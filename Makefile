@@ -67,8 +67,8 @@ fresh: ## Drop every table and migrate again (development only)
 tinker: ## Open tinker
 	$(APP) php artisan tinker
 
-test: ## Run the PHP test suite
-	$(APP) php artisan test
+test: ## PHP checks: Pint, PHPStan and the test suite
+	$(APP) composer test
 
 lint: ## Format PHP code with Pint
 	$(APP) vendor/bin/pint --parallel

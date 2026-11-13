@@ -121,7 +121,7 @@ make artisan a="route:list"  # run artisan
 make composer a="install"    # run composer
 make npm a="run build"       # run npm in the node container
 make migrate                 # run the migrations (as the owner role)
-make test                    # PHP test suite
+make test                    # Pint check, PHPStan and the PHP test suite
 make check                   # frontend lint, format and type checks
 make psql                    # psql on the app database
 make queue-restart           # reload the workers after code changes
@@ -144,9 +144,8 @@ docker build -f docker/php/Dockerfile --target prod -t gasflow-php:prod .
 
 ```bash
 make lint            # format PHP code with Pint
-make test            # PHP test suite
+make test            # Pint check, PHPStan and the PHP test suite
 make check           # frontend lint, format and type checks
-composer test        # (host) Pint check, PHPStan and the test suite
 ```
 
 ## License
