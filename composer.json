@@ -1,13 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/blank-vue-starter-kit",
+    "name": "gasflow/gasflow",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "GasFlow: multi-tenant pipeline gas billing platform.",
     "keywords": [
-        "laravel",
-        "framework"
+        "gas",
+        "billing",
+        "saas"
     ],
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": "^8.5",
         "inertiajs/inertia-laravel": "^3.0",
