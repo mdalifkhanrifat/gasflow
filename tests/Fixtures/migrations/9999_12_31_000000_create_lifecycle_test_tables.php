@@ -31,6 +31,10 @@ return new class extends Migration
               id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
               name TEXT NOT NULL
             );
+            CREATE TABLE lifecycle_test_codes (
+              code VARCHAR(32) PRIMARY KEY,
+              name TEXT NOT NULL
+            );
             CREATE TABLE lifecycle_test_links (
               left_id BIGINT NOT NULL,
               right_id BIGINT NOT NULL,
@@ -69,6 +73,9 @@ return new class extends Migration
                    ('lifecycle_test_periods', 'collecting', 'locked');
             SQL);
 
+        // catalogue with a text primary key (like payment_method_catalog)
+        LifecycleSchema::attach('lifecycle_test_codes', module: 'testing', class: RecordClass::Configuration);
+
         // pivot with a composite primary key; hard delete allowed
         LifecycleSchema::attach(
             'lifecycle_test_links',
@@ -81,7 +88,7 @@ return new class extends Migration
     public function down(): void
     {
         DB::unprepared(<<<'SQL'
-            DROP TABLE IF EXISTS lifecycle_test_links, lifecycle_test_periods,
+            DROP TABLE IF EXISTS lifecycle_test_links, lifecycle_test_codes, lifecycle_test_periods,
                                  lifecycle_test_ledgers, lifecycle_test_items;
             DELETE FROM status_transitions WHERE entity_name LIKE 'lifecycle_test_%';
             DELETE FROM status_definitions WHERE entity_name LIKE 'lifecycle_test_%';
