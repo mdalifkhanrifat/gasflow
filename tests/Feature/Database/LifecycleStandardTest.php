@@ -381,23 +381,57 @@ describe('activity trail', function () {
         $log = trailFor('lifecycle_test_items', (string) $id)[0];
         expect(json_decode($log->new_values)->secret)->toBe('[redacted]');
     });
+});
 
-    it('keeps the status trail append-only', function () {
+describe('trail protection', function () {
+    it('still records trails for changes made by the runtime role', function () {
+        // Arrange
+        $id = insertItem();
+
+        // Act
+        DB::table('lifecycle_test_items')->where('id', $id)->update(['status' => 'inactive']);
+
+        // Assert
+        expect(trailFor('lifecycle_test_items', (string) $id, 'status_change_logs'))->toHaveCount(1)
+            ->and(trailFor('lifecycle_test_items', (string) $id))->toHaveCount(2);
+    });
+
+    it('does not let the runtime role write a trail table directly', function (string $table) {
+        // Arrange
+        $fakeRow = ['entity_name' => 'lifecycle_test_items', 'record_key' => '1'];
+        if ($table !== 'status_change_logs') {
+            $fakeRow['operation'] = 'update';
+        }
+        if ($table === 'maintenance_override_logs') {
+            $fakeRow['reason'] = 'forged';
+        }
+
+        // Act & Assert
+        expect(fn () => DB::table($table)->insert($fakeRow))
+            ->toThrow(QueryException::class, "permission denied for table {$table}");
+    })->with([
+        'status trail' => 'status_change_logs',
+        'activity trail' => 'data_change_logs',
+        'activity trail partition' => 'data_change_logs_default',
+        'override trail' => 'maintenance_override_logs',
+    ]);
+
+    it('does not let the runtime role rewrite existing trail rows', function () {
         // Arrange
         $id = insertItem();
         DB::table('lifecycle_test_items')->where('id', $id)->update(['status' => 'inactive']);
 
         // Act & Assert
         expect(fn () => DB::table('status_change_logs')->update(['reason' => 'rewritten']))
-            ->toThrow(QueryException::class, 'status_change_logs is append-only');
+            ->toThrow(QueryException::class, 'permission denied for table status_change_logs');
     });
 
-    it('keeps the activity trail append-only', function () {
+    it('does not let the runtime role remove activity trail rows', function () {
         // Arrange
         insertItem();
 
         // Act & Assert
         expect(fn () => DB::table('data_change_logs')->delete())
-            ->toThrow(QueryException::class, 'is append-only');
+            ->toThrow(QueryException::class, 'permission denied for table data_change_logs');
     });
 });
