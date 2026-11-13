@@ -435,3 +435,50 @@ describe('trail protection', function () {
             ->toThrow(QueryException::class, 'permission denied for table data_change_logs');
     });
 });
+
+describe('activity trail partitions', function () {
+    it('can be created ahead of time by the runtime role', function () {
+        // Act
+        DB::select("select data_change_logs_ensure_partition('2030-01-15')");
+
+        // Assert
+        expect(DB::selectOne("select to_regclass('data_change_logs_2030_01') as name")->name)
+            ->toBe('data_change_logs_2030_01');
+    });
+
+    it('are created only once', function () {
+        // Arrange
+        DB::select("select data_change_logs_ensure_partition('2030-02-01')");
+
+        // Act
+        DB::select("select data_change_logs_ensure_partition('2030-02-28')");
+
+        // Assert
+        expect(DB::table('pg_class')->where('relname', 'data_change_logs_2030_02')->count())->toBe(1);
+    });
+
+    it('receive the rows of their month', function () {
+        // Arrange
+        DB::select('select data_change_logs_ensure_partition(current_date)');
+
+        // Act
+        $id = insertItem();
+
+        // Assert
+        $partition = DB::table('data_change_logs')
+            ->where('entity_name', 'lifecycle_test_items')
+            ->where('record_key', (string) $id)
+            ->value(DB::raw('tableoid::regclass::text'));
+        expect($partition)->toBe('data_change_logs_'.now()->format('Y_m'));
+    });
+
+    it('cannot be written directly by the runtime role', function () {
+        // Arrange
+        DB::select("select data_change_logs_ensure_partition('2030-03-01')");
+
+        // Act & Assert
+        expect(fn () => DB::table('data_change_logs_2030_03')->insert([
+            'entity_name' => 'lifecycle_test_items', 'record_key' => '1', 'operation' => 'update',
+        ]))->toThrow(QueryException::class, 'permission denied for table data_change_logs_2030_03');
+    });
+});
