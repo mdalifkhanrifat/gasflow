@@ -109,6 +109,24 @@ The init script also creates the `gasflow_testing` database and the
 `pgcrypto` and `btree_gist` extensions. It runs only on an empty volume. To
 start over, run `docker compose down -v`. This deletes all local data.
 
+### Maintenance override
+
+Deliberate manual corrections, including hiding protected money rows, go
+through one command on an operator machine. It uses its own connection,
+`pgsql_maintenance` (`DB_MAINTENANCE_USERNAME` / `DB_MAINTENANCE_PASSWORD`,
+never set on web or queue servers):
+
+```bash
+make artisan a="gasflow:maintenance \
+  --sql='delete from financial_journals where id = 1992' \
+  --reason='Audit request #17: duplicate entry' --user=1"
+```
+
+It runs every statement in one transaction, checks the rules that normally wait
+for COMMIT, previews each changed row and commits only after you type `APPLY`.
+`--dry-run` previews and rolls back. Every changed row is recorded in
+`maintenance_override_logs` and `data_change_logs`.
+
 ### Common commands
 
 ```bash

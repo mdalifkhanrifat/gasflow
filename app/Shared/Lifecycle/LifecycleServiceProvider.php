@@ -2,6 +2,7 @@
 
 namespace App\Shared\Lifecycle;
 
+use App\Shared\Lifecycle\Maintenance\MaintenanceOverrideCommand;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -27,5 +28,9 @@ class LifecycleServiceProvider extends ServiceProvider
         Event::listen(MigrationsEnded::class, function (): void {
             $this->app->make(StatusRegistry::class)->flush();
         });
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([MaintenanceOverrideCommand::class]);
+        }
     }
 }

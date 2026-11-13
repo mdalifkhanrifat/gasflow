@@ -120,6 +120,27 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        /*
+         * Operator login, a member of gasflow_maintenance. Only the backend
+         * maintenance override (php artisan gasflow:maintenance) may use it, and
+         * its credentials exist only on operator machines, never on web or queue
+         * servers. Without DB_MAINTENANCE_USERNAME the command refuses to run.
+         */
+        'pgsql_maintenance' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_MAINTENANCE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_MAINTENANCE_USERNAME', ''),
+            'password' => env('DB_MAINTENANCE_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
