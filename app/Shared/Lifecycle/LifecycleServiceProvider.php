@@ -30,7 +30,7 @@ class LifecycleServiceProvider extends ServiceProvider
         });
 
         if ($this->app->runningInConsole()) {
-            $this->commands([MaintenanceOverrideCommand::class]);
+            $this->commands([EnsureChangeLogPartitions::class, MaintenanceOverrideCommand::class]);
         }
     }
 }
