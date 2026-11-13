@@ -25,7 +25,7 @@ setup: ## First run: env, images, containers, dependencies, app key, migrations
 	$(DC) up -d
 	$(APP) composer install
 	@grep -q '^APP_KEY=$$' .env && $(APP) php artisan key:generate || true
-	$(APP) php artisan migrate
+	$(APP) php artisan migrate --database=pgsql_migrations
 	@echo "GasFlow is running on http://localhost:$$(grep '^APP_PORT=' .env | cut -d= -f2)"
 
 build: ## Build the images
@@ -58,11 +58,11 @@ composer: ## Run composer (make composer a="require vendor/package")
 npm: ## Run npm in the node container (make npm a="run build")
 	$(DC) exec node npm $(a)
 
-migrate: ## Run the database migrations
-	$(APP) php artisan migrate
+migrate: ## Run the database migrations (as the owner role)
+	$(APP) php artisan migrate --database=pgsql_migrations
 
 fresh: ## Drop every table and migrate again (development only)
-	$(APP) php artisan migrate:fresh
+	$(APP) php artisan migrate:fresh --database=pgsql_migrations
 
 tinker: ## Open tinker
 	$(APP) php artisan tinker

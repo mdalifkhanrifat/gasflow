@@ -99,6 +99,27 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        /*
+         * Owner role (gasflow_owner): owns the schema and is used only to run
+         * migrations (php artisan migrate --database=pgsql_migrations). The
+         * runtime "pgsql" connection uses the restricted gasflow_app role, so
+         * row-level security and the lifecycle triggers always apply to it.
+         */
+        'pgsql_migrations' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_MIGRATION_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_MIGRATION_USERNAME', 'gasflow_owner'),
+            'password' => env('DB_MIGRATION_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

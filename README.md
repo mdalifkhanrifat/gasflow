@@ -99,6 +99,12 @@ The database is initialised by `docker/postgres/init` the first time the
 | `gasflow_maintenance` | no    | Group required for the audited backend maintenance override                              |
 | `gasflow_operator`    | yes   | Member of `gasflow_maintenance`; created only when `DB_OPERATOR_PASSWORD` is set         |
 
+Laravel has two connections. The app, queues and scheduler use `pgsql`
+(`gasflow_app`). Migrations use `pgsql_migrations` (`gasflow_owner`), so always
+run them with `make migrate` or `php artisan migrate --database=pgsql_migrations`.
+A plain `php artisan migrate` fails on purpose, because the app role cannot
+change the schema.
+
 The init script also creates the `gasflow_testing` database and the
 `pgcrypto` and `btree_gist` extensions. It runs only on an empty volume. To
 start over, run `docker compose down -v`. This deletes all local data.
@@ -114,7 +120,7 @@ make shell                   # shell in the app container
 make artisan a="route:list"  # run artisan
 make composer a="install"    # run composer
 make npm a="run build"       # run npm in the node container
-make migrate                 # run the migrations
+make migrate                 # run the migrations (as the owner role)
 make test                    # PHP test suite
 make check                   # frontend lint, format and type checks
 make psql                    # psql on the app database
