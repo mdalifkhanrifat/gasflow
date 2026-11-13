@@ -6,7 +6,7 @@ use BackedEnum;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Throwable;
 
 /**
  * Eloquent side of the universal record lifecycle (08-record-lifecycle-standard.md §5).
@@ -128,29 +128,25 @@ trait HasLifecycle
     }
 
     /**
-     * Save lifecycle attributes in a savepoint with app.lifecycle_reason set for
-     * that write only, then reload the values the database derived.
+     * Save lifecycle attributes with the reason scoped to this write, then reload
+     * the values the database derived. On refusal the model keeps its old values.
      *
      * @param  array<string, mixed>  $attributes
      */
     private function writeLifecycle(array $attributes, ?string $reason): static
     {
-        $connection = $this->getConnection();
         $original = $this->getRawOriginal();
 
         try {
-            $connection->transaction(function () use ($connection, $attributes, $reason): void {
-                $previousReason = $connection->scalar("select current_setting('app.lifecycle_reason', true)");
-                $connection->select("select set_config('app.lifecycle_reason', ?, true)", [$reason ?? '']);
-
-                $this->forceFill($attributes)->save();
-
-                $connection->select("select set_config('app.lifecycle_reason', ?, true)", [(string) $previousReason]);
-            });
-        } catch (QueryException $exception) {
+            LifecycleWrite::withReason(
+                $this->getConnection(),
+                $reason,
+                fn () => $this->forceFill($attributes)->save(),
+            );
+        } catch (Throwable $exception) {
             $this->setRawAttributes($original, true);
 
-            throw LifecycleViolation::fromQueryException($exception) ?? $exception;
+            throw $exception;
         }
 
         return $this->refresh();
