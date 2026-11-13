@@ -92,12 +92,12 @@ on `127.0.0.1`.
 The database is initialised by `docker/postgres/init` the first time the
 `postgres` volume is created:
 
-| Role                  | Login | Purpose                                                                                  |
-| --------------------- | ----- | ---------------------------------------------------------------------------------------- |
-| `gasflow_owner`       | yes   | Owns the database and schema; runs migrations                                            |
-| `gasflow_app`         | yes   | Runtime role: owns nothing, no `BYPASSRLS`, no `TRUNCATE`, so row-level security applies |
-| `gasflow_maintenance` | no    | Group required for the audited backend maintenance override                              |
-| `gasflow_operator`    | yes   | Member of `gasflow_maintenance`; created only when `DB_OPERATOR_PASSWORD` is set         |
+| Role                  | Login | Purpose                                                                                                                       |
+| --------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `gasflow_owner`       | yes   | Owns the database and schema; runs migrations                                                                                 |
+| `gasflow_app`         | yes   | Runtime role: owns nothing, no `BYPASSRLS`, no `TRUNCATE`, so row-level security applies                                      |
+| `gasflow_maintenance` | no    | Group required for the audited backend maintenance override                                                                   |
+| `gasflow_operator`    | yes   | Member of `gasflow_maintenance`; created only when `DB_OPERATOR_PASSWORD` is set (`make env` sets it on development machines) |
 
 Laravel has two connections. The app, queues and scheduler use `pgsql`
 (`gasflow_app`). Migrations use `pgsql_migrations` (`gasflow_owner`), so always

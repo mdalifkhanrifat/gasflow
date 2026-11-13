@@ -2,7 +2,7 @@
 
 DC   := docker compose --profile dev
 APP  := $(DC) exec app
-SECRETS := DB_SUPERUSER_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD REDIS_PASSWORD
+SECRETS := DB_SUPERUSER_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD DB_OPERATOR_PASSWORD REDIS_PASSWORD
 
 .DEFAULT_GOAL := help
 .PHONY: help env setup build up down restart ps logs shell artisan composer npm \
