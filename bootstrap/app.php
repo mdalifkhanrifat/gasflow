@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Shared\Lifecycle\LifecycleContext;
 use App\Shared\Lifecycle\LifecycleViolation;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
@@ -19,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            // Last, so the user and every context value are known before BEGIN.
+            LifecycleContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -16,6 +16,9 @@ class LifecycleServiceProvider extends ServiceProvider
         // Scoped: a fresh instance per request and per queued job; the shared
         // cache (version key) keeps long-running workers up to date.
         $this->app->scoped(StatusRegistry::class);
+
+        // One context per request / job, shared by every middleware that adds values.
+        $this->app->scoped(DatabaseContext::class);
     }
 
     public function boot(): void
