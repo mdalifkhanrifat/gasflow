@@ -87,10 +87,11 @@ FROM dev AS node
 USER root
 COPY --from=nodejs /usr/local/bin/node /usr/local/bin/node
 COPY --from=nodejs /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN apk add --no-cache libstdc++ \
+RUN apk add --no-cache libatomic libstdc++ \
     && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && node --version && npm --version
+    && node --version && npm --version \
+    && install -d -o www-data -g www-data /var/www/html/node_modules
 
 USER www-data
 CMD ["npm", "run", "dev"]
@@ -107,7 +108,7 @@ FROM vendor AS assets
 
 COPY --from=nodejs /usr/local/bin/node /usr/local/bin/node
 COPY --from=nodejs /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN apk add --no-cache libstdc++ \
+RUN apk add --no-cache libatomic libstdc++ \
     && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 
 COPY package.json package-lock.json .npmrc ./

@@ -141,6 +141,38 @@ services:
             retries: 5
         restart: unless-stopped
 
+    # Vite dev server with HMR (dev profile). Built from the app image plus Node 26,
+    # because the Wayfinder plugin runs "php artisan" while Vite is running.
+    # node_modules lives in a volume so Linux/musl binaries never mix with the host's.
+    node:
+        <<: *php
+        image: gasflow-php:node
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            target: node
+            args:
+                UID: ${HOST_UID:-1000}
+                GID: ${HOST_GID:-1000}
+        profiles: [dev]
+        command:
+            - sh
+            - -c
+            - >-
+                cmp -s package-lock.json node_modules/.installed-lock
+                || { npm ci --no-audit --no-fund && cp package-lock.json node_modules/.installed-lock; };
+                exec npm run dev
+        environment:
+            DOCKER_VITE: '1'
+            NPM_CONFIG_UPDATE_NOTIFIER: 'false'
+            DOCKER_VITE_PORT: ${VITE_PORT:-5173}
+        ports:
+            - '127.0.0.1:${VITE_PORT:-5173}:5173'
+        volumes:
+            - ./:/var/www/html
+            - node-modules:/var/www/html/node_modules
+
 volumes:
+    node-modules:
     postgres-data:
     redis-data:

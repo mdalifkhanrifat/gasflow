@@ -6,6 +6,11 @@ import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig, lazyPlugins } from 'vite-plus';
 
+// Inside the Docker "node" service the dev server must listen on all interfaces,
+// while the browser reaches it through the port published on localhost.
+const inDocker = process.env.DOCKER_VITE === '1';
+const dockerVitePort = Number(process.env.DOCKER_VITE_PORT ?? 5173);
+
 export default defineConfig({
     plugins: lazyPlugins(() => [
         laravel({
@@ -32,6 +37,12 @@ export default defineConfig({
         }),
     ]),
     server: {
+        ...(inDocker && {
+            host: '0.0.0.0',
+            port: 5173,
+            strictPort: true,
+            hmr: { host: 'localhost', clientPort: dockerVitePort },
+        }),
         watch: {
             ignored: [
                 '**/.agents/**',
