@@ -26,14 +26,14 @@ meter readings → reconciliation → vendor tariffs → invoices → payments
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Backend | PHP 8.5, Laravel 13 |
-| Frontend | Vue 3, TypeScript, Inertia 3, Tailwind CSS 4 |
-| Database | PostgreSQL 18 |
-| Cache, queue, session | Redis 8 |
-| Web server | Nginx 1.30 |
-| Tests and quality | Pest, Larastan, Pint, vue-tsc |
+| Layer                 | Technology                                   |
+| --------------------- | -------------------------------------------- |
+| Backend               | PHP 8.5, Laravel 13                          |
+| Frontend              | Vue 3, TypeScript, Inertia 3, Tailwind CSS 4 |
+| Database              | PostgreSQL 18                                |
+| Cache, queue, session | Redis 8                                      |
+| Web server            | Nginx 1.30                                   |
+| Tests and quality     | Pest, Larastan, Pint, vue-tsc                |
 
 ## Requirements
 
