@@ -127,6 +127,27 @@ for COMMIT, previews each changed row and commits only after you type `APPLY`.
 `--dry-run` previews and rolls back. Every changed row is recorded in
 `maintenance_override_logs` and `data_change_logs`.
 
+### License
+
+Every installation needs a license signed by the owner's key, development
+included. The private key never enters the repository: it stays in
+`~/.config/gasflow/license-keys` (override with `LICENSE_KEYS=...`), sealed with
+the owner's passphrase. Only the public key is committed
+(`resources/licensing/public-keys.json`).
+
+```bash
+make license-keygen a="--id=kdev-2026"     # once: create the key, type a passphrase
+make license a="--licensee='Your name' --days=30"
+make license a="--licensee='Rahim (dev)' --valid-until=2027-03-31 \
+  --output=storage/app/license/rahim.json"  # a license for another developer
+```
+
+`make license` asks for the passphrase and writes the license to
+`storage/app/license/license.json` (git-ignored). Options: `--domain`,
+`--limit=buildings=10`, `--feature=module.billing`, `--grace`, `--edition`. Run
+`make artisan a="license:issue --help"` for the full list. Back up the key file
+and keep the passphrase: without both, no new license can be signed with that key.
+
 ### Common commands
 
 ```bash
