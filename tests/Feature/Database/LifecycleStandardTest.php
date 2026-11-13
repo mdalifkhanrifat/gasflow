@@ -56,6 +56,17 @@ describe('registry', function () {
             ->update(['soft_delete_policy' => 'allowed']))
             ->toThrow(QueryException::class, 'permission denied for table lifecycle_entities');
     });
+
+    it('gives every status of the real tables a bangla label', function () {
+        // Act
+        $missing = DB::table('status_definitions')
+            ->where('entity_name', 'not like', 'lifecycle_test_%')
+            ->whereRaw("coalesce(translations -> 'bn' ->> 'label', '') = ''")
+            ->pluck('code', 'entity_name');
+
+        // Assert
+        expect($missing->all())->toBe([]);
+    });
 });
 
 describe('lifecycle_attach()', function () {
@@ -144,6 +155,34 @@ describe('new records', function () {
         expect($item->created_by)->toBe($creator->id)
             ->and($item->updated_by)->toBe($editor->id);
     });
+
+    it('record the session on insert and on update', function () {
+        // Arrange
+        setDatabaseContext(['session_id' => 71]);
+        $id = insertItem();
+
+        // Act
+        setDatabaseContext(['session_id' => 72]);
+        DB::table('lifecycle_test_items')->where('id', $id)->update(['name' => 'Renamed']);
+
+        // Assert
+        $item = findItem($id);
+        expect($item->created_session_id)->toBe(71)
+            ->and($item->updated_session_id)->toBe(72);
+    });
+
+    it('keep updated_at current on every change', function () {
+        // Arrange
+        $id = insertItem(attributes: ['created_at' => '2020-01-01', 'updated_at' => '2020-01-01']);
+
+        // Act
+        DB::table('lifecycle_test_items')->where('id', $id)->update(['name' => 'Renamed']);
+
+        // Assert
+        $item = findItem($id);
+        expect($item->created_at)->toStartWith('2020-01-01')
+            ->and($item->updated_at)->toStartWith(now()->format('Y-m-d'));
+    });
 });
 
 describe('status changes', function () {
@@ -187,6 +226,23 @@ describe('status changes', function () {
         expect($item->is_active)->toBeFalse()
             ->and($item->status)->toBe('active')
             ->and($item->is_deleted)->toBeFalse();
+    });
+
+    it('accept a status that was added later as data', function () {
+        // Arrange
+        $id = insertItem();
+        DB::table('status_definitions')->insert([
+            'entity_name' => 'lifecycle_test_items', 'code' => 'on_hold', 'label' => 'On hold',
+            'tone' => 'warning', 'implies_active' => false, 'sort_order' => 50,
+        ]);
+
+        // Act
+        DB::table('lifecycle_test_items')->where('id', $id)->update(['status' => 'on_hold']);
+
+        // Assert
+        $item = findItem($id);
+        expect($item->status)->toBe('on_hold')
+            ->and($item->is_active)->toBeFalse();
     });
 });
 
@@ -249,6 +305,19 @@ describe('soft delete', function () {
         expect($item->is_deleted)->toBeFalse()
             ->and($item->deleted_at)->toBeNull()
             ->and($item->is_active)->toBeTrue();
+    });
+
+    it('fills deleted_at when only is_deleted is set', function () {
+        // Arrange
+        $id = insertItem();
+
+        // Act
+        DB::table('lifecycle_test_items')->where('id', $id)->update(['is_deleted' => true]);
+
+        // Assert
+        $item = findItem($id);
+        expect($item->deleted_at)->not->toBeNull()
+            ->and($item->is_active)->toBeFalse();
     });
 
     it('marks a row deleted when only deleted_at is set', function () {
@@ -348,6 +417,17 @@ describe('pivot records', function () {
 });
 
 describe('activity trail', function () {
+    it('does not log an update that changes nothing', function () {
+        // Arrange
+        $id = insertItem('Same');
+
+        // Act
+        DB::table('lifecycle_test_items')->where('id', $id)->update(['name' => 'Same']);
+
+        // Assert
+        expect(array_column(trailFor('lifecycle_test_items', (string) $id), 'operation'))->toBe(['insert']);
+    });
+
     it('logs an insert with the new values', function () {
         // Act
         $id = insertItem('Pressure gauge');
@@ -481,4 +561,50 @@ describe('activity trail partitions', function () {
             'entity_name' => 'lifecycle_test_items', 'record_key' => '1', 'operation' => 'update',
         ]))->toThrow(QueryException::class, 'permission denied for table data_change_logs_2030_03');
     });
+});
+
+describe('database guarantees', function () {
+    // These need the owner role (switch triggers off, bypass the grants); its
+    // changes are rolled back after each test.
+    beforeEach(function () {
+        $this->owner = DB::connection('pgsql_migrations');
+        $this->owner->beginTransaction();
+    });
+
+    afterEach(function () {
+        $this->owner->rollBack();
+    });
+
+    it('refuse a hidden row without deleted_at when the triggers are switched off', function () {
+        // Arrange
+        $id = $this->owner->table('lifecycle_test_items')->insertGetId(['name' => 'Item']);
+        $this->owner->statement('alter table lifecycle_test_items disable trigger user');
+
+        // Act & Assert
+        expect(fn () => $this->owner->table('lifecycle_test_items')->where('id', $id)->update(['is_deleted' => true, 'is_active' => false]))
+            ->toThrow(QueryException::class, 'ck_lifecycle_test_items_lifecycle_deleted');
+    });
+
+    it('refuse a hidden row that is still active when the triggers are switched off', function () {
+        // Arrange
+        $id = $this->owner->table('lifecycle_test_items')->insertGetId(['name' => 'Item']);
+        $this->owner->statement('alter table lifecycle_test_items disable trigger user');
+
+        // Act & Assert
+        expect(fn () => $this->owner->table('lifecycle_test_items')->where('id', $id)->update(['is_deleted' => true, 'deleted_at' => now()]))
+            ->toThrow(QueryException::class, 'ck_lifecycle_test_items_lifecycle_active');
+    });
+
+    it('keep every trail append-only, even for the owner', function (string $trail) {
+        // Arrange
+        $id = $this->owner->table('lifecycle_test_items')->insertGetId(['name' => 'Item']);
+        $this->owner->table('lifecycle_test_items')->where('id', $id)->update(['status' => 'inactive']);
+        $this->owner->table('maintenance_override_logs')->insert([
+            'entity_name' => 'lifecycle_test_items', 'record_key' => (string) $id, 'operation' => 'update', 'reason' => 'Fixture row',
+        ]);
+
+        // Act & Assert
+        expect(fn () => $this->owner->table($trail)->update(['reason' => 'rewritten']))
+            ->toThrow(QueryException::class, 'append-only');
+    })->with(['status_change_logs', 'data_change_logs', 'maintenance_override_logs']);
 });
