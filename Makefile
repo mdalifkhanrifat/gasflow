@@ -1,12 +1,15 @@
 # GasFlow development shortcuts. Run "make" to list them.
 
 DC   := docker compose --profile dev
+# The owner's sealed license signing keys: outside the project, never committed.
+LICENSE_KEYS ?= $(HOME)/.config/gasflow/license-keys
 APP  := $(DC) exec app
 SECRETS := DB_SUPERUSER_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD DB_OPERATOR_PASSWORD REDIS_PASSWORD
 
 .DEFAULT_GOAL := help
 .PHONY: help env setup build up down restart ps logs shell artisan composer npm \
-        migrate fresh tinker test lint check psql redis-cli queue-restart geoip
+        migrate fresh tinker test lint check psql redis-cli queue-restart geoip \
+        license-keygen license
 
 help: ## List the available commands
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -91,3 +94,10 @@ queue-restart: ## Restart the queue workers after code changes
 
 geoip: ## Download the DB-IP City Lite database (IP → city lookups)
 	$(APP) php artisan audit:geoip-update
+
+license-keygen: ## Create a license signing key (make license-keygen a="--id=kdev-2026")
+	@mkdir -p $(LICENSE_KEYS) && chmod 700 $(LICENSE_KEYS)
+	$(DC) run --rm --no-deps -v $(LICENSE_KEYS):/license-keys app php artisan license:keygen --dir=/license-keys $(a)
+
+license: ## Sign a license (make license a="--licensee='Your name' --days=30")
+	$(DC) run --rm --no-deps -v $(LICENSE_KEYS):/license-keys:ro app php artisan license:issue --keys=/license-keys $(a)

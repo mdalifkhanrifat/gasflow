@@ -9,6 +9,7 @@ use App\Modules\Licensing\CanonicalJson;
 use App\Modules\Licensing\LicenseStatus;
 use App\Modules\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
+use Tests\Support\LicenseFixtures;
 
 /**
  * @return array{public: string, secret: string}
@@ -20,29 +21,6 @@ function licenseKeyPair(): array
     return [
         'public' => base64_encode(sodium_crypto_sign_publickey($pair)),
         'secret' => sodium_crypto_sign_secretkey($pair),
-    ];
-}
-
-/**
- * @param  array<string, mixed>  $overrides
- * @return array<string, mixed>
- */
-function licensePayload(array $overrides = []): array
-{
-    return [
-        'license_no' => 'LIC-00081',
-        'licensee' => 'Northstar Gas Services',
-        'edition' => 'self_hosted',
-        'domains' => ['gas.northstar.example'],
-        'max_activations' => 1,
-        'limits' => ['organizations' => 1, 'buildings' => 10, 'flats' => 600, 'users' => 50],
-        'features' => ['module.billing' => true, 'module.system_setup' => false],
-        'valid_from' => '2026-01-01',
-        'valid_until' => '2026-12-31',
-        'offline_grace_days' => 14,
-        'key_id' => 'k-test',
-        'issued_at' => '2026-01-01T00:00:00Z',
-        ...$overrides,
     ];
 }
 
@@ -69,7 +47,7 @@ beforeEach(function () {
 describe('signature', function () {
     it('accepts a license signed with a trusted key', function () {
         // Arrange
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2026-06-01'));
@@ -81,7 +59,7 @@ describe('signature', function () {
 
     it('refuses a payload changed after signing', function () {
         // Arrange
-        $document = json_decode(signLicense(licensePayload(), $this->keys['secret']), true);
+        $document = json_decode(signLicense(LicenseFixtures::payload(), $this->keys['secret']), true);
         $document['payload']['limits']['flats'] = 60000;
 
         // Act
@@ -96,7 +74,7 @@ describe('signature', function () {
     it('refuses a license signed with a key it does not trust', function () {
         // Arrange
         $foreign = licenseKeyPair();
-        $document = signLicense(licensePayload(['key_id' => 'k-foreign']), $foreign['secret']);
+        $document = signLicense(LicenseFixtures::payload(['key_id' => 'k-foreign']), $foreign['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2026-06-01'));
@@ -108,7 +86,7 @@ describe('signature', function () {
     it('refuses a license that names a trusted key it was not signed with', function () {
         // Arrange
         $foreign = licenseKeyPair();
-        $document = signLicense(licensePayload(), $foreign['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $foreign['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2026-06-01'));
@@ -119,7 +97,7 @@ describe('signature', function () {
 
     it('does not depend on the order of the payload keys', function () {
         // Arrange
-        $payload = licensePayload();
+        $payload = LicenseFixtures::payload();
         $signed = json_decode(signLicense($payload, $this->keys['secret']), true);
         $reordered = ['payload' => array_reverse($payload, true), 'signature' => $signed['signature']];
 
@@ -132,7 +110,7 @@ describe('signature', function () {
 
     it('refuses a signature that is not a base64 Ed25519 signature', function (string $signature) {
         // Arrange
-        $document = json_encode(['payload' => licensePayload(), 'signature' => $signature]);
+        $document = json_encode(['payload' => LicenseFixtures::payload(), 'signature' => $signature]);
 
         // Act
         $check = $this->verifier->verify($document, at('2026-06-01'));
@@ -144,7 +122,7 @@ describe('signature', function () {
     it('ignores a trusted key entry that is not an Ed25519 public key', function () {
         // Arrange
         $verifier = new LicenseVerifier(['k-test' => base64_encode('not 32 bytes')]);
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $check = $verifier->verify($document, at('2026-06-01'));
@@ -179,7 +157,7 @@ describe('document', function () {
 describe('payload', function () {
     it('refuses a signed payload with a malformed field', function (array $overrides, string $field) {
         // Arrange
-        $document = signLicense(licensePayload($overrides), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload($overrides), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2026-06-01'));
@@ -202,7 +180,7 @@ describe('payload', function () {
 
     it('treats a missing limit as unlimited', function () {
         // Arrange
-        $document = signLicense(licensePayload(['limits' => ['buildings' => 10]]), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(['limits' => ['buildings' => 10]]), $this->keys['secret']);
 
         // Act
         $license = $this->verifier->verify($document, at('2026-06-01'))->license;
@@ -214,7 +192,7 @@ describe('payload', function () {
 
     it('enables only the features switched on', function () {
         // Arrange
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $license = $this->verifier->verify($document, at('2026-06-01'))->license;
@@ -229,7 +207,7 @@ describe('payload', function () {
 describe('dates', function () {
     it('is not valid before valid_from', function () {
         // Arrange
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2025-12-31 23:59:59'));
@@ -241,7 +219,7 @@ describe('dates', function () {
 
     it('is active through the last second of valid_until', function () {
         // Arrange
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2026-12-31 23:59:59'));
@@ -252,7 +230,7 @@ describe('dates', function () {
 
     it('is in grace from the next day for offline_grace_days', function (string $time) {
         // Arrange
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at($time));
@@ -263,7 +241,7 @@ describe('dates', function () {
 
     it('expires when the grace period is over and still shows the license', function () {
         // Arrange
-        $document = signLicense(licensePayload(), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2027-01-15 00:00:00'));
@@ -275,7 +253,7 @@ describe('dates', function () {
 
     it('expires right after valid_until without grace days', function () {
         // Arrange
-        $document = signLicense(licensePayload(['offline_grace_days' => 0]), $this->keys['secret']);
+        $document = signLicense(LicenseFixtures::payload(['offline_grace_days' => 0]), $this->keys['secret']);
 
         // Act
         $check = $this->verifier->verify($document, at('2027-01-01 00:00:00'));

@@ -2,6 +2,8 @@
 
 namespace App\Modules\Licensing;
 
+use App\Modules\Licensing\Console\GenerateSigningKey;
+use App\Modules\Licensing\Console\IssueLicense;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -17,5 +19,12 @@ class LicensingServiceProvider extends ServiceProvider
 
             return new LicenseVerifier($keys);
         });
+    }
+
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([GenerateSigningKey::class, IssueLicense::class]);
+        }
     }
 }
