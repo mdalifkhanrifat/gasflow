@@ -9,18 +9,12 @@ on:
 permissions:
   contents: read
 
+# CI runs on the same Docker stack as development (PHP 8.5, PostgreSQL 18.7 with
+# the owner/app roles, Redis 8, Node 26), so tests see the real database rules.
 jobs:
   ci:
     runs-on: ubuntu-latest
-
-    # The defaults in .env.example point at the Docker services. Until the
-    # PostgreSQL and Redis CI job is added, setup runs on in-memory SQLite.
-    env:
-      DB_CONNECTION: sqlite
-      DB_DATABASE: ':memory:'
-      CACHE_STORE: array
-      SESSION_DRIVER: array
-      QUEUE_CONNECTION: sync
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -28,20 +22,33 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
-        with:
-          php-version: '8.5'
-          tools: composer:v2
-          coverage: none
+      - name: Create environment file
+        run: make env
 
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
+      - name: Build images
+        run: docker compose --profile dev build app node
 
-      - name: Setup Application
-        run: composer setup
+      - name: Start app, postgres and redis
+        run: docker compose up -d --wait app postgres redis
 
-      - name: Run CI Checks
-        run: composer ci:check
+      - name: Install PHP dependencies
+        run: docker compose exec -T app composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generate application key
+        run: docker compose exec -T app php artisan key:generate --no-interaction
+
+      - name: Install and build frontend
+        run: docker compose --profile dev run --rm --no-deps -T node sh -c "npm ci --no-audit --no-fund && npm run build"
+
+      - name: Run migrations as the owner role
+        run: docker compose exec -T app php artisan migrate --database=pgsql_migrations --force
+
+      - name: PHP checks (Pint, PHPStan, Pest)
+        run: docker compose exec -T app composer test
+
+      - name: Frontend checks (lint, format, types)
+        run: docker compose --profile dev run --rm --no-deps -T node sh -c "npm run check && npm run types:check"
+
+      - name: Show service logs
+        if: failure()
+        run: docker compose --profile dev logs --no-color
