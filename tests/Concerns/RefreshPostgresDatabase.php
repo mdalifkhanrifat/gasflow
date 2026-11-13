@@ -29,7 +29,8 @@ trait RefreshPostgresDatabase
     }
 
     /**
-     * Options for "migrate:fresh": always as the owner role.
+     * Options for "migrate:fresh": always as the owner role, plus the
+     * test-only fixture tables in tests/Fixtures/migrations.
      *
      * @return array<string, mixed>
      */
@@ -40,6 +41,8 @@ trait RefreshPostgresDatabase
         return array_merge(
             [
                 '--database' => 'pgsql_migrations',
+                '--path' => [database_path('migrations'), base_path('tests/Fixtures/migrations')],
+                '--realpath' => true,
                 '--drop-views' => true,
                 '--drop-types' => $this->shouldDropTypes(),
             ],

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Tests\Concerns\RefreshPostgresDatabase;
 use Tests\TestCase;
 
@@ -44,7 +45,15 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Set request context values for the current test transaction, the same
+ * values Laravel sets per request (app.user_id, app.lifecycle_reason, ...).
+ *
+ * @param  array<string, scalar>  $values  keys without the "app." prefix
+ */
+function setDatabaseContext(array $values): void
 {
-    // ..
+    foreach ($values as $key => $value) {
+        DB::select('select set_config(?, ?, true)', ["app.{$key}", (string) $value]);
+    }
 }
