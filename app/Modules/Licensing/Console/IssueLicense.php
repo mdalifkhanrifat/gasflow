@@ -96,9 +96,11 @@ final class IssueLicense extends Command
         $files = is_string($keyId) ? array_filter(["{$directory}/{$keyId}.key.json"], 'is_file') : (glob("{$directory}/*.key.json") ?: []);
 
         if (count($files) !== 1) {
-            $this->refuse(is_string($keyId)
-                ? "No key file [{$keyId}.key.json] in {$directory}."
-                : 'Expected exactly one *.key.json in '.$directory.'; choose one with --key-id.');
+            $this->refuse(match (true) {
+                is_string($keyId) => "No key file [{$keyId}.key.json] in {$directory}.",
+                $files === [] => "No signing key in {$directory} yet. Create one first: make license-keygen a=\"--id=kdev-2026\".",
+                default => "Several keys in {$directory}; choose one with --key-id.",
+            });
 
             return null;
         }

@@ -197,6 +197,13 @@ describe('license:issue', function () {
             ->assertFailed();
     });
 
+    it('explains how to create a key when the folder has none', function () {
+        // Act & Assert
+        $this->artisan('license:issue', ['--keys' => $this->folder.'/keys', '--licensee' => 'Alif', '--days' => '30'])
+            ->expectsOutputToContain('No signing key in '.$this->folder.'/keys yet. Create one first: make license-keygen')
+            ->assertFailed();
+    });
+
     it('does not write a license whose payload the verifier would refuse', function () {
         // Arrange
         sealedKeyIn($this->folder.'/keys');
