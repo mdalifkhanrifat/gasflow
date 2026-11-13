@@ -26,6 +26,29 @@ services:
       start_period: 10s
       retries: 3
 
+  # Background workers share the app image. "critical" is kept separate so payment
+  # and ledger jobs are never stuck behind slow default jobs (e.g. bulk SMS).
+  queue-default:
+    <<: *php
+    command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3", "--max-time=3600"]
+    stop_grace_period: 60s
+    depends_on: &backing-services
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  queue-critical:
+    <<: *php
+    command: ["php", "artisan", "queue:work", "--queue=critical", "--sleep=1", "--tries=1", "--max-time=3600"]
+    stop_grace_period: 60s
+    depends_on: *backing-services
+
+  scheduler:
+    <<: *php
+    command: ["php", "artisan", "schedule:work"]
+    depends_on: *backing-services
+
   nginx:
     image: nginx:1.30-alpine
     depends_on:
