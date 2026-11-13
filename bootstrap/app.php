@@ -3,6 +3,7 @@
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Shared\Lifecycle\LifecycleContext;
 use App\Shared\Lifecycle\LifecycleViolation;
+use App\Shared\RequestContext\RequestContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            // Device, IP city and GPS for the activity trail (before LifecycleContext).
+            RequestContext::class,
             // Last, so the user and every context value are known before BEGIN.
             LifecycleContext::class,
         ]);
