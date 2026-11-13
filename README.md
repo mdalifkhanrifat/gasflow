@@ -125,6 +125,7 @@ make test                    # Pint check, PHPStan and the PHP test suite
 make check                   # frontend lint, format and type checks
 make psql                    # psql on the app database
 make queue-restart           # reload the workers after code changes
+make geoip                   # download the IP → city database (monthly, also scheduled)
 ```
 
 Queue workers load the code when they start. After you change PHP code that
@@ -147,6 +148,13 @@ make lint            # format PHP code with Pint
 make test            # Pint check, PHPStan and the PHP test suite
 make check           # frontend lint, format and type checks
 ```
+
+## Third-party data
+
+IP geolocation by [DB-IP](https://db-ip.com) (DB-IP City Lite, licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). The database is
+downloaded into `storage/app/geoip/` by `make geoip` and is not part of the
+repository. Lookups run locally; no IP address is sent to a third party.
 
 ## License
 

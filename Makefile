@@ -6,7 +6,7 @@ SECRETS := DB_SUPERUSER_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD REDIS_PASSWOR
 
 .DEFAULT_GOAL := help
 .PHONY: help env setup build up down restart ps logs shell artisan composer npm \
-        migrate fresh tinker test lint check psql redis-cli queue-restart
+        migrate fresh tinker test lint check psql redis-cli queue-restart geoip
 
 help: ## List the available commands
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -85,3 +85,6 @@ redis-cli: ## Open redis-cli
 
 queue-restart: ## Restart the queue workers after code changes
 	$(APP) php artisan queue:restart
+
+geoip: ## Download the DB-IP City Lite database (IP → city lookups)
+	$(APP) php artisan audit:geoip-update
