@@ -49,8 +49,8 @@ make setup   # create .env, build images, start services, install, migrate
 `make setup` creates `.env` from `.env.example` with random passwords. You can
 also run `make env` by itself and edit the values before the first start.
 
-Open the app at <http://localhost>. Mail sent by the app appears in Mailpit at
-<http://localhost:8025>.
+Open the app at <http://localhost:8047>. Mail sent by the app appears in Mailpit
+at <http://localhost:8247>.
 
 ### Services
 
@@ -71,19 +71,20 @@ mixes with a `node_modules` folder on your machine.
 
 ### Ports
 
-Host ports are set in `.env`. Change one if it is already taken on your
-machine, then run `make up` again.
+Host ports are set in `.env`. The defaults use a GasFlow-only block (all ending
+in 47), so they do not clash with other local projects. Change one if it is
+already taken on your machine, then run `make up` again.
 
 | Variable                 | Default | Service           |
 | ------------------------ | ------- | ----------------- |
-| `APP_PORT`               | 80      | nginx             |
-| `VITE_PORT`              | 5173    | Vite (hot reload) |
-| `DB_FORWARD_PORT`        | 5432    | PostgreSQL        |
-| `REDIS_FORWARD_PORT`     | 6379    | Redis             |
-| `MAILPIT_DASHBOARD_PORT` | 8025    | Mailpit           |
+| `APP_PORT`               | 8047    | nginx             |
+| `VITE_PORT`              | 5147    | Vite (hot reload) |
+| `DB_FORWARD_PORT`        | 5447    | PostgreSQL        |
+| `REDIS_FORWARD_PORT`     | 6347    | Redis             |
+| `MAILPIT_DASHBOARD_PORT` | 8247    | Mailpit           |
 
-If `APP_PORT` is not 80, set `APP_URL` to the same port, for example
-`APP_URL=http://localhost:8088`. PostgreSQL, Redis, Vite and Mailpit only listen
+`APP_URL` must use the same port as `APP_PORT`
+(`APP_URL=http://localhost:8047`). PostgreSQL, Redis, Vite and Mailpit only listen
 on `127.0.0.1`.
 
 ### Database roles
