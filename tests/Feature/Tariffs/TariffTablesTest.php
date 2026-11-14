@@ -250,3 +250,105 @@ describe('building charge rules', function () {
         expect(DB::table('building_charge_rules')->where('id', $id)->value('is_deleted'))->toBeTrue();
     });
 });
+
+describe('approved tariff versions', function () {
+    beforeEach(function () {
+        $this->assignmentId = TestRecords::vendorAssignment(TestRecords::building(), '2026-01-01');
+        $this->id = TestRecords::tariffVersion($this->assignmentId);
+    });
+
+    it('can change their rate while still a draft', function () {
+        // Act
+        DB::table('tariff_versions')->where('id', $this->id)->update(['rate' => 32]);
+
+        // Assert
+        expect((float) DB::table('tariff_versions')->where('id', $this->id)->value('rate'))->toBe(32.0);
+    });
+
+    it('keep their rate once approved', function () {
+        // Arrange
+        moveTariffVersion($this->id, 'approved');
+
+        // Act & Assert
+        expect(fn () => DB::table('tariff_versions')->where('id', $this->id)->update(['rate' => 45]))
+            ->toThrow(QueryException::class, "tariff_versions {$this->id} is approved: rate can no longer change");
+    });
+
+    it('keep their start once active', function () {
+        // Arrange
+        moveTariffVersion($this->id, 'active');
+
+        // Act & Assert
+        expect(fn () => DB::table('tariff_versions')->where('id', $this->id)->update(['effective_from' => '2026-02-01']))
+            ->toThrow(QueryException::class, 'effective_from can no longer change');
+    });
+
+    it('can still be ended while active', function () {
+        // Arrange
+        moveTariffVersion($this->id, 'active');
+
+        // Act
+        DB::table('tariff_versions')->where('id', $this->id)->update(['effective_to' => '2026-09-30']);
+
+        // Assert
+        expect(DB::table('tariff_versions')->where('id', $this->id)->value('effective_to'))->toBe('2026-09-30');
+    });
+
+    it('cannot be ended differently once retired', function () {
+        // Arrange
+        moveTariffVersion($this->id, 'retired');
+
+        // Act & Assert
+        expect(fn () => DB::table('tariff_versions')->where('id', $this->id)->update(['effective_to' => '2026-09-30']))
+            ->toThrow(QueryException::class, 'effective_to can no longer change');
+    });
+
+    it('let a retroactive rate replace the active one from a past day', function () {
+        // Arrange: the 30 BDT rate is active from January; on 15 October a rate of 36 BDT is announced from 1 October
+        moveTariffVersion($this->id, 'active');
+        DB::table('tariff_versions')->where('id', $this->id)->update(['effective_to' => '2026-09-30']);
+        $retroId = TestRecords::tariffVersion($this->assignmentId, '2026-10-01', ['rate' => 36]);
+
+        // Act
+        moveTariffVersion($retroId, 'active');
+
+        // Assert
+        expect(DB::table('tariff_versions')->where('building_vendor_assignment_id', $this->assignmentId)
+            ->orderBy('effective_from')->pluck('rate')->map(fn ($rate) => (float) $rate)->all())->toBe([30.0, 36.0]);
+    });
+});
+
+describe('tariff versions and their vendor assignment', function () {
+    beforeEach(function () {
+        $this->assignmentId = TestRecords::vendorAssignment(TestRecords::building(), '2026-01-01', ['valid_to' => '2026-06-30']);
+    });
+
+    it('refuse a start before the assignment', function () {
+        // Act & Assert
+        expect(fn () => TestRecords::tariffVersion($this->assignmentId, '2025-12-31'))
+            ->toThrow(QueryException::class, 'Tariff starts on 2025-12-31, outside its vendor assignment (2026-01-01 to 2026-06-30)');
+    });
+
+    it('refuse a start after the assignment ended', function () {
+        // Act & Assert
+        expect(fn () => TestRecords::tariffVersion($this->assignmentId, '2026-07-01'))
+            ->toThrow(QueryException::class, 'outside its vendor assignment');
+    });
+
+    it('accept a start on the last day of the assignment', function () {
+        // Act
+        $id = TestRecords::tariffVersion($this->assignmentId, '2026-06-30');
+
+        // Assert
+        expect(DB::table('tariff_versions')->where('id', $id)->value('effective_from'))->toBe('2026-06-30');
+    });
+
+    it('refuse moving a draft outside the assignment', function () {
+        // Arrange
+        $id = TestRecords::tariffVersion($this->assignmentId, '2026-03-01');
+
+        // Act & Assert
+        expect(fn () => DB::table('tariff_versions')->where('id', $id)->update(['effective_from' => '2026-08-01']))
+            ->toThrow(QueryException::class, 'outside its vendor assignment');
+    });
+});

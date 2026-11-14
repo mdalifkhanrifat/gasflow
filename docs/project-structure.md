@@ -244,7 +244,8 @@ and it never changes once saved.
   `000019` the closed-parent guard, `000020` readings frozen once their
   period is approved, locked or cancelled), 9 tariffs and reconciliation (`000021` tariff
   versions and building charge rules, `000022` meter reconciliations, `000023`
-  the frozen-columns guard).
+  the frozen-columns guard, `000024` approved tariffs frozen and started inside
+  their vendor assignment).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
