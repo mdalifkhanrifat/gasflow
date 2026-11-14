@@ -31,4 +31,12 @@ return [
 
     'license_file' => storage_path('app/license/license.json'),
 
+    /*
+    | Route names that may still write while the license is locked (design 09
+    | §3: read-only mode). Everything else that is not GET/HEAD/OPTIONS gets 423.
+    | Login, logout (Phase 4) and installing a new license (Phase 3) go here.
+    */
+
+    'locked_write_routes' => [],
+
 ];

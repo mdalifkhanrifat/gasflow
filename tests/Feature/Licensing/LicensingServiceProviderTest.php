@@ -4,6 +4,7 @@
  * The application's verifier trusts exactly the keys in the build key file.
  */
 
+use App\Modules\Licensing\LicenseState;
 use App\Modules\Licensing\LicenseVerifier;
 
 describe('licensing service provider', function () {
@@ -28,5 +29,18 @@ describe('licensing service provider', function () {
         // Assert
         expect($check->message)->toBe('The license is signed with an unknown key.')
             ->and(app(LicenseVerifier::class))->toBe(app(LicenseVerifier::class));
+    });
+
+    it('gives the application one license state that reads the installed license file', function () {
+        // Arrange
+        config(['licensing.license_file' => storage_path('framework/testing/no-such-license.json')]);
+        $this->app->forgetInstance(LicenseState::class);
+
+        // Act
+        $check = app(LicenseState::class)->check();
+
+        // Assert
+        expect($check->message)->toBe('No license is installed.')
+            ->and(app(LicenseState::class))->toBe(app(LicenseState::class));
     });
 });
