@@ -148,6 +148,24 @@ make license a="--licensee='Rahim (dev)' --valid-until=2027-03-31 \
 `make artisan a="license:issue --help"` for the full list. Back up the key file
 and keep the passphrase: without both, no new license can be signed with that key.
 
+#### Looking after the signing key
+
+The key file and the passphrase together can sign a license for any
+installation. Either one alone is useless. Keep them apart:
+
+1. After `make license-keygen`, save the passphrase in a password manager. Never
+   put it in the repository, a chat, a log or the key folder.
+2. Copy the key file (`~/.config/gasflow/license-keys/<id>.key.json`) to an
+   offline backup, such as a USB drive. The backup must not hold the passphrase.
+3. To sign a new license later, run `make license ...` and paste the passphrase
+   when asked.
+4. If the key file or the passphrase is lost, that key can sign nothing more.
+   Create a new key with a new `--id`, commit its public key and issue new
+   licenses. Licenses already signed stay valid.
+5. If the key file and the passphrase may have leaked together, create a new key,
+   remove the old key from `resources/licensing/public-keys.json`, release, and
+   issue every license again with the new key.
+
 ### Common commands
 
 ```bash
