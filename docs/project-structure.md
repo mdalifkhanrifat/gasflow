@@ -227,7 +227,11 @@ and it never changes once saved.
   buildings (`000005` buildings, ownership history and gas vendor
   assignments, `000006` building access grants, building memberships and
   their roles, with the triggers that refuse a wrong-scope role or a member
-  without tenant or grant).
+  without tenant or grant), 5 catalogues (`000007` features, meter types,
+  payment methods and integration providers, seeded with Bangla names).
+- Catalogue tables keep English in their base columns and other languages in
+  `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.
+  Tests for tables shared by several domains live in `tests/Feature/Catalogs`.
 - A model uses Laravel's `SoftDeletes` exactly when its table's
   `soft_delete_policy` is `allowed` (master and configuration tables). Money,
   history and log tables never do. A test checks every model in `app/Models`
