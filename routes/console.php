@@ -1,6 +1,6 @@
 <?php
 
-use App\Modules\Licensing\LicenseState;
+use App\Services\Licensing\LicenseState;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;

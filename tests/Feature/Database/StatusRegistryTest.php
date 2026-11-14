@@ -5,7 +5,7 @@
  * active locale, tones, allowed transitions) and the UI's status source.
  */
 
-use App\Shared\Lifecycle\StatusRegistry;
+use App\Services\Lifecycle\StatusRegistry;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Enums\LifecycleTestPeriodStatus;

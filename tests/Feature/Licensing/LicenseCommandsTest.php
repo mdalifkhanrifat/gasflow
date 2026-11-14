@@ -6,10 +6,10 @@
  * Each test works in its own temporary folder and a copy of the trusted keys file.
  */
 
-use App\Modules\Licensing\Enums\LicenseStatus;
-use App\Modules\Licensing\Issuing\SigningKey;
-use App\Modules\Licensing\Issuing\SigningKeyFile;
-use App\Modules\Licensing\LicenseVerifier;
+use App\Enums\Licensing\LicenseStatus;
+use App\Services\Licensing\Issuing\SigningKey;
+use App\Services\Licensing\Issuing\SigningKeyFile;
+use App\Services\Licensing\LicenseVerifier;
 use Illuminate\Support\Facades\File;
 use Tests\Support\LicenseFixtures;
 

@@ -5,7 +5,7 @@
  * with a readable message; every other database error stays untouched.
  */
 
-use App\Shared\Lifecycle\Exceptions\LifecycleViolation;
+use App\Exceptions\Lifecycle\LifecycleViolation;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;

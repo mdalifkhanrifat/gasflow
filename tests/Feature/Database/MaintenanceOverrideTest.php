@@ -9,7 +9,7 @@
  * opened on pgsql_maintenance here, so nothing is left behind.
  */
 
-use App\Shared\Lifecycle\Console\MaintenanceOverrideCommand;
+use App\Console\Commands\Lifecycle\MaintenanceOverrideCommand;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\PendingCommand;

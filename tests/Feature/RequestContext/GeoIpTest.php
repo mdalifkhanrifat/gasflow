@@ -4,7 +4,7 @@
  * IP → city lookups from the local DB-IP database, and its monthly download.
  */
 
-use App\Shared\RequestContext\DbIpLocator;
+use App\Services\RequestContext\DbIpLocator;
 use GeoIp2\Database\Reader;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;

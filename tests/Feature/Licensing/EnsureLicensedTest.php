@@ -5,7 +5,7 @@
  * works and every write is refused with 423, through the real web stack.
  */
 
-use App\Modules\Licensing\Exceptions\LicenseLocked;
+use App\Exceptions\Licensing\LicenseLocked;
 use Illuminate\Support\Facades\Route;
 use Tests\Support\TestLicense;
 

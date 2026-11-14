@@ -5,9 +5,9 @@
  * client type, device kind, IP city/country and the consented GPS fix.
  */
 
-use App\Shared\RequestContext\GeoFix;
-use App\Shared\RequestContext\IpLocation;
-use App\Shared\RequestContext\IpLocator;
+use App\Services\RequestContext\GeoFix;
+use App\Services\RequestContext\IpLocation;
+use App\Services\RequestContext\IpLocator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;

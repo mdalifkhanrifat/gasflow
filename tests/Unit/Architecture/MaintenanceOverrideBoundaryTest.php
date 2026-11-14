@@ -7,7 +7,7 @@
  */
 const PROJECT_ROOT = __DIR__.'/../../..';
 const SCANNED_DIRECTORIES = ['app', 'bootstrap', 'config', 'routes'];
-const MAINTENANCE_COMMAND = 'app/Shared/Lifecycle/Console/MaintenanceOverrideCommand.php';
+const MAINTENANCE_COMMAND = 'app/Console/Commands/Lifecycle/MaintenanceOverrideCommand.php';
 
 /**
  * PHP files (relative paths) whose code, comments left out, matches the pattern.

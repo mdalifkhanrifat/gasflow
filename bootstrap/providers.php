@@ -1,9 +1,9 @@
 <?php
 
-use App\Modules\Licensing\LicensingServiceProvider;
 use App\Providers\AppServiceProvider;
-use App\Shared\Lifecycle\LifecycleServiceProvider;
-use App\Shared\RequestContext\RequestContextServiceProvider;
+use App\Providers\LicensingServiceProvider;
+use App\Providers\LifecycleServiceProvider;
+use App\Providers\RequestContextServiceProvider;
 
 return [
     AppServiceProvider::class,

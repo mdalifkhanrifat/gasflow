@@ -5,8 +5,8 @@
  * record lifecycle (calls the PostgreSQL function lifecycle_attach()).
  */
 
-use App\Shared\Lifecycle\Enums\RecordClass;
-use App\Shared\Lifecycle\LifecycleSchema;
+use App\Enums\Lifecycle\RecordClass;
+use App\Services\Lifecycle\LifecycleSchema;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;
 

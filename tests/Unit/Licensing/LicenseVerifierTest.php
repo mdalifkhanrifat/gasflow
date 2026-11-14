@@ -5,9 +5,9 @@
  * pair generated on the spot; no key is stored in the repository for this.
  */
 
-use App\Modules\Licensing\CanonicalJson;
-use App\Modules\Licensing\Enums\LicenseStatus;
-use App\Modules\Licensing\LicenseVerifier;
+use App\Enums\Licensing\LicenseStatus;
+use App\Services\Licensing\CanonicalJson;
+use App\Services\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
 use Tests\Support\LicenseFixtures;
 

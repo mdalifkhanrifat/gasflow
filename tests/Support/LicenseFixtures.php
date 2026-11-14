@@ -2,8 +2,8 @@
 
 namespace Tests\Support;
 
-use App\Modules\Licensing\Issuing\SigningKey;
-use App\Modules\Licensing\Issuing\SigningKeyFile;
+use App\Services\Licensing\Issuing\SigningKey;
+use App\Services\Licensing\Issuing\SigningKeyFile;
 
 /**
  * License payloads and keys for tests. Keys are generated on the spot; no

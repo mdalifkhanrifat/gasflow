@@ -5,7 +5,7 @@
  * transitionTo / activate / deactivate, SoftDeletes interplay).
  */
 
-use App\Shared\Lifecycle\Exceptions\LifecycleViolation;
+use App\Exceptions\Lifecycle\LifecycleViolation;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Enums\LifecycleTestPeriodStatus;

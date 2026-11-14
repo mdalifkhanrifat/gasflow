@@ -1,10 +1,10 @@
 <?php
 
+use App\Exceptions\Lifecycle\LifecycleViolation;
+use App\Http\Middleware\EnsureLicensed;
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Modules\Licensing\Http\Middleware\EnsureLicensed;
-use App\Shared\Lifecycle\Exceptions\LifecycleViolation;
-use App\Shared\Lifecycle\Http\Middleware\LifecycleContext;
-use App\Shared\RequestContext\Http\Middleware\RequestContext;
+use App\Http\Middleware\LifecycleContext;
+use App\Http\Middleware\RequestContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;

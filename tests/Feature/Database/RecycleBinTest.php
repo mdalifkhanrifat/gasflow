@@ -6,9 +6,9 @@
  */
 
 use App\Models\User;
-use App\Shared\Lifecycle\RecycleBin\HiddenRecord;
-use App\Shared\Lifecycle\RecycleBin\RecycleBin;
-use App\Shared\Lifecycle\RecycleBin\RestoreHiddenRecord;
+use App\Services\Lifecycle\RecycleBin\HiddenRecord;
+use App\Services\Lifecycle\RecycleBin\RecycleBin;
+use App\Services\Lifecycle\RecycleBin\RestoreHiddenRecord;
 use Illuminate\Database\RecordNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Models\LifecycleTestItem;

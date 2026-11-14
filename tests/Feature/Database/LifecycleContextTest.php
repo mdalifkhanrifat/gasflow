@@ -6,7 +6,7 @@
  */
 
 use App\Models\User;
-use App\Shared\Lifecycle\DatabaseContext;
+use App\Services\Lifecycle\DatabaseContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;

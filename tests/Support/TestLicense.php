@@ -2,10 +2,10 @@
 
 namespace Tests\Support;
 
-use App\Modules\Licensing\Issuing\LicenseSigner;
-use App\Modules\Licensing\Issuing\SigningKey;
-use App\Modules\Licensing\LicenseState;
-use App\Modules\Licensing\LicenseVerifier;
+use App\Services\Licensing\Issuing\LicenseSigner;
+use App\Services\Licensing\Issuing\SigningKey;
+use App\Services\Licensing\LicenseState;
+use App\Services\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Foundation\Application;
 

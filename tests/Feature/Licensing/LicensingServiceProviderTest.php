@@ -4,8 +4,8 @@
  * The application's verifier trusts exactly the keys in the build key file.
  */
 
-use App\Modules\Licensing\LicenseState;
-use App\Modules\Licensing\LicenseVerifier;
+use App\Services\Licensing\LicenseState;
+use App\Services\Licensing\LicenseVerifier;
 
 describe('licensing service provider', function () {
     it('trusts exactly the keys in the build key file', function () {
