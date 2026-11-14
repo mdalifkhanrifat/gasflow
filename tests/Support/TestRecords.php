@@ -174,6 +174,53 @@ final class TestRecords
     }
 
     /**
+     * A flat in the given building (a new building when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function flat(?int $buildingId = null, array $overrides = []): int
+    {
+        return (int) DB::table('flats')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'code' => 'F-'.Str::upper(Str::random(6)),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A customer of the given tenant organization (a new organization when
+     * none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function customer(?int $organizationId = null, array $overrides = []): int
+    {
+        return (int) DB::table('customers')->insertGetId([
+            'public_id' => strtolower((string) Str::ulid()),
+            'tenant_organization_id' => $organizationId ?? self::organization(),
+            'customer_code' => 'C-'.Str::upper(Str::random(8)),
+            'full_name' => 'Rahima Begum',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A new customer's occupancy of the flat, open-ended from the given day.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function occupancy(int $flatId, string $validFrom, array $overrides = []): int
+    {
+        return (int) DB::table('flat_occupancies')->insertGetId([
+            'flat_id' => $flatId,
+            'customer_id' => self::customer(),
+            'occupancy_type' => 'tenant',
+            'valid_from' => $validFrom,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

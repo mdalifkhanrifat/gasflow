@@ -231,7 +231,8 @@ and it never changes once saved.
   payment methods and integration providers, seeded with Bangla names), 6
   subscriptions (`000008` SaaS packages, versions, features and the default
   feature set of each package, `000009` building subscriptions, SaaS invoices
-  and SaaS payments, `000010` SaaS invoice total check and frozen amounts).
+  and SaaS payments, `000010` SaaS invoice total check and frozen amounts), 7
+  flats and customers (`000011` flats, customers and flat occupancies).
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
