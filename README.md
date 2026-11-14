@@ -191,6 +191,11 @@ make queue-restart           # reload the workers after code changes
 make geoip                   # download the IP → city database (monthly, also scheduled)
 ```
 
+Logs go to `storage/logs/laravel.log` in development. In production on
+Docker set `LOG_STACK=json`, which writes one JSON object per line to stderr.
+Every line carries the request id (`X-Request-Id`), and secrets such as
+passwords, tokens and API keys are replaced with `[redacted]`.
+
 Queue workers load the code when they start. After you change PHP code that
 jobs use, run `make queue-restart`.
 

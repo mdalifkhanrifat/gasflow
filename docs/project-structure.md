@@ -61,6 +61,7 @@ app/
 │   ├── Requests/<Domain>/       form requests (validation)
 │   └── Resources/<Domain>/      API resources for /api/v1
 ├── Jobs/<Domain>/               queued work; Jobs/Middleware for job middleware
+├── Logging/                     log channel taps and processors (redaction)
 ├── Mail/, Notifications/
 ├── Models/<Domain>/             Eloquent models; Models/Concerns for model traits (HasLifecycle, HasPublicId)
 ├── Policies/<Domain>/           one per model (found automatically)
@@ -163,6 +164,16 @@ and queued job) and in `data_change_logs.request_id`. The web middleware group
 then runs, in order: Laravel's defaults,
 `HandleInertiaRequests`, `AddLinkHeadersForPreloadedAssets`, `EnsureLicensed`,
 `RequestContext`, `LifecycleContext` (one database transaction per request).
+
+### Logging
+
+- Every log channel has the `RedactSensitiveData` tap (`app/Logging`). Values
+  under keys such as password, token, secret, api key, authorization, OTP, PIN
+  or card number become `[redacted]`, at any depth. Never put a secret into the
+  message text itself. A test fails when a channel lacks the tap.
+- Development writes `storage/logs/laravel.log` (`LOG_STACK=single`). Production
+  on Docker uses `LOG_STACK=json`: one JSON object per line on stderr.
+- Laravel's `Context` adds `request_id` to every line, and queued jobs carry it.
 
 ### Health check
 
