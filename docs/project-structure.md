@@ -222,7 +222,8 @@ and it never changes once saved.
   (`2026_11_14_000001`: users, sessions, password reset tokens, Sanctum tokens;
   it replaces Laravel's default users migration), 3 organizations and access
   (`2026_11_14_000002` supported locales and `users.locale`, `000003`
-  organizations, memberships, roles, permissions and the role-scope triggers, ...).
+  organizations, memberships, roles, permissions and the role-scope triggers,
+  `000004` user devices, access sessions and the live user count views).
 - A model uses Laravel's `SoftDeletes` exactly when its table's
   `soft_delete_policy` is `allowed` (master and configuration tables). Money,
   history and log tables never do. A test checks every model in `app/Models`
@@ -251,7 +252,7 @@ tests/
 ├── Feature/<Domain>/       through Laravel and PostgreSQL (RefreshPostgresDatabase)
 ├── Unit/<Domain>/          plain PHP, no application
 ├── Architecture/          rules about the code itself (Pest arch tests)
-├── Support/                helpers shared by tests (TestLicense, LicenseFixtures, ...)
+├── Support/                helpers shared by tests (TestLicense, TestRecords, ...)
 ├── Fixtures/               test-only models, enums and tables (tests/Fixtures/migrations)
 └── Concerns/               test case traits
 ```

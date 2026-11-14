@@ -8,35 +8,7 @@
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
-/**
- * @param  array<string, mixed>  $overrides
- */
-function insertOrganization(array $overrides = []): int
-{
-    return (int) DB::table('organizations')->insertGetId([
-        'public_id' => strtolower((string) Str::ulid()),
-        'code' => 'ORG-'.Str::upper(Str::random(6)),
-        'name' => 'Northstar Gas Services',
-        'organization_type' => 'gas_vendor',
-        ...$overrides,
-    ]);
-}
-
-function insertRole(string $scope): int
-{
-    return (int) DB::table('roles')->insertGetId(['code' => "{$scope}.role.".Str::random(6), 'name' => ucfirst($scope).' role', 'scope' => $scope]);
-}
-
-function insertMembership(int $organizationId, int $userId): int
-{
-    return (int) DB::table('organization_memberships')->insertGetId([
-        'organization_id' => $organizationId,
-        'user_id' => $userId,
-        'membership_role' => 'staff',
-    ]);
-}
+use Tests\Support\TestRecords;
 
 describe('lifecycle registration', function () {
     it('registers each table with the policies of the design', function (string $table, string $module, string $class, string $softDelete, string $hardDelete) {
@@ -62,7 +34,7 @@ describe('lifecycle registration', function () {
 describe('organizations', function () {
     it('start pending, in Bangla, with optional location tracking', function () {
         // Arrange
-        $id = insertOrganization();
+        $id = TestRecords::organization();
 
         // Act
         $organization = DB::table('organizations')->find($id);
@@ -74,7 +46,7 @@ describe('organizations', function () {
 
     it('refuse a language GasFlow does not speak', function () {
         // Arrange
-        $id = insertOrganization();
+        $id = TestRecords::organization();
 
         // Act & Assert
         expect(fn () => DB::table('organizations')->where('id', $id)->update(['default_locale' => 'fr']))
@@ -86,7 +58,7 @@ describe('organizations', function () {
         $row = ['organization_type' => 'bank'];
 
         // Act & Assert
-        expect(fn () => insertOrganization($row))->toThrow(QueryException::class, 'ck_organizations_type');
+        expect(fn () => TestRecords::organization($row))->toThrow(QueryException::class, 'ck_organizations_type');
     });
 
     it('refuse an unknown location tracking policy', function () {
@@ -94,12 +66,12 @@ describe('organizations', function () {
         $row = ['location_tracking_policy' => 'always'];
 
         // Act & Assert
-        expect(fn () => insertOrganization($row))->toThrow(QueryException::class, 'ck_organizations_location_tracking_policy');
+        expect(fn () => TestRecords::organization($row))->toThrow(QueryException::class, 'ck_organizations_location_tracking_policy');
     });
 
     it('are hidden, not removed, when deleted', function () {
         // Arrange
-        $id = insertOrganization();
+        $id = TestRecords::organization();
 
         // Act
         DB::table('organizations')->where('id', $id)->delete();
@@ -112,18 +84,18 @@ describe('organizations', function () {
 describe('memberships', function () {
     it('allow one membership per user and organization', function () {
         // Arrange
-        $organizationId = insertOrganization();
+        $organizationId = TestRecords::organization();
         $userId = User::factory()->create()->id;
-        insertMembership($organizationId, $userId);
+        TestRecords::membership($organizationId, $userId);
 
         // Act & Assert
-        expect(fn () => insertMembership($organizationId, $userId))
+        expect(fn () => TestRecords::membership($organizationId, $userId))
             ->toThrow(QueryException::class, 'organization_memberships_organization_id_user_id_unique');
     });
 
     it('can never be deleted, only revoked', function () {
         // Arrange
-        $membershipId = insertMembership(insertOrganization(), User::factory()->create()->id);
+        $membershipId = TestRecords::membership(TestRecords::organization(), User::factory()->create()->id);
 
         // Act & Assert
         expect(fn () => DB::transaction(fn () => DB::table('organization_memberships')->where('id', $membershipId)->delete()))
@@ -133,8 +105,8 @@ describe('memberships', function () {
 
     it('take organization roles', function () {
         // Arrange
-        $membershipId = insertMembership(insertOrganization(), User::factory()->create()->id);
-        $roleId = insertRole('organization');
+        $membershipId = TestRecords::membership(TestRecords::organization(), User::factory()->create()->id);
+        $roleId = TestRecords::role('organization');
 
         // Act
         DB::table('membership_roles')->insert(['membership_id' => $membershipId, 'role_id' => $roleId]);
@@ -145,8 +117,8 @@ describe('memberships', function () {
 
     it('refuse a platform or building role', function (string $scope) {
         // Arrange
-        $membershipId = insertMembership(insertOrganization(), User::factory()->create()->id);
-        $roleId = insertRole($scope);
+        $membershipId = TestRecords::membership(TestRecords::organization(), User::factory()->create()->id);
+        $roleId = TestRecords::role($scope);
 
         // Act & Assert
         expect(fn () => DB::table('membership_roles')->insert(['membership_id' => $membershipId, 'role_id' => $roleId]))
@@ -158,7 +130,7 @@ describe('platform roles', function () {
     it('are given to users', function () {
         // Arrange
         $userId = User::factory()->create()->id;
-        $roleId = insertRole('platform');
+        $roleId = TestRecords::role('platform');
 
         // Act
         DB::table('platform_user_roles')->insert(['user_id' => $userId, 'role_id' => $roleId]);
@@ -170,7 +142,7 @@ describe('platform roles', function () {
     it('refuse an organization or building role', function (string $scope) {
         // Arrange
         $userId = User::factory()->create()->id;
-        $roleId = insertRole($scope);
+        $roleId = TestRecords::role($scope);
 
         // Act & Assert
         expect(fn () => DB::table('platform_user_roles')->insert(['user_id' => $userId, 'role_id' => $roleId]))
@@ -189,7 +161,7 @@ describe('roles', function () {
 
     it('lose a permission for good when it is taken away', function () {
         // Arrange
-        $roleId = insertRole('organization');
+        $roleId = TestRecords::role('organization');
         $permissionId = (int) DB::table('permissions')->insertGetId(['code' => 'invoice.issue']);
         DB::table('role_permissions')->insert(['role_id' => $roleId, 'permission_id' => $permissionId]);
 

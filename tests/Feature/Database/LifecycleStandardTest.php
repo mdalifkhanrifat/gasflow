@@ -11,6 +11,7 @@
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\TestRecords;
 
 function insertItem(string $name = 'Item', array $attributes = []): int
 {
@@ -158,17 +159,19 @@ describe('new records', function () {
 
     it('record the session on insert and on update', function () {
         // Arrange
-        setDatabaseContext(['session_id' => 71]);
+        $laptop = TestRecords::accessSession();
+        $phone = TestRecords::accessSession();
+        setDatabaseContext(['session_id' => $laptop]);
         $id = insertItem();
 
         // Act
-        setDatabaseContext(['session_id' => 72]);
+        setDatabaseContext(['session_id' => $phone]);
         DB::table('lifecycle_test_items')->where('id', $id)->update(['name' => 'Renamed']);
 
         // Assert
         $item = findItem($id);
-        expect($item->created_session_id)->toBe(71)
-            ->and($item->updated_session_id)->toBe(72);
+        expect($item->created_session_id)->toBe($laptop)
+            ->and($item->updated_session_id)->toBe($phone);
     });
 
     it('keep updated_at current on every change', function () {
