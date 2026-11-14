@@ -5,6 +5,8 @@
  * ready before their month starts (design 08 §9).
  */
 
+use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
@@ -71,19 +73,33 @@ describe('audit:change-log-partitions', function () {
             ->assertFailed();
     });
 
-    it('reports a month whose rows already sit in the default partition and prepares the rest', function () {
-        // Arrange: the fresh test database has no partition for this month, so
-        // this change lands in data_change_logs_default
-        DB::table('lifecycle_test_items')->insert(['name' => 'early row']);
-        $thisMonth = 'data_change_logs_'.now()->format('Y_m');
-        $nextMonth = 'data_change_logs_'.now()->startOfMonth()->addMonth()->format('Y_m');
+    it('reports a month the database refuses and prepares the rest', function () {
+        // Arrange: PostgreSQL refuses this month (its rows already sit in the
+        // default partition, D30); a fresh database never gets there any more,
+        // so the connection plays that refusal
+        $thisMonth = now()->startOfMonth()->toDateString();
+        $nextMonth = now()->startOfMonth()->addMonth()->toDateString();
+        $prepared = [];
+        $connection = Mockery::mock(ConnectionInterface::class);
+        $connection->shouldReceive('scalar')->andReturnNull();
+        $connection->shouldReceive('transaction')->andReturnUsing(fn (Closure $callback) => $callback());
+        $connection->shouldReceive('select')->andReturnUsing(function (string $sql, array $bindings) use ($thisMonth, &$prepared) {
+            if ($bindings[0] === $thisMonth) {
+                throw new QueryException('pgsql', $sql, $bindings, new PDOException(
+                    'SQLSTATE[23514]: Check violation: 7 ERROR:  updated partition constraint for default partition "data_change_logs_default" would be violated by some row',
+                ));
+            }
+            $prepared[] = $bindings[0];
+
+            return [];
+        });
+        $this->app->instance(ConnectionInterface::class, $connection);
 
         // Act & Assert
         $this->artisan('audit:change-log-partitions', ['--months' => '1'])
             ->expectsOutputToContain('would be violated by some row')
             ->assertFailed();
-        expect(partitionExists($thisMonth))->toBeFalse()
-            ->and(partitionExists($nextMonth))->toBeTrue();
+        expect($prepared)->toBe([$nextMonth]);
     });
 });
 
@@ -94,5 +110,28 @@ describe('schedule', function () {
 
         // Assert
         expect(Artisan::output())->toMatch('~10 3 \* \* \*\s+php artisan audit:change-log-partitions~');
+    });
+});
+
+describe('a new database', function () {
+    it('has this month partition before any migration writes a trail row', function () {
+        // Arrange: RefreshPostgresDatabase migrated a fresh database
+        $name = 'data_change_logs_'.now()->format('Y_m');
+
+        // Act
+        $exists = partitionExists($name);
+
+        // Assert
+        expect($exists)->toBeTrue();
+    });
+
+    it('leaves no trail row in the default partition', function () {
+        // Arrange: the migrations wrote rows (for example the bn and en locales)
+
+        // Act
+        $stray = DB::table('data_change_logs')->whereRaw("tableoid = 'data_change_logs_default'::regclass")->count();
+
+        // Assert
+        expect($stray)->toBe(0);
     });
 });
