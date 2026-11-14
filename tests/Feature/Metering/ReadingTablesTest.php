@@ -451,3 +451,71 @@ describe('reading approvals', function () {
         expect(fn () => DB::table('reading_approvals')->insert($row))->toThrow(QueryException::class, 'ck_reading_approvals_decision');
     });
 });
+
+/**
+ * Moves an open reading period along its transitions to the given status.
+ */
+function moveReadingPeriod(int $id, string $status): void
+{
+    $path = [
+        'collecting' => ['collecting'],
+        'review' => ['collecting', 'review'],
+        'approved' => ['collecting', 'review', 'approved'],
+        'locked' => ['collecting', 'review', 'approved', 'locked'],
+        'cancelled' => ['cancelled'],
+    ][$status];
+
+    foreach ($path as $next) {
+        DB::table('reading_periods')->where('id', $id)->update(['status' => $next]);
+    }
+}
+
+describe('readings of a closed period', function () {
+    beforeEach(function () {
+        $this->periodId = TestRecords::readingPeriod();
+    });
+
+    it('can still be decided while the period is in review', function () {
+        // Arrange
+        $id = TestRecords::meterReading($this->periodId);
+        moveReadingPeriod($this->periodId, 'review');
+
+        // Act
+        DB::table('meter_readings')->where('id', $id)->update(['status' => 'approved']);
+
+        // Assert
+        expect(DB::table('meter_readings')->where('id', $id)->value('status'))->toBe('approved');
+    });
+
+    it('cannot be added once the period is closed', function (string $status) {
+        // Arrange
+        moveReadingPeriod($this->periodId, $status);
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterReading($this->periodId))
+            ->toThrow(QueryException::class, "reading_periods {$this->periodId} is {$status}: its meter_readings can no longer change");
+    })->with(['approved', 'locked', 'cancelled']);
+
+    it('cannot be superseded once the period is locked', function () {
+        // Arrange
+        $id = TestRecords::meterReading($this->periodId);
+        moveReadingPeriod($this->periodId, 'review');
+        DB::table('meter_readings')->where('id', $id)->update(['status' => 'approved']);
+        DB::table('reading_periods')->where('id', $this->periodId)->update(['status' => 'approved']);
+        DB::table('reading_periods')->where('id', $this->periodId)->update(['status' => 'locked']);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_readings')->where('id', $id)->update(['status' => 'superseded']))
+            ->toThrow(QueryException::class, 'can no longer change');
+    });
+
+    it('cannot have their numbers changed once the period is approved', function () {
+        // Arrange
+        $id = TestRecords::meterReading($this->periodId);
+        moveReadingPeriod($this->periodId, 'approved');
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_readings')->where('id', $id)->update(['current_reading' => 11, 'consumption' => 11]))
+            ->toThrow(QueryException::class, 'can no longer change');
+    });
+});
