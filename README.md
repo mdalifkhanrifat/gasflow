@@ -35,6 +35,12 @@ meter readings → reconciliation → vendor tariffs → invoices → payments
 | Web server            | Nginx 1.30                                   |
 | Tests and quality     | Pest, Larastan, Pint, vue-tsc                |
 
+## Project structure
+
+[docs/project-structure.md](docs/project-structure.md) shows where every kind of
+file lives (modules, actions, models, migrations, tests) and the conventions to
+follow when adding code.
+
 ## Development with Docker
 
 Docker is the supported development environment. Development uses the same
