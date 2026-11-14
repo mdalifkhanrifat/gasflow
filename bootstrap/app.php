@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\Lifecycle\LifecycleViolation;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureLicensed;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LifecycleContext;
@@ -19,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Correlation id first, so every response, log line and trail row carries it.
+        $middleware->prepend(AssignRequestId::class);
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

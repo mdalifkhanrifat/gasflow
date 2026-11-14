@@ -156,7 +156,10 @@ Route → middleware → Controller → FormRequest → Policy → Action → Mo
 - One domain does not reach into another domain's internals. It calls the
   other domain's actions or reacts to its events.
 
-The web middleware group runs, in order: Laravel's defaults,
+Every request first passes `AssignRequestId` (global): one UUID per request in
+the `X-Request-Id` response header, in Laravel's `Context` (so in every log line
+and queued job) and in `data_change_logs.request_id`. The web middleware group
+then runs, in order: Laravel's defaults,
 `HandleInertiaRequests`, `AddLinkHeadersForPreloadedAssets`, `EnsureLicensed`,
 `RequestContext`, `LifecycleContext` (one database transaction per request).
 
