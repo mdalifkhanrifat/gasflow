@@ -187,6 +187,10 @@ and it never changes once saved.
 - Infrastructure SQL (functions, triggers, partitions, RLS) is written in the
   migration with `DB::unprepared()`. Plain tables use the schema builder.
 - Every domain table ends with `LifecycleSchema::attach()`.
+- A model uses Laravel's `SoftDeletes` exactly when its table's
+  `soft_delete_policy` is `allowed` (master and configuration tables). Money,
+  history and log tables never do. A test checks every model in `app/Models`
+  against the registry (`tests/Feature/Database/LifecycleModelsTest.php`).
 
 ## Frontend
 
