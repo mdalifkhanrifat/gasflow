@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Enums;
 
 /**
  * Whether the app may hide rows (is_deleted = true).

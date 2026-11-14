@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Http\Middleware;
 
+use App\Shared\Lifecycle\DatabaseContext;
 use Closure;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Http\Request;

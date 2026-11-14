@@ -2,10 +2,10 @@
 
 namespace App\Modules\Licensing\Console;
 
+use App\Modules\Licensing\Enums\LicenseEdition;
 use App\Modules\Licensing\Issuing\LicenseSigner;
 use App\Modules\Licensing\Issuing\SigningKeyFile;
 use App\Modules\Licensing\License;
-use App\Modules\Licensing\LicenseEdition;
 use App\Modules\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;

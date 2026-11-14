@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\RequestContext;
+namespace App\Shared\RequestContext\Console;
 
 use Carbon\CarbonImmutable;
 use GeoIp2\Database\Reader;

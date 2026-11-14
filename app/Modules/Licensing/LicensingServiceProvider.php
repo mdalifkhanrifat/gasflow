@@ -4,7 +4,7 @@ namespace App\Modules\Licensing;
 
 use App\Modules\Licensing\Console\GenerateSigningKey;
 use App\Modules\Licensing\Console\IssueLicense;
-use App\Modules\Licensing\Queue\LicensedJob;
+use App\Modules\Licensing\Jobs\Middleware\LicensedJob;
 use Illuminate\Bus\Dispatcher;
 use Illuminate\Contracts\Events\Dispatcher as Events;
 use Illuminate\Queue\Events\Looping;

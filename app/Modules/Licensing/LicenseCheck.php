@@ -2,6 +2,8 @@
 
 namespace App\Modules\Licensing;
 
+use App\Modules\Licensing\Enums\LicenseStatus;
+
 /**
  * The outcome of verifying a license document. The license is set whenever
  * the signature was valid, so an expired license can still be shown.

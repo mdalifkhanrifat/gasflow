@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Licensing;
+namespace App\Modules\Licensing\Exceptions;
 
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;

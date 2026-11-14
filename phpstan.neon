@@ -17,4 +17,4 @@ parameters:
         # PHPStan reports this entry as unmatched once a model uses the trait; remove it then.
         -
             identifier: trait.unused
-            path: app/Shared/Lifecycle/HasLifecycle.php
+            path: app/Shared/Lifecycle/Concerns/HasLifecycle.php

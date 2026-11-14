@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Enums;
 
 /**
  * Whether a DELETE may physically remove rows.

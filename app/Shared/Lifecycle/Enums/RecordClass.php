@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Enums;
 
 /**
  * What kind of record a table holds. Documents intent in lifecycle_entities

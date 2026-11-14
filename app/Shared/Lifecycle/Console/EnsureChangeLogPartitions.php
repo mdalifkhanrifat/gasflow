@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Console;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;

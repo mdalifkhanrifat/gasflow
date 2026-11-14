@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Modules\Licensing\Queue;
+namespace App\Modules\Licensing\Jobs\Middleware;
 
-use App\Modules\Licensing\LicenseLocked;
+use App\Modules\Licensing\Exceptions\LicenseLocked;
 use App\Modules\Licensing\LicenseState;
 use Closure;
 use Illuminate\Contracts\Queue\Job;

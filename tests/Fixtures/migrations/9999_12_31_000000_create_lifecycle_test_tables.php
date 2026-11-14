@@ -1,9 +1,9 @@
 <?php
 
-use App\Shared\Lifecycle\HardDeletePolicy;
+use App\Shared\Lifecycle\Enums\HardDeletePolicy;
+use App\Shared\Lifecycle\Enums\RecordClass;
+use App\Shared\Lifecycle\Enums\SoftDeletePolicy;
 use App\Shared\Lifecycle\LifecycleSchema;
-use App\Shared\Lifecycle\RecordClass;
-use App\Shared\Lifecycle\SoftDeletePolicy;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 

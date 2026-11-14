@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Lifecycle\Maintenance;
+namespace App\Shared\Lifecycle\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Connection;

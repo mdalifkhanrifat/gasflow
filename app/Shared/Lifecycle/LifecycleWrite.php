@@ -2,6 +2,7 @@
 
 namespace App\Shared\Lifecycle;
 
+use App\Shared\Lifecycle\Exceptions\LifecycleViolation;
 use Closure;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\QueryException;

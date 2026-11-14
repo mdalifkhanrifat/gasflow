@@ -2,7 +2,7 @@
 
 namespace Tests\Fixtures\Models;
 
-use App\Shared\Lifecycle\HasLifecycle;
+use App\Shared\Lifecycle\Concerns\HasLifecycle;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;

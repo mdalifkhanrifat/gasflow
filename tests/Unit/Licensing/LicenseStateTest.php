@@ -5,10 +5,10 @@
  * and keeps the result in the process for a minute.
  */
 
+use App\Modules\Licensing\Enums\LicenseStatus;
 use App\Modules\Licensing\Issuing\LicenseSigner;
 use App\Modules\Licensing\Issuing\SigningKey;
 use App\Modules\Licensing\LicenseState;
-use App\Modules\Licensing\LicenseStatus;
 use App\Modules\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
 use Tests\Support\LicenseFixtures;

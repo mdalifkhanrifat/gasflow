@@ -2,7 +2,8 @@
 
 namespace App\Shared\Lifecycle;
 
-use App\Shared\Lifecycle\Maintenance\MaintenanceOverrideCommand;
+use App\Shared\Lifecycle\Console\EnsureChangeLogPartitions;
+use App\Shared\Lifecycle\Console\MaintenanceOverrideCommand;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;

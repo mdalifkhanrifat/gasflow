@@ -2,7 +2,7 @@
 
 namespace App\Shared\Lifecycle\RecycleBin;
 
-use App\Shared\Lifecycle\LifecycleViolation;
+use App\Shared\Lifecycle\Exceptions\LifecycleViolation;
 use App\Shared\Lifecycle\LifecycleWrite;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\RecordNotFoundException;

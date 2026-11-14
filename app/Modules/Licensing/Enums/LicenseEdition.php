@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Licensing;
+namespace App\Modules\Licensing\Enums;
 
 /**
  * The editions in licenses.edition, plus Development: a license signed with the

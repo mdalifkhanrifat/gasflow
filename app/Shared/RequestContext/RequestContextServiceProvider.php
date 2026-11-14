@@ -2,6 +2,7 @@
 
 namespace App\Shared\RequestContext;
 
+use App\Shared\RequestContext\Console\UpdateGeoIpDatabase;
 use Illuminate\Support\ServiceProvider;
 
 /**

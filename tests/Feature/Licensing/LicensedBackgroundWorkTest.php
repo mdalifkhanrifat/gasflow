@@ -6,7 +6,7 @@
  * only the task that protects the activity trail.
  */
 
-use App\Modules\Licensing\LicenseLocked;
+use App\Modules\Licensing\Exceptions\LicenseLocked;
 use Illuminate\Bus\Queueable;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 use Illuminate\Console\Scheduling\Schedule;

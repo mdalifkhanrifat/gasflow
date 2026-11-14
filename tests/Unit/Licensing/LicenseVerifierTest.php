@@ -6,7 +6,7 @@
  */
 
 use App\Modules\Licensing\CanonicalJson;
-use App\Modules\Licensing\LicenseStatus;
+use App\Modules\Licensing\Enums\LicenseStatus;
 use App\Modules\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
 use Tests\Support\LicenseFixtures;

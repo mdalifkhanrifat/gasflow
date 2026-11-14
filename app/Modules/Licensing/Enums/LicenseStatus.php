@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Licensing;
+namespace App\Modules\Licensing\Enums;
 
 /**
  * The evaluated state of a license (design 09 §8). Only Active and Grace allow

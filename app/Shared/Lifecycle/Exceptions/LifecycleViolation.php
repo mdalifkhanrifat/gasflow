@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Exceptions;
 
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;

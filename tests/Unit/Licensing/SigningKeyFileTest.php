@@ -5,10 +5,10 @@
  * without it, and bound to its key id and public key.
  */
 
+use App\Modules\Licensing\Enums\LicenseStatus;
 use App\Modules\Licensing\Issuing\LicenseSigner;
 use App\Modules\Licensing\Issuing\SigningKey;
 use App\Modules\Licensing\Issuing\SigningKeyFile;
-use App\Modules\Licensing\LicenseStatus;
 use App\Modules\Licensing\LicenseVerifier;
 use Carbon\CarbonImmutable;
 use Tests\Support\LicenseFixtures;

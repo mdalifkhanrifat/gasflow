@@ -2,6 +2,7 @@
 
 namespace App\Modules\Licensing;
 
+use App\Modules\Licensing\Enums\LicenseStatus;
 use Carbon\CarbonInterface;
 use InvalidArgumentException;
 use JsonException;

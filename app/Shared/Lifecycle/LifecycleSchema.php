@@ -2,6 +2,9 @@
 
 namespace App\Shared\Lifecycle;
 
+use App\Shared\Lifecycle\Enums\HardDeletePolicy;
+use App\Shared\Lifecycle\Enums\RecordClass;
+use App\Shared\Lifecycle\Enums\SoftDeletePolicy;
 use Illuminate\Support\Facades\DB;
 
 /**

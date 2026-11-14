@@ -1,8 +1,11 @@
 <?php
 
-namespace App\Shared\RequestContext;
+namespace App\Shared\RequestContext\Http\Middleware;
 
 use App\Shared\Lifecycle\DatabaseContext;
+use App\Shared\RequestContext\DeviceDetection;
+use App\Shared\RequestContext\GeoFix;
+use App\Shared\RequestContext\IpLocator;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;

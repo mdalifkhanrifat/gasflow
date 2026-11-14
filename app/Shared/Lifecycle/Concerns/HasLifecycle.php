@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Shared\Lifecycle;
+namespace App\Shared\Lifecycle\Concerns;
 
+use App\Shared\Lifecycle\Exceptions\LifecycleViolation;
+use App\Shared\Lifecycle\LifecycleWrite;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;

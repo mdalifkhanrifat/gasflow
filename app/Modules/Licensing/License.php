@@ -2,6 +2,7 @@
 
 namespace App\Modules\Licensing;
 
+use App\Modules\Licensing\Enums\LicenseEdition;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use InvalidArgumentException;
