@@ -139,6 +139,16 @@ describe('vendor assignments', function () {
             ->toThrow(QueryException::class, 'ex_building_single_gas_vendor_no_overlap');
     });
 
+    it('refuse a new vendor on days an ended vendor still covers', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        TestRecords::vendorAssignment($buildingId, '2026-01-01', ['valid_to' => '2026-06-30', 'status' => 'ended']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::vendorAssignment($buildingId, '2026-06-01'))
+            ->toThrow(QueryException::class, 'ex_building_single_gas_vendor_no_overlap');
+    });
+
     it('allow the next vendor from the day after the previous one ends', function () {
         // Arrange
         $buildingId = TestRecords::building();
