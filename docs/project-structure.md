@@ -240,7 +240,8 @@ and it never changes once saved.
   groups 7 and 8 (`000015` the shared building access check, `000016`
   occupants only from organizations with access to the building, `000017`
   every attachment has an owner organization or building, `000018` meter
-  assignments and readings carry their building, checked by composite keys).
+  assignments and readings carry their building, checked by composite keys,
+  `000019` the closed-parent guard).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -253,6 +254,12 @@ and it never changes once saved.
   another building is refused by the database (and row-level security can
   check the building directly). The column is `NOT NULL`, because a null would
   skip the composite check.
+- Rows that must stop changing once their parent is closed (readings of a
+  locked reading period, later invoices of a closed billing cycle) get one
+  call after the parent's statuses exist:
+  `LifecycleSchema::freezeWhenParentClosed('meter_readings', parent: 'reading_periods', foreignKey: 'reading_period_id', closedStatuses: [...])`.
+  It creates the generic trigger `trg_<table>_closed_parent`; only the
+  maintenance override may still correct such a row.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.

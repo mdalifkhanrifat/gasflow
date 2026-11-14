@@ -45,4 +45,31 @@ final class LifecycleSchema
             ],
         );
     }
+
+    /**
+     * Freezes the rows of a table once their parent is closed: no insert and
+     * no update while the parent has one of the given statuses (only the
+     * maintenance override may still correct them).
+     *
+     *     LifecycleSchema::freezeWhenParentClosed('meter_readings', parent: 'reading_periods',
+     *         foreignKey: 'reading_period_id', closedStatuses: ['approved', 'locked', 'cancelled']);
+     *
+     * Calls the PostgreSQL function lifecycle_freeze_with_parent(), which
+     * checks the parent, column and statuses and creates the trigger
+     * trg_<table>_closed_parent. Run it after the parent's statuses exist.
+     *
+     * @param  list<string>  $closedStatuses  at least one (checked by the database)
+     */
+    public static function freezeWhenParentClosed(
+        string $table,
+        string $parent,
+        string $foreignKey,
+        array $closedStatuses,
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_freeze_with_parent(?::text, ?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)))',
+            [$table, $parent, $foreignKey, json_encode($closedStatuses, JSON_THROW_ON_ERROR)],
+        );
+    }
 }

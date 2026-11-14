@@ -31,6 +31,12 @@ return new class extends Migration
               id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
               name TEXT NOT NULL
             );
+            -- child of a period, frozen once the period is locked
+            CREATE TABLE lifecycle_test_period_lines (
+              id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+              period_id BIGINT NOT NULL REFERENCES lifecycle_test_periods(id),
+              amount NUMERIC(14,2) NOT NULL
+            );
             CREATE TABLE lifecycle_test_codes (
               code VARCHAR(32) PRIMARY KEY,
               name TEXT NOT NULL
@@ -80,6 +86,11 @@ return new class extends Migration
                    ('lifecycle_test_periods', 'collecting', 'locked');
             SQL);
 
+        // master record whose rows freeze once their period is locked
+        LifecycleSchema::attach('lifecycle_test_period_lines', module: 'testing', class: RecordClass::Master);
+        LifecycleSchema::freezeWhenParentClosed('lifecycle_test_period_lines', parent: 'lifecycle_test_periods',
+            foreignKey: 'period_id', closedStatuses: ['locked']);
+
         // catalogue with a text primary key (like payment_method_catalog)
         LifecycleSchema::attach('lifecycle_test_codes', module: 'testing', class: RecordClass::Configuration);
 
@@ -95,7 +106,8 @@ return new class extends Migration
     public function down(): void
     {
         DB::unprepared(<<<'SQL'
-            DROP TABLE IF EXISTS lifecycle_test_entries, lifecycle_test_links, lifecycle_test_codes, lifecycle_test_periods,
+            DROP TABLE IF EXISTS lifecycle_test_entries, lifecycle_test_links, lifecycle_test_codes, lifecycle_test_period_lines,
+                                 lifecycle_test_periods,
                                  lifecycle_test_ledgers, lifecycle_test_items;
             DELETE FROM status_transitions WHERE entity_name LIKE 'lifecycle_test_%';
             DELETE FROM status_definitions WHERE entity_name LIKE 'lifecycle_test_%';
