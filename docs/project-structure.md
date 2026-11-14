@@ -210,6 +210,14 @@ and it never changes once saved.
 - Infrastructure SQL (functions, triggers, partitions, RLS) is written in the
   migration with `DB::unprepared()`. Plain tables use the schema builder.
 - Every domain table ends with `LifecycleSchema::attach()`.
+- Status codes (with Bangla labels) and redacted columns are inserted by the
+  same migration that creates the table, because rows cannot be written
+  without them.
+- Timestamps keep microseconds (`Schema::defaultTimePrecision(null)` in
+  `AppServiceProvider`), matching the design's `TIMESTAMPTZ`.
+- Migration groups so far: 1 lifecycle foundation (`2026_11_13_*`), 2 identity
+  (`2026_11_14_000001`: users, sessions, password reset tokens, Sanctum tokens;
+  it replaces Laravel's default users migration).
 - A model uses Laravel's `SoftDeletes` exactly when its table's
   `soft_delete_policy` is `allowed` (master and configuration tables). Money,
   history and log tables never do. A test checks every model in `app/Models`

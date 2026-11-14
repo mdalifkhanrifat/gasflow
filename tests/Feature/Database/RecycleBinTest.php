@@ -40,11 +40,24 @@ function hiddenCode(string $code): void
 
 describe('tables', function () {
     it('include only tables whose rows the app may hide and restore', function () {
+        // Arrange: among the fixture tables only codes and items allow it
+
         // Act
         $entities = array_keys(recycleBin()->entities());
 
         // Assert
-        expect($entities)->toBe(['lifecycle_test_codes', 'lifecycle_test_items']);
+        expect(array_values(array_filter($entities, fn (string $entity) => str_starts_with($entity, 'lifecycle_test_'))))
+            ->toBe(['lifecycle_test_codes', 'lifecycle_test_items']);
+    });
+
+    it('include the users table, whose rows are hidden and never removed', function () {
+        // Arrange: users is a master table with soft delete allowed
+
+        // Act
+        $entities = array_keys(recycleBin()->entities());
+
+        // Assert
+        expect($entities)->toContain('users');
     });
 
     it('report how many hidden rows each table has', function () {
@@ -58,7 +71,8 @@ describe('tables', function () {
         $summary = recycleBin()->summary();
 
         // Assert
-        expect($summary)->toBe(['lifecycle_test_codes' => 1, 'lifecycle_test_items' => 2]);
+        expect(array_filter($summary, fn (string $entity) => str_starts_with($entity, 'lifecycle_test_'), ARRAY_FILTER_USE_KEY))
+            ->toBe(['lifecycle_test_codes' => 1, 'lifecycle_test_items' => 2]);
     });
 });
 

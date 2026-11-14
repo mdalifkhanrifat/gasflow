@@ -2,6 +2,7 @@
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 describe('test database', function () {
     it('runs on the dedicated postgres testing database', function () {
@@ -51,6 +52,7 @@ describe('runtime role', function () {
 
         // Act
         DB::table('users')->insert([
+            'public_id' => strtolower((string) Str::ulid()),
             'name' => 'Role Check',
             'email' => $email,
             'password' => 'not-a-real-hash',

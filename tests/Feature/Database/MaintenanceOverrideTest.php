@@ -12,6 +12,7 @@
 use App\Console\Commands\Lifecycle\MaintenanceOverrideCommand;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Testing\PendingCommand;
 
 const CONFIRM_QUESTION = 'Type APPLY to commit these changes';
@@ -228,6 +229,7 @@ describe('applying', function () {
         // Arrange
         $id = ledgerRow();
         $operator = (int) maintenance()->table('users')->insertGetId([
+            'public_id' => strtolower((string) Str::ulid()),
             'name' => 'Operator',
             'email' => 'operator@example.test',
             'password' => 'not-a-real-hash',

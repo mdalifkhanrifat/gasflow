@@ -11,13 +11,3 @@ parameters:
         - routes/
 
     level: 7
-
-    ignoreErrors:
-        # Used only by test fixtures until the first domain model (identity group).
-        # PHPStan reports this entry as unmatched once a model uses the trait; remove it then.
-        -
-            identifier: trait.unused
-            path: app/Models/Concerns/HasLifecycle.php
-        -
-            identifier: trait.unused
-            path: app/Models/Concerns/HasPublicId.php
