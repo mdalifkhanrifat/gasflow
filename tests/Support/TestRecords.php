@@ -119,6 +119,29 @@ final class TestRecords
     }
 
     /**
+     * A monthly version of the given SaaS plan (a new plan when none is
+     * given), open-ended from the given day.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function planVersion(?int $planId = null, string $effectiveFrom = '2026-01-01', array $overrides = []): int
+    {
+        $planId ??= (int) DB::table('saas_plans')->insertGetId([
+            'code' => 'PLAN_'.Str::upper(Str::random(8)),
+            'name' => 'Test plan',
+        ]);
+
+        return (int) DB::table('plan_versions')->insertGetId([
+            'saas_plan_id' => $planId,
+            'version_no' => (int) DB::table('plan_versions')->where('saas_plan_id', $planId)->max('version_no') + 1,
+            'billing_interval' => 'monthly',
+            'price' => 1500,
+            'effective_from' => $effectiveFrom,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

@@ -228,7 +228,9 @@ and it never changes once saved.
   assignments, `000006` building access grants, building memberships and
   their roles, with the triggers that refuse a wrong-scope role or a member
   without tenant or grant), 5 catalogues (`000007` features, meter types,
-  payment methods and integration providers, seeded with Bangla names).
+  payment methods and integration providers, seeded with Bangla names), 6
+  subscriptions (`000008` SaaS packages, versions, features and the default
+  feature set of each package).
 - Catalogue tables keep English in their base columns and other languages in
   `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.
   Tests for tables shared by several domains live in `tests/Feature/Catalogs`.
