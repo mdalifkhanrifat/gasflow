@@ -239,7 +239,8 @@ and it never changes once saved.
   their enforced status transitions), then fixes from the owner's review of
   groups 7 and 8 (`000015` the shared building access check, `000016`
   occupants only from organizations with access to the building, `000017`
-  every attachment has an owner organization or building).
+  every attachment has an owner organization or building, `000018` meter
+  assignments and readings carry their building, checked by composite keys).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -247,6 +248,11 @@ and it never changes once saved.
   function, `organization_can_access_building(organization, building)`: it owns
   the building or holds an active grant in force today. Triggers (and later
   the row-level security policies) call it instead of repeating the rule.
+- A row that must stay inside one building carries `building_id` and composite
+  foreign keys to its parents' `(id, building_id)` unique keys, so a parent of
+  another building is refused by the database (and row-level security can
+  check the building directly). The column is `NOT NULL`, because a null would
+  skip the composite check.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.

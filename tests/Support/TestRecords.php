@@ -263,8 +263,8 @@ final class TestRecords
     }
 
     /**
-     * The meter placed in the flat (no flat: a main or common-area meter),
-     * open-ended from the given day.
+     * The meter placed in the flat of its building (no flat: a main or
+     * common-area meter), open-ended from the given day.
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -272,6 +272,7 @@ final class TestRecords
     {
         return (int) DB::table('meter_assignments')->insertGetId([
             'meter_id' => $meterId,
+            'building_id' => DB::table('meters')->where('id', $meterId)->value('building_id'),
             'flat_id' => $flatId,
             'valid_from' => $validFrom,
             ...$overrides,
@@ -317,16 +318,20 @@ final class TestRecords
     }
 
     /**
-     * A submitted reading of the meter in the period: 0 → 10 at factor 1,
-     * taken now by a new user, with a fresh idempotency key.
+     * A submitted reading in the period of a meter of the period's building (a
+     * new meter when none is given): 0 → 10 at factor 1, taken now by a new
+     * user, with a fresh idempotency key.
      *
      * @param  array<string, mixed>  $overrides
      */
-    public static function meterReading(int $readingPeriodId, int $meterId, array $overrides = []): int
+    public static function meterReading(int $readingPeriodId, ?int $meterId = null, array $overrides = []): int
     {
+        $buildingId = DB::table('reading_periods')->where('id', $readingPeriodId)->value('building_id');
+
         return (int) DB::table('meter_readings')->insertGetId([
             'reading_period_id' => $readingPeriodId,
-            'meter_id' => $meterId,
+            'building_id' => $buildingId,
+            'meter_id' => $meterId ?? self::meter($buildingId),
             'previous_reading' => 0,
             'current_reading' => 10,
             'meter_factor_snapshot' => 1,

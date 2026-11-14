@@ -97,9 +97,13 @@ describe('meters', function () {
 });
 
 describe('meter assignments', function () {
+    beforeEach(function () {
+        $this->buildingId = TestRecords::building();
+    });
+
     it('may place a meter without a flat', function () {
         // Arrange
-        $meterId = TestRecords::meter(overrides: ['meter_type' => 'main']);
+        $meterId = TestRecords::meter($this->buildingId, ['meter_type' => 'main']);
 
         // Act
         $id = TestRecords::meterAssignment($meterId, null, '2026-01-01');
@@ -110,48 +114,75 @@ describe('meter assignments', function () {
 
     it('refuse an end before the start', function () {
         // Arrange
-        $meterId = TestRecords::meter();
+        $meterId = TestRecords::meter($this->buildingId);
 
         // Act & Assert
-        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-02-01', ['valid_to' => '2026-01-31']))
+        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-02-01', ['valid_to' => '2026-01-31']))
             ->toThrow(QueryException::class, 'ck_meter_assignments_valid_range');
     });
 
     it('refuse a second place for the same meter on the same days', function () {
         // Arrange
-        $meterId = TestRecords::meter();
-        TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-01-01');
+        $meterId = TestRecords::meter($this->buildingId);
+        TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-01-01');
 
         // Act & Assert
-        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-03-01'))
+        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-03-01'))
             ->toThrow(QueryException::class, 'ex_meter_physical_assignment_no_overlap');
     });
 
     it('count the last day of a placement as covered', function () {
         // Arrange
-        $meterId = TestRecords::meter();
-        TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-01-01', ['valid_to' => '2026-06-30']);
+        $meterId = TestRecords::meter($this->buildingId);
+        TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-01-01', ['valid_to' => '2026-06-30']);
 
         // Act & Assert
-        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-06-30'))
+        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-06-30'))
             ->toThrow(QueryException::class, 'ex_meter_physical_assignment_no_overlap');
     });
 
     it('allow the meter to move from the day after', function () {
         // Arrange
-        $meterId = TestRecords::meter();
-        TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-01-01', ['valid_to' => '2026-06-30']);
+        $meterId = TestRecords::meter($this->buildingId);
+        TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-01-01', ['valid_to' => '2026-06-30']);
 
         // Act
-        TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-07-01');
+        TestRecords::meterAssignment($meterId, TestRecords::flat($this->buildingId), '2026-07-01');
 
         // Assert
         expect(DB::table('meter_assignments')->where('meter_id', $meterId)->count())->toBe(2);
     });
 
+    it('refuse a flat of another building', function () {
+        // Arrange
+        $meterId = TestRecords::meter($this->buildingId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-01-01'))
+            ->toThrow(QueryException::class, 'fk_meter_assignment_flat_building');
+    });
+
+    it('refuse a placement without a building, which would skip the building checks', function () {
+        // Arrange
+        $meterId = TestRecords::meter($this->buildingId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterAssignment($meterId, TestRecords::flat(), '2026-01-01', ['building_id' => null]))
+            ->toThrow(QueryException::class, 'building_id');
+    });
+
+    it('refuse a building other than the meter\'s', function () {
+        // Arrange
+        $meterId = TestRecords::meter($this->buildingId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterAssignment($meterId, null, '2026-01-01', ['building_id' => TestRecords::building()]))
+            ->toThrow(QueryException::class, 'fk_meter_assignment_meter_building');
+    });
+
     it('can never be deleted', function () {
         // Arrange
-        $id = TestRecords::meterAssignment(TestRecords::meter(), TestRecords::flat(), '2026-01-01');
+        $id = TestRecords::meterAssignment(TestRecords::meter($this->buildingId), TestRecords::flat($this->buildingId), '2026-01-01');
 
         // Act & Assert
         expect(fn () => DB::transaction(fn () => DB::table('meter_assignments')->where('id', $id)->delete()))
@@ -162,13 +193,14 @@ describe('meter assignments', function () {
 
 describe('meter occupancy assignments', function () {
     beforeEach(function () {
-        $this->flatId = TestRecords::flat();
-        $this->assignmentId = TestRecords::meterAssignment(TestRecords::meter(), $this->flatId, '2026-01-01');
+        $this->buildingId = TestRecords::building();
+        $this->flatId = TestRecords::flat($this->buildingId);
+        $this->assignmentId = TestRecords::meterAssignment(TestRecords::meter($this->buildingId), $this->flatId, '2026-01-01');
     });
 
     it('refuse an occupancy of a flat the meter is not in', function () {
         // Arrange
-        $otherOccupancyId = TestRecords::occupancy(TestRecords::flat(), '2026-01-01');
+        $otherOccupancyId = TestRecords::occupancy(TestRecords::flat($this->buildingId), '2026-01-01');
 
         // Act & Assert
         expect(fn () => TestRecords::meterOccupancyAssignment($this->assignmentId, $otherOccupancyId, '2026-01-01'))
@@ -177,7 +209,7 @@ describe('meter occupancy assignments', function () {
 
     it('refuse a flat that does not match the occupancy', function () {
         // Arrange
-        $otherOccupancyId = TestRecords::occupancy(TestRecords::flat(), '2026-01-01');
+        $otherOccupancyId = TestRecords::occupancy(TestRecords::flat($this->buildingId), '2026-01-01');
 
         // Act & Assert
         expect(fn () => TestRecords::meterOccupancyAssignment($this->assignmentId, $otherOccupancyId, '2026-01-01', ['flat_id' => $this->flatId]))

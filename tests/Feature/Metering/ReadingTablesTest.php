@@ -42,9 +42,9 @@ describe('lifecycle registration', function () {
             ->toThrow(QueryException::class, "Records in {$table} are protected");
     })->with([
         'reading periods (design 12, 39)' => ['reading_periods', fn () => TestRecords::readingPeriod()],
-        'meter readings' => ['meter_readings', fn () => TestRecords::meterReading(TestRecords::readingPeriod(), TestRecords::meter())],
+        'meter readings' => ['meter_readings', fn () => TestRecords::meterReading(TestRecords::readingPeriod())],
         'reading revisions' => ['meter_reading_revisions', fn () => DB::table('meter_reading_revisions')->insertGetId([
-            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod(), TestRecords::meter()),
+            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod()),
             'revision_no' => 1,
             'previous_reading' => 0,
             'current_reading' => 12,
@@ -53,7 +53,7 @@ describe('lifecycle registration', function () {
             'submitted_by' => TestRecords::user(),
         ])],
         'reading approvals' => ['reading_approvals', fn () => DB::table('reading_approvals')->insertGetId([
-            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod(), TestRecords::meter()),
+            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod()),
             'reviewer_user_id' => TestRecords::user(),
             'decision' => 'approved',
         ])],
@@ -294,6 +294,33 @@ describe('meter readings', function () {
         ]))->toThrow(QueryException::class, 'fk_meter_reading_occupancy_assignment');
     });
 
+    it('refuse a meter of another building', function () {
+        // Arrange
+        $otherMeterId = TestRecords::meter();
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterReading($this->periodId, $otherMeterId))
+            ->toThrow(QueryException::class, 'fk_meter_reading_meter_building');
+    });
+
+    it('refuse a reading without a building, which would skip the building checks', function () {
+        // Arrange
+        $otherMeterId = TestRecords::meter();
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterReading($this->periodId, $otherMeterId, ['building_id' => null]))
+            ->toThrow(QueryException::class, 'building_id');
+    });
+
+    it('refuse a period of another building', function () {
+        // Arrange
+        $otherPeriodId = TestRecords::readingPeriod();
+
+        // Act & Assert
+        expect(fn () => TestRecords::meterReading($otherPeriodId, $this->meterId, ['building_id' => $this->buildingId]))
+            ->toThrow(QueryException::class, 'fk_meter_reading_period_building');
+    });
+
     it('refuse a second reading of a meter without billed occupancy in one period', function () {
         // Arrange
         TestRecords::meterReading($this->periodId, $this->meterId);
@@ -395,7 +422,7 @@ describe('reading revisions', function () {
     it('refuse a revision number the reading already has', function () {
         // Arrange
         $row = [
-            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod(), TestRecords::meter()),
+            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod()),
             'revision_no' => 1,
             'previous_reading' => 0,
             'current_reading' => 12,
@@ -415,7 +442,7 @@ describe('reading approvals', function () {
     it('refuse an unknown decision', function () {
         // Arrange
         $row = [
-            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod(), TestRecords::meter()),
+            'meter_reading_id' => TestRecords::meterReading(TestRecords::readingPeriod()),
             'reviewer_user_id' => TestRecords::user(),
             'decision' => 'maybe',
         ];
