@@ -72,4 +72,32 @@ final class LifecycleSchema
             [$table, $parent, $foreignKey, json_encode($closedStatuses, JSON_THROW_ON_ERROR)],
         );
     }
+
+    /**
+     * Freezes columns once a row leaves its editable statuses: an UPDATE that
+     * changes one of them is refused while the row's current status is not
+     * editable (only the maintenance override may still correct it).
+     *
+     *     LifecycleSchema::freezeColumns('tariff_versions', ['rate', 'unit'], editableStatuses: ['draft']);
+     *
+     * Calls the PostgreSQL function lifecycle_freeze_columns(), which checks
+     * the table, columns and statuses and creates the trigger
+     * trg_<table>_freeze_<name>. Use a different name for each column group
+     * with its own editable statuses.
+     *
+     * @param  list<string>  $columns
+     * @param  list<string>  $editableStatuses
+     */
+    public static function freezeColumns(
+        string $table,
+        array $columns,
+        array $editableStatuses,
+        string $name = 'fields',
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_freeze_columns(?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)), array(select jsonb_array_elements_text(?::jsonb)))',
+            [$table, $name, json_encode($columns, JSON_THROW_ON_ERROR), json_encode($editableStatuses, JSON_THROW_ON_ERROR)],
+        );
+    }
 }

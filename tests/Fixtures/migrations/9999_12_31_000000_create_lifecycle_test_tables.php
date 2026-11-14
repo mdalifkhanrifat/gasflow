@@ -29,7 +29,9 @@ return new class extends Migration
             );
             CREATE TABLE lifecycle_test_periods (
               id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-              name TEXT NOT NULL
+              name TEXT NOT NULL,
+              budget NUMERIC(14,2) NOT NULL DEFAULT 0,
+              note TEXT
             );
             -- child of a period, frozen once the period is locked
             CREATE TABLE lifecycle_test_period_lines (
@@ -85,6 +87,9 @@ return new class extends Migration
             VALUES ('lifecycle_test_periods', 'open', 'collecting'),
                    ('lifecycle_test_periods', 'collecting', 'locked');
             SQL);
+
+        // a period's name and budget are fixed once it leaves "open"; note stays free
+        LifecycleSchema::freezeColumns('lifecycle_test_periods', ['name', 'budget'], editableStatuses: ['open']);
 
         // master record whose rows freeze once their period is locked
         LifecycleSchema::attach('lifecycle_test_period_lines', module: 'testing', class: RecordClass::Master);

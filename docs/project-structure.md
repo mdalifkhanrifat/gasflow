@@ -243,7 +243,8 @@ and it never changes once saved.
   assignments and readings carry their building, checked by composite keys,
   `000019` the closed-parent guard, `000020` readings frozen once their
   period is approved, locked or cancelled), 9 tariffs and reconciliation (`000021` tariff
-  versions and building charge rules, `000022` meter reconciliations).
+  versions and building charge rules, `000022` meter reconciliations, `000023`
+  the frozen-columns guard).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -262,6 +263,12 @@ and it never changes once saved.
   `LifecycleSchema::freezeWhenParentClosed('meter_readings', parent: 'reading_periods', foreignKey: 'reading_period_id', closedStatuses: [...])`.
   It creates the generic trigger `trg_<table>_closed_parent`; only the
   maintenance override may still correct such a row.
+- Columns that must stop changing once a row leaves its editable statuses (an
+  approved tariff's rate, a reviewed reconciliation's numbers, an issued
+  invoice's amounts) get one call after the table's statuses exist:
+  `LifecycleSchema::freezeColumns('tariff_versions', [...], editableStatuses: ['draft'])`.
+  It creates `trg_<table>_freeze_<name>`; a correction is a new record, or the
+  maintenance override.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
