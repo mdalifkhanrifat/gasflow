@@ -234,7 +234,12 @@ and it never changes once saved.
   and SaaS payments, `000010` SaaS invoice total check and frozen amounts), 7
   flats and customers (`000011` flats, customers and flat occupancies,
   `000012` attachments and the ownership evidence FK), 8 metering (`000013`
-  meters, meter assignments, billed occupancy per meter and meter events).
+  meters, meter assignments, billed occupancy per meter and meter events,
+  `000014` reading periods, meter readings, revisions and approvals, with
+  their enforced status transitions).
+- A migration that enforces status transitions inserts its
+  `status_transitions` rows next to its statuses, and its `down()` deletes the
+  transitions before the statuses.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.

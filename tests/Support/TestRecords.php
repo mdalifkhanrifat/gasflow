@@ -27,6 +27,14 @@ final class TestRecords
         ]);
     }
 
+    /**
+     * A new user's id.
+     */
+    public static function user(): int
+    {
+        return User::factory()->create()->id;
+    }
+
     public static function role(string $scope): int
     {
         return (int) DB::table('roles')->insertGetId([
@@ -280,6 +288,48 @@ final class TestRecords
             'flat_id' => DB::table('flat_occupancies')->where('id', $flatOccupancyId)->value('flat_id'),
             'valid_from' => $validFrom,
             'opening_reading' => 0,
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * The given month of 2026 as an open reading period of the building (a
+     * new building when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function readingPeriod(?int $buildingId = null, int $month = 10, array $overrides = []): int
+    {
+        $start = now()->setDate(2026, $month, 1);
+
+        return (int) DB::table('reading_periods')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'period_year' => 2026,
+            'period_month' => $month,
+            'starts_on' => $start->toDateString(),
+            'ends_on' => $start->endOfMonth()->toDateString(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A submitted reading of the meter in the period: 0 → 10 at factor 1,
+     * taken now by a new user, with a fresh idempotency key.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function meterReading(int $readingPeriodId, int $meterId, array $overrides = []): int
+    {
+        return (int) DB::table('meter_readings')->insertGetId([
+            'reading_period_id' => $readingPeriodId,
+            'meter_id' => $meterId,
+            'previous_reading' => 0,
+            'current_reading' => 10,
+            'meter_factor_snapshot' => 1,
+            'consumption' => 10,
+            'reading_taken_at' => now(),
+            'submitted_by' => self::user(),
+            'idempotency_key' => (string) Str::uuid7(),
             ...$overrides,
         ]);
     }
