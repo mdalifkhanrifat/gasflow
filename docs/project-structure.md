@@ -231,7 +231,10 @@ and it never changes once saved.
   payment methods and integration providers, seeded with Bangla names), 6
   subscriptions (`000008` SaaS packages, versions, features and the default
   feature set of each package, `000009` building subscriptions, SaaS invoices
-  and SaaS payments).
+  and SaaS payments, `000010` SaaS invoice total check and frozen amounts).
+- An invoice's total is always subtotal plus tax, and once it leaves draft
+  what it bills is frozen: a mistake is fixed by voiding it and issuing a new
+  one. Only the maintenance override may correct it in place.
 - Catalogue tables keep English in their base columns and other languages in
   `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.
   Tests for tables shared by several domains live in `tests/Feature/Catalogs`.

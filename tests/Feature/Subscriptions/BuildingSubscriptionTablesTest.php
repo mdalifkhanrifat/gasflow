@@ -7,6 +7,7 @@
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\Support\TestRecords;
 
 describe('lifecycle registration', function () {
@@ -156,5 +157,121 @@ describe('saas payments', function () {
 
         // Assert
         expect(DB::table('saas_payments')->where('saas_invoice_id', $invoiceId)->count())->toBe(2);
+    });
+});
+
+describe('saas invoice amounts', function () {
+    it('refuse a total that is not the subtotal plus tax', function () {
+        // Arrange
+        $row = ['subtotal' => 1500, 'tax_total' => 225, 'total' => 1500];
+
+        // Act & Assert
+        expect(fn () => TestRecords::saasInvoice($row))->toThrow(QueryException::class, 'ck_saas_invoices_total_sum');
+    });
+
+    it('accept a total that is the subtotal plus tax', function () {
+        // Arrange
+        $row = ['subtotal' => 1500, 'tax_total' => 225, 'total' => 1725];
+
+        // Act
+        $id = TestRecords::saasInvoice($row);
+
+        // Assert
+        expect(DB::table('saas_invoices')->where('id', $id)->value('total'))->toBe('1725.00');
+    });
+
+    it('let a draft change what it bills', function () {
+        // Arrange
+        $id = TestRecords::saasInvoice(['status' => 'draft']);
+
+        // Act
+        DB::table('saas_invoices')->where('id', $id)->update(['subtotal' => 2000, 'total' => 2000]);
+
+        // Assert
+        expect(DB::table('saas_invoices')->where('id', $id)->value('total'))->toBe('2000.00');
+    });
+
+    it('let a draft get its final amounts in the update that issues it', function () {
+        // Arrange
+        $id = TestRecords::saasInvoice(['status' => 'draft']);
+
+        // Act
+        DB::table('saas_invoices')->where('id', $id)->update(['status' => 'issued', 'subtotal' => 2000, 'total' => 2000]);
+
+        // Assert
+        expect(DB::table('saas_invoices')->where('id', $id)->first())
+            ->status->toBe('issued')
+            ->total->toBe('2000.00');
+    });
+
+    it('freeze what an issued invoice bills', function (Closure $change) {
+        // Arrange
+        $id = TestRecords::saasInvoice();
+
+        // Act & Assert
+        expect(fn () => DB::table('saas_invoices')->where('id', $id)->update($change()))
+            ->toThrow(QueryException::class, 'void it and issue a new one');
+    })->with([
+        'amounts' => fn () => ['subtotal' => 2000, 'total' => 2000],
+        'number' => fn () => ['invoice_no' => 'SINV-CHANGED'],
+        'currency' => fn () => ['currency' => 'USD'],
+        'issue time' => fn () => ['issued_at' => '2026-01-01 00:00:00+06'],
+        'subscription' => fn () => ['building_subscription_id' => TestRecords::buildingSubscription()],
+    ]);
+
+    it('still let an issued invoice be paid or given more time', function () {
+        // Arrange
+        $id = TestRecords::saasInvoice();
+
+        // Act
+        DB::table('saas_invoices')->where('id', $id)->update(['status' => 'paid', 'due_at' => '2026-12-31 23:59:59+06']);
+
+        // Assert
+        expect(DB::table('saas_invoices')->where('id', $id)->value('status'))->toBe('paid');
+    });
+
+    it('refuse to send an issued invoice back to draft', function () {
+        // Arrange
+        $id = TestRecords::saasInvoice();
+
+        // Act & Assert
+        expect(fn () => DB::table('saas_invoices')->where('id', $id)->update(['status' => 'draft']))
+            ->toThrow(QueryException::class, 'cannot return to draft');
+    });
+
+    it('let the maintenance override correct an issued invoice', function () {
+        // Arrange
+        $operator = DB::connection('pgsql_maintenance');
+        $operator->beginTransaction();
+        $organizationId = $operator->table('organizations')->insertGetId(
+            ['public_id' => strtolower((string) Str::ulid()), 'code' => 'ORG-OVR-INV', 'name' => 'Override org', 'organization_type' => 'management'],
+        );
+        $buildingId = $operator->table('buildings')->insertGetId(
+            ['public_id' => strtolower((string) Str::ulid()), 'tenant_organization_id' => $organizationId, 'code' => 'B-OVR', 'name' => 'Override building'],
+        );
+        $planId = $operator->table('saas_plans')->insertGetId(['code' => 'PLAN_OVR_INV', 'name' => 'Override plan']);
+        $versionId = $operator->table('plan_versions')->insertGetId(
+            ['saas_plan_id' => $planId, 'version_no' => 1, 'billing_interval' => 'monthly', 'price' => 1500, 'effective_from' => '2026-01-01'],
+        );
+        $subscriptionId = $operator->table('building_subscriptions')->insertGetId(
+            ['building_id' => $buildingId, 'plan_version_id' => $versionId, 'starts_at' => now()],
+        );
+        $invoiceId = $operator->table('saas_invoices')->insertGetId(
+            ['building_subscription_id' => $subscriptionId, 'invoice_no' => 'SINV-OVR-1', 'subtotal' => 1500, 'total' => 1500, 'issued_at' => now()],
+        );
+        $operator->select(
+            "select set_config('app.maintenance_override', 'on', true), set_config('app.lifecycle_reason', ?, true)",
+            ['Ticket #42: invoice billed the wrong package price'],
+        );
+
+        try {
+            // Act
+            $operator->table('saas_invoices')->where('id', $invoiceId)->update(['subtotal' => 1200, 'total' => 1200]);
+
+            // Assert
+            expect($operator->table('saas_invoices')->where('id', $invoiceId)->value('total'))->toBe('1200.00');
+        } finally {
+            $operator->rollBack();
+        }
     });
 });
