@@ -247,7 +247,8 @@ and it never changes once saved.
   the frozen-columns guard, `000024` approved tariffs frozen and started inside
   their vendor assignment, `000025` reconciliation checks, review transitions and
   freeze, `000026` percentage charges at most 100,
-  `000027` ended gas vendor assignments also in the overlap check).
+  `000027` ended gas vendor assignments also in the overlap check, `000028`
+  the tariff timeline functions).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -272,6 +273,12 @@ and it never changes once saved.
   `LifecycleSchema::freezeColumns('tariff_versions', [...], editableStatuses: ['draft'])`.
   It creates `trg_<table>_freeze_<name>`; a correction is a new record, or the
   maintenance override.
+- Gas is priced only through the tariff timeline: `tariff_rate_segments()`
+  says which vendor and rate applied on which days (several changes a month,
+  customer category with the general rate as fallback, gaps shown), and
+  `tariff_charge_segments()` splits a consumption over those days by the daily
+  average and prices each part. Billing, retro adjustments and reports call
+  these functions instead of looking up a rate themselves.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
