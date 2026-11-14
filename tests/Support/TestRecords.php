@@ -221,6 +221,20 @@ final class TestRecords
     }
 
     /**
+     * A private file of a new building.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function attachment(array $overrides = []): int
+    {
+        return (int) DB::table('attachments')->insertGetId([
+            'building_id' => self::building(),
+            'object_key' => 'evidence/'.Str::lower(Str::random(16)).'.pdf',
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
