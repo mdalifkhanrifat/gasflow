@@ -225,7 +225,9 @@ and it never changes once saved.
   organizations, memberships, roles, permissions and the role-scope triggers,
   `000004` user devices, access sessions and the live user count views), 4
   buildings (`000005` buildings, ownership history and gas vendor
-  assignments).
+  assignments, `000006` building access grants, building memberships and
+  their roles, with the triggers that refuse a wrong-scope role or a member
+  without tenant or grant).
 - A model uses Laravel's `SoftDeletes` exactly when its table's
   `soft_delete_policy` is `allowed` (master and configuration tables). Money,
   history and log tables never do. A test checks every model in `app/Models`

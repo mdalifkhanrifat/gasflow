@@ -46,6 +46,28 @@ final class TestRecords
     }
 
     /**
+     * An active member of the organization: a new user's membership id.
+     */
+    public static function member(int $organizationId): int
+    {
+        return self::membership($organizationId, User::factory()->create()->id);
+    }
+
+    /**
+     * A member of a new tenant organization placed in that tenant's new
+     * building, as a building membership id.
+     */
+    public static function buildingMembership(): int
+    {
+        $tenantId = self::organization();
+
+        return (int) DB::table('building_memberships')->insertGetId([
+            'building_id' => self::building($tenantId),
+            'organization_membership_id' => self::member($tenantId),
+        ]);
+    }
+
+    /**
      * A building of the given tenant organization (a new organization when
      * none is given).
      *
@@ -74,6 +96,24 @@ final class TestRecords
             'building_id' => $buildingId,
             'vendor_organization_id' => self::organization(),
             'valid_from' => $validFrom,
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * An access grant to the building for the grantee organization, active
+     * and open-ended from today unless overridden.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function accessGrant(int $buildingId, int $granteeOrganizationId, array $overrides = []): int
+    {
+        return (int) DB::table('building_access_grants')->insertGetId([
+            'building_id' => $buildingId,
+            'building_owner_organization_id' => DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id'),
+            'grantee_organization_id' => $granteeOrganizationId,
+            'access_role' => 'gas_vendor',
+            'valid_from' => today()->toDateString(),
             ...$overrides,
         ]);
     }
