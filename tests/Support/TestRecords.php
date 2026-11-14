@@ -235,6 +235,56 @@ final class TestRecords
     }
 
     /**
+     * A sub-meter in the given building (a new building when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function meter(?int $buildingId = null, array $overrides = []): int
+    {
+        return (int) DB::table('meters')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'meter_number' => 'M-'.Str::upper(Str::random(8)),
+            'meter_type' => 'sub_meter',
+            'measurement_unit' => 'm3',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * The meter placed in the flat (no flat: a main or common-area meter),
+     * open-ended from the given day.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function meterAssignment(int $meterId, ?int $flatId, string $validFrom, array $overrides = []): int
+    {
+        return (int) DB::table('meter_assignments')->insertGetId([
+            'meter_id' => $meterId,
+            'flat_id' => $flatId,
+            'valid_from' => $validFrom,
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * The occupancy billed for the meter assignment, open-ended from the
+     * given day with an opening reading of 0.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function meterOccupancyAssignment(int $meterAssignmentId, int $flatOccupancyId, string $validFrom, array $overrides = []): int
+    {
+        return (int) DB::table('meter_occupancy_assignments')->insertGetId([
+            'meter_assignment_id' => $meterAssignmentId,
+            'flat_occupancy_id' => $flatOccupancyId,
+            'flat_id' => DB::table('flat_occupancies')->where('id', $flatOccupancyId)->value('flat_id'),
+            'valid_from' => $validFrom,
+            'opening_reading' => 0,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

@@ -233,7 +233,8 @@ and it never changes once saved.
   feature set of each package, `000009` building subscriptions, SaaS invoices
   and SaaS payments, `000010` SaaS invoice total check and frozen amounts), 7
   flats and customers (`000011` flats, customers and flat occupancies,
-  `000012` attachments and the ownership evidence FK).
+  `000012` attachments and the ownership evidence FK), 8 metering (`000013`
+  meters, meter assignments, billed occupancy per meter and meter events).
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
