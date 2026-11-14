@@ -194,3 +194,63 @@ describe('flat occupancies', function () {
         expect(DB::table('flat_occupancies')->where('id', $id)->value('is_deleted'))->toBeFalse();
     });
 });
+
+describe('who may occupy a flat', function () {
+    beforeEach(function () {
+        $this->tenantId = TestRecords::organization();
+        $this->buildingId = TestRecords::building($this->tenantId);
+        $this->flatId = TestRecords::flat($this->buildingId);
+    });
+
+    it('accept a customer of the building tenant', function () {
+        // Arrange
+        $customerId = TestRecords::customer($this->tenantId);
+
+        // Act
+        TestRecords::occupancy($this->flatId, '2026-01-01', ['customer_id' => $customerId]);
+
+        // Assert
+        expect(DB::table('flat_occupancies')->where('customer_id', $customerId)->count())->toBe(1);
+    });
+
+    it('accept a customer of an organization with an active grant', function () {
+        // Arrange
+        $vendorId = TestRecords::organization();
+        TestRecords::accessGrant($this->buildingId, $vendorId);
+        $customerId = TestRecords::customer($vendorId);
+
+        // Act
+        TestRecords::occupancy($this->flatId, '2026-01-01', ['customer_id' => $customerId]);
+
+        // Assert
+        expect(DB::table('flat_occupancies')->where('customer_id', $customerId)->count())->toBe(1);
+    });
+
+    it('refuse a customer of an organization without access', function () {
+        // Arrange
+        $customerId = TestRecords::customer(TestRecords::organization());
+
+        // Act & Assert
+        expect(fn () => TestRecords::occupancy($this->flatId, '2026-01-01', ['customer_id' => $customerId]))
+            ->toThrow(QueryException::class, 'The customer belongs to an organization without access to this building');
+    });
+
+    it('refuse moving an occupancy to a customer without access', function () {
+        // Arrange
+        $id = TestRecords::occupancy($this->flatId, '2026-01-01');
+        $strangerCustomerId = TestRecords::customer(TestRecords::organization());
+
+        // Act & Assert
+        expect(fn () => DB::table('flat_occupancies')->where('id', $id)->update(['customer_id' => $strangerCustomerId]))
+            ->toThrow(QueryException::class, 'The customer belongs to an organization without access to this building');
+    });
+
+    it('still report a missing customer through its foreign key', function () {
+        // Arrange
+        $row = ['customer_id' => 999999999];
+
+        // Act & Assert
+        expect(fn () => TestRecords::occupancy($this->flatId, '2026-01-01', $row))
+            ->toThrow(QueryException::class, 'flat_occupancies_customer_id_foreign');
+    });
+});

@@ -236,8 +236,9 @@ and it never changes once saved.
   `000012` attachments and the ownership evidence FK), 8 metering (`000013`
   meters, meter assignments, billed occupancy per meter and meter events,
   `000014` reading periods, meter readings, revisions and approvals, with
-  their enforced status transitions), `000015` the shared building access
-  check.
+  their enforced status transitions), then fixes from the owner's review of
+  groups 7 and 8 (`000015` the shared building access check, `000016`
+  occupants only from organizations with access to the building).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

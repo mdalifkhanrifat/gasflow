@@ -213,15 +213,19 @@ final class TestRecords
     }
 
     /**
-     * A new customer's occupancy of the flat, open-ended from the given day.
+     * The occupancy of the flat by a new customer of the building's tenant
+     * organization, open-ended from the given day.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function occupancy(int $flatId, string $validFrom, array $overrides = []): int
     {
+        $tenantId = DB::table('flats')->join('buildings', 'buildings.id', '=', 'flats.building_id')
+            ->where('flats.id', $flatId)->value('buildings.tenant_organization_id');
+
         return (int) DB::table('flat_occupancies')->insertGetId([
             'flat_id' => $flatId,
-            'customer_id' => self::customer(),
+            'customer_id' => self::customer($tenantId),
             'occupancy_type' => 'tenant',
             'valid_from' => $validFrom,
             ...$overrides,
