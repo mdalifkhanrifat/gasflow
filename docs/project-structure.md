@@ -238,7 +238,8 @@ and it never changes once saved.
   `000014` reading periods, meter readings, revisions and approvals, with
   their enforced status transitions), then fixes from the owner's review of
   groups 7 and 8 (`000015` the shared building access check, `000016`
-  occupants only from organizations with access to the building).
+  occupants only from organizations with access to the building, `000017`
+  every attachment has an owner organization or building).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
