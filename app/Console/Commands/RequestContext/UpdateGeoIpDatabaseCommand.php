@@ -14,7 +14,7 @@ use Throwable;
  * this month's file is not published yet), checks it is a real City database,
  * and only then replaces the current file. A failed update keeps the old file.
  */
-final class UpdateGeoIpDatabase extends Command
+final class UpdateGeoIpDatabaseCommand extends Command
 {
     protected $signature = 'audit:geoip-update';
 

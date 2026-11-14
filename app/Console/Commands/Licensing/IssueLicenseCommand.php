@@ -18,7 +18,7 @@ use RuntimeException;
  *
  * Run it through "make license a=..." which mounts the owner's key folder read-only.
  */
-final class IssueLicense extends Command
+final class IssueLicenseCommand extends Command
 {
     protected $signature = 'license:issue
         {--keys= : Folder with the sealed signing key files}

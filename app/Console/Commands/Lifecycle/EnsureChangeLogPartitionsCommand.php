@@ -16,7 +16,7 @@ use Illuminate\Database\QueryException;
  * create that month's partition. So this runs daily (and after migrations) and
  * keeps several months ready; a failed month is reported and the rest go on.
  */
-final class EnsureChangeLogPartitions extends Command
+final class EnsureChangeLogPartitionsCommand extends Command
 {
     protected $signature = 'audit:change-log-partitions
         {--months=3 : How many months after the current one to prepare}';

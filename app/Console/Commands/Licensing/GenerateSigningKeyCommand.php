@@ -14,7 +14,7 @@ use RuntimeException;
  *
  * Run it through "make license-keygen", which mounts the owner's key folder.
  */
-final class GenerateSigningKey extends Command
+final class GenerateSigningKeyCommand extends Command
 {
     protected $signature = 'license:keygen
         {--dir= : Folder outside the project for the sealed private key}
