@@ -223,7 +223,9 @@ and it never changes once saved.
   it replaces Laravel's default users migration), 3 organizations and access
   (`2026_11_14_000002` supported locales and `users.locale`, `000003`
   organizations, memberships, roles, permissions and the role-scope triggers,
-  `000004` user devices, access sessions and the live user count views).
+  `000004` user devices, access sessions and the live user count views), 4
+  buildings (`000005` buildings, ownership history and gas vendor
+  assignments).
 - A model uses Laravel's `SoftDeletes` exactly when its table's
   `soft_delete_policy` is `allowed` (master and configuration tables). Money,
   history and log tables never do. A test checks every model in `app/Models`
