@@ -242,7 +242,8 @@ and it never changes once saved.
   every attachment has an owner organization or building, `000018` meter
   assignments and readings carry their building, checked by composite keys,
   `000019` the closed-parent guard, `000020` readings frozen once their
-  period is approved, locked or cancelled).
+  period is approved, locked or cancelled), 9 tariffs and reconciliation (`000021` tariff
+  versions and building charge rules).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

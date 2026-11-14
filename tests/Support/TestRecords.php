@@ -344,6 +344,56 @@ final class TestRecords
     }
 
     /**
+     * A draft tariff version of the vendor assignment's vendor and building (a
+     * new building with a gas vendor from 2026-01-01 when none is given): the
+     * next version of tariff DOMESTIC at 30 BDT per m3 from the given day.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function tariffVersion(?int $vendorAssignmentId = null, string $effectiveFrom = '2026-01-01', array $overrides = []): int
+    {
+        $vendorAssignmentId ??= self::vendorAssignment(self::building(), '2026-01-01');
+        $assignment = DB::table('building_vendor_assignments')->where('id', $vendorAssignmentId)->first(['building_id', 'vendor_organization_id']);
+        $row = [
+            'building_id' => $assignment->building_id,
+            'vendor_organization_id' => $assignment->vendor_organization_id,
+            'building_vendor_assignment_id' => $vendorAssignmentId,
+            'tariff_code' => 'DOMESTIC',
+            'name' => 'Domestic gas',
+            'unit' => 'm3',
+            'rate' => 30,
+            'effective_from' => $effectiveFrom,
+            ...$overrides,
+        ];
+        $row['version_no'] ??= (int) DB::table('tariff_versions')
+            ->where('building_id', $row['building_id'])
+            ->where('vendor_organization_id', $row['vendor_organization_id'])
+            ->where('tariff_code', $row['tariff_code'])
+            ->max('version_no') + 1;
+
+        return (int) DB::table('tariff_versions')->insertGetId($row);
+    }
+
+    /**
+     * An active fixed service charge of 100 BDT per invoice in the building (a
+     * new building when none is given) from the given day.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function chargeRule(?int $buildingId = null, string $effectiveFrom = '2026-01-01', array $overrides = []): int
+    {
+        return (int) DB::table('building_charge_rules')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'charge_code' => 'SERVICE',
+            'name' => 'Service charge',
+            'calculation_type' => 'fixed_per_invoice',
+            'amount' => 100,
+            'effective_from' => $effectiveFrom,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
