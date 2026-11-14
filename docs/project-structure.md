@@ -248,7 +248,7 @@ and it never changes once saved.
   their vendor assignment, `000025` reconciliation checks, review transitions and
   freeze, `000026` percentage charges at most 100,
   `000027` ended gas vendor assignments also in the overlap check, `000028`
-  the tariff timeline functions).
+  the tariff timeline functions, `000029` the gas supply change register).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

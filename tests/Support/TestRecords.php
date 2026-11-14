@@ -394,6 +394,43 @@ final class TestRecords
     }
 
     /**
+     * A recorded gas supply change of the tariff version's building, vendor
+     * and price, taking effect on the given day (changed at 10:00 that day
+     * in Dhaka).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function supplyChange(int $tariffVersionId, string $effectiveOn, array $overrides = []): int
+    {
+        $tariff = DB::table('tariff_versions')->where('id', $tariffVersionId)
+            ->first(['building_id', 'vendor_organization_id', 'building_vendor_assignment_id']);
+
+        return (int) DB::table('supply_changes')->insertGetId([
+            'building_id' => $tariff->building_id,
+            'vendor_organization_id' => $tariff->vendor_organization_id,
+            'building_vendor_assignment_id' => $tariff->building_vendor_assignment_id,
+            'tariff_version_id' => $tariffVersionId,
+            'changed_at' => "{$effectiveOn} 10:00:00+06",
+            'effective_on' => $effectiveOn,
+            'reason' => 'vendor_changed',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A meter reading taken at the supply change.
+     */
+    public static function supplyChangeReading(int $supplyChangeId, int $meterId, float|string $reading): int
+    {
+        return (int) DB::table('supply_change_readings')->insertGetId([
+            'supply_change_id' => $supplyChangeId,
+            'building_id' => DB::table('supply_changes')->where('id', $supplyChangeId)->value('building_id'),
+            'meter_id' => $meterId,
+            'reading' => $reading,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
