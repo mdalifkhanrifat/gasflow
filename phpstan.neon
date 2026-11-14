@@ -18,3 +18,6 @@ parameters:
         -
             identifier: trait.unused
             path: app/Models/Concerns/HasLifecycle.php
+        -
+            identifier: trait.unused
+            path: app/Models/Concerns/HasPublicId.php

@@ -62,7 +62,7 @@ app/
 │   └── Resources/<Domain>/      API resources for /api/v1
 ├── Jobs/<Domain>/               queued work; Jobs/Middleware for job middleware
 ├── Mail/, Notifications/
-├── Models/<Domain>/             Eloquent models; Models/Concerns for model traits
+├── Models/<Domain>/             Eloquent models; Models/Concerns for model traits (HasLifecycle, HasPublicId)
 ├── Policies/<Domain>/           one per model (found automatically)
 ├── Providers/                   AppServiceProvider + one provider per domain that needs one
 ├── Queries/<Domain>/            read-only queries too big for a model scope
@@ -125,21 +125,21 @@ Generators accept the subfolder: `php artisan make:model Billing/Invoice`,
 
 ## Where does it go?
 
-| I am adding...                         | Put it in                                                                        |
-| -------------------------------------- | -------------------------------------------------------------------------------- |
-| a table                                | `database/migrations/`, ending with `LifecycleSchema::attach()`                  |
-| a model                                | `app/Models/<Domain>/` with `HasLifecycle`                                       |
-| a business operation (create, approve) | `app/Actions/<Domain>/<Verb><Noun>.php`                                          |
-| a page or endpoint                     | controller + form request under `<Domain>/`, route in `routes/web/<domain>.php`  |
-| a permission check                     | the model's policy in `app/Policies/<Domain>/`                                   |
-| background work                        | a job in `app/Jobs/<Domain>/`                                                    |
-| a scheduled task                       | `routes/console.php`, inside the licensed group unless it protects data          |
-| an artisan command                     | `app/Console/Commands/<Domain>/`                                                 |
-| HTTP middleware                        | `app/Http/Middleware/`, registered in `bootstrap/app.php`                        |
-| a status                               | an enum case in `app/Enums/<Domain>/` and a row in `status_definitions` (seeder) |
-| a setting                              | a `config/` file; secrets only through `.env`                                    |
-| a translation                          | `lang/bn` and `lang/en` (Phase 3)                                                |
-| a test                                 | `tests/Feature/<Domain>/` or `tests/Unit/<Domain>/`                              |
+| I am adding...                         | Put it in                                                                                 |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| a table                                | `database/migrations/`, ending with `LifecycleSchema::attach()`                           |
+| a model                                | `app/Models/<Domain>/` with `HasLifecycle` (+ `HasPublicId` if the table has `public_id`) |
+| a business operation (create, approve) | `app/Actions/<Domain>/<Verb><Noun>.php`                                                   |
+| a page or endpoint                     | controller + form request under `<Domain>/`, route in `routes/web/<domain>.php`           |
+| a permission check                     | the model's policy in `app/Policies/<Domain>/`                                            |
+| background work                        | a job in `app/Jobs/<Domain>/`                                                             |
+| a scheduled task                       | `routes/console.php`, inside the licensed group unless it protects data                   |
+| an artisan command                     | `app/Console/Commands/<Domain>/`                                                          |
+| HTTP middleware                        | `app/Http/Middleware/`, registered in `bootstrap/app.php`                                 |
+| a status                               | an enum case in `app/Enums/<Domain>/` and a row in `status_definitions` (seeder)          |
+| a setting                              | a `config/` file; secrets only through `.env`                                             |
+| a translation                          | `lang/bn` and `lang/en` (Phase 3)                                                         |
+| a test                                 | `tests/Feature/<Domain>/` or `tests/Unit/<Domain>/`                                       |
 
 ## Request flow
 
@@ -174,6 +174,12 @@ repository per model: it doubles the files and hides Laravel features without
 adding safety, because PostgreSQL already enforces the rules.
 
 ## Database
+
+Tables that are referred to from outside (users, organizations, buildings,
+customers, invoices, payments, financial transactions, licenses) have a BIGINT
+`id` for joins and foreign keys and a ULID `public_id` (`CHAR(26)`). Their models
+use `HasPublicId`: URLs, API responses, exports and links show only `public_id`,
+and it never changes once saved.
 
 - All migrations live in `database/migrations/`, in the dependency order of the
   design (foundation and lifecycle first, row-level security last).
