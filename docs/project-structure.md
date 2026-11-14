@@ -136,6 +136,7 @@ Generators accept the subfolder: `php artisan make:model Billing/Invoice`,
 | a scheduled task                       | `routes/console.php`, inside the licensed group unless it protects data                   |
 | an artisan command                     | `app/Console/Commands/<Domain>/`                                                          |
 | HTTP middleware                        | `app/Http/Middleware/`, registered in `bootstrap/app.php`                                 |
+| an event listener                      | `app/Listeners/<Domain>/` (found automatically by its `handle()` type hint)               |
 | a status                               | an enum case in `app/Enums/<Domain>/` and a row in `status_definitions` (seeder)          |
 | a setting                              | a `config/` file; secrets only through `.env`                                             |
 | a translation                          | `lang/bn` and `lang/en` (Phase 3)                                                         |
@@ -162,6 +163,14 @@ and queued job) and in `data_change_logs.request_id`. The web middleware group
 then runs, in order: Laravel's defaults,
 `HandleInertiaRequests`, `AddLinkHeadersForPreloadedAssets`, `EnsureLicensed`,
 `RequestContext`, `LifecycleContext` (one database transaction per request).
+
+### Health check
+
+`GET /up` is Laravel's own health route (for load balancers and uptime
+monitors). `app/Listeners/Health/CheckServices` adds PostgreSQL and Redis to it:
+200 `up` only when both answer, otherwise 500 `down`, without showing the
+error. A new must-have service gets its check in that listener. A locked
+license does not count as unhealthy.
 
 ## When to add a layer
 
