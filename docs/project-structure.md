@@ -230,7 +230,8 @@ and it never changes once saved.
   without tenant or grant), 5 catalogues (`000007` features, meter types,
   payment methods and integration providers, seeded with Bangla names), 6
   subscriptions (`000008` SaaS packages, versions, features and the default
-  feature set of each package).
+  feature set of each package, `000009` building subscriptions, SaaS invoices
+  and SaaS payments).
 - Catalogue tables keep English in their base columns and other languages in
   `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.
   Tests for tables shared by several domains live in `tests/Feature/Catalogs`.

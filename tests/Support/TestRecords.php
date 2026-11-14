@@ -142,6 +142,38 @@ final class TestRecords
     }
 
     /**
+     * A new building's subscription to a new plan version, starting now.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function buildingSubscription(array $overrides = []): int
+    {
+        return (int) DB::table('building_subscriptions')->insertGetId([
+            'building_id' => self::building(),
+            'plan_version_id' => self::planVersion(),
+            'starts_at' => now(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * An issued SaaS invoice of 1,500 BDT for a new building subscription.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function saasInvoice(array $overrides = []): int
+    {
+        return (int) DB::table('saas_invoices')->insertGetId([
+            'building_subscription_id' => self::buildingSubscription(),
+            'invoice_no' => 'SINV-'.Str::upper(Str::random(10)),
+            'subtotal' => 1500,
+            'total' => 1500,
+            'issued_at' => now(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
