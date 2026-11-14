@@ -257,3 +257,16 @@ describe('retroactive rate changes', function () {
         expect([$billed, $recalculated, $recalculated - $billed])->toBe([9300.0, 10260.0, 960.0]);
     });
 });
+
+describe('charge quantities', function () {
+    it('always come with six decimals, also for a single rate', function () {
+        // Arrange
+        activeTariffVersion($this->assignmentId, '2026-01-01', null, 30);
+
+        // Act
+        $charges = chargeSegments($this->buildingId, '2026-10-01', '2026-10-31', 70);
+
+        // Assert
+        expect(array_column($charges, 'quantity'))->toBe(['70.000000']);
+    });
+});
