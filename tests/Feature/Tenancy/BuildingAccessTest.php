@@ -206,3 +206,73 @@ describe('building roles', function () {
         expect(DB::table('building_membership_roles')->where('building_membership_id', $buildingMembershipId)->exists())->toBeFalse();
     });
 });
+
+describe('building access check', function () {
+    it('lets the tenant organization into its own building', function () {
+        // Arrange
+        $tenantId = TestRecords::organization();
+        $buildingId = TestRecords::building($tenantId);
+
+        // Act
+        $allowed = DB::scalar('select organization_can_access_building(?, ?)', [$tenantId, $buildingId]);
+
+        // Assert
+        expect($allowed)->toBeTrue();
+    });
+
+    it('lets in an organization whose grant is in force today', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $vendorId = TestRecords::organization();
+        TestRecords::accessGrant($buildingId, $vendorId);
+
+        // Act
+        $allowed = DB::scalar('select organization_can_access_building(?, ?)', [$vendorId, $buildingId]);
+
+        // Assert
+        expect($allowed)->toBeTrue();
+    });
+
+    it('keeps out an organization without a grant', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $strangerId = TestRecords::organization();
+
+        // Act
+        $allowed = DB::scalar('select organization_can_access_building(?, ?)', [$strangerId, $buildingId]);
+
+        // Assert
+        expect($allowed)->toBeFalse();
+    });
+
+    it('keeps out an organization whose grant is not in force today', function (array $grant) {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $vendorId = TestRecords::organization();
+        TestRecords::accessGrant($buildingId, $vendorId, $grant);
+
+        // Act
+        $allowed = DB::scalar('select organization_can_access_building(?, ?)', [$vendorId, $buildingId]);
+
+        // Assert
+        expect($allowed)->toBeFalse();
+    })->with([
+        'pending' => fn () => ['status' => 'pending'],
+        'revoked' => fn () => ['status' => 'revoked'],
+        'ended yesterday' => fn () => ['valid_from' => today()->subMonth()->toDateString(), 'valid_to' => today()->subDay()->toDateString()],
+        'starting tomorrow' => fn () => ['valid_from' => today()->addDay()->toDateString()],
+    ]);
+
+    it('keeps out the grantee of another building', function () {
+        // Arrange
+        $vendorId = TestRecords::organization();
+        TestRecords::accessGrant(TestRecords::building(), $vendorId);
+        $otherBuildingId = TestRecords::building();
+
+        // Act
+        $allowed = DB::scalar('select organization_can_access_building(?, ?)', [$vendorId, $otherBuildingId]);
+
+        // Assert
+        expect($allowed)->toBeFalse();
+    });
+});

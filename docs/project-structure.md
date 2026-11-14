@@ -236,10 +236,15 @@ and it never changes once saved.
   `000012` attachments and the ownership evidence FK), 8 metering (`000013`
   meters, meter assignments, billed occupancy per meter and meter events,
   `000014` reading periods, meter readings, revisions and approvals, with
-  their enforced status transitions).
+  their enforced status transitions), `000015` the shared building access
+  check.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
+- Whether an organization may work in a building is answered by one SQL
+  function, `organization_can_access_building(organization, building)`: it owns
+  the building or holds an active grant in force today. Triggers (and later
+  the row-level security policies) call it instead of repeating the rule.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
