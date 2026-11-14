@@ -217,7 +217,8 @@ and it never changes once saved.
   `AppServiceProvider`), matching the design's `TIMESTAMPTZ`.
 - Migration groups so far: 1 lifecycle foundation (`2026_11_13_*`), 2 identity
   (`2026_11_14_000001`: users, sessions, password reset tokens, Sanctum tokens;
-  it replaces Laravel's default users migration).
+  it replaces Laravel's default users migration), 3 organizations and access
+  (`2026_11_14_000002` supported locales and `users.locale`, ...).
 - A model uses Laravel's `SoftDeletes` exactly when its table's
   `soft_delete_policy` is `allowed` (master and configuration tables). Money,
   history and log tables never do. A test checks every model in `app/Models`

@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $email
  * @property string|null $phone
+ * @property string|null $locale preferred language (supported_locales), else the organization's
  * @property Carbon|null $email_verified_at
  * @property Carbon|null $phone_verified_at
  * @property bool $mfa_enabled
