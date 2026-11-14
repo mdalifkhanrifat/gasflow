@@ -81,7 +81,7 @@ describe('meter reconciliations', function () {
 
         // Act & Assert
         expect(fn () => DB::table('meter_reconciliations')->insert($row))
-            ->toThrow(QueryException::class, 'fk_meter_reconciliation_main_meter_building');
+            ->toThrow(QueryException::class, 'fk_meter_reconciliation_main_meter');
     });
 
     it('can never be deleted', function () {
@@ -91,5 +91,97 @@ describe('meter reconciliations', function () {
         // Act & Assert
         expect(fn () => DB::transaction(fn () => DB::table('meter_reconciliations')->where('id', $id)->delete()))
             ->toThrow(QueryException::class, 'Records in meter_reconciliations are protected');
+    });
+});
+
+describe('reconciliation checks', function () {
+    it('refuse a variance that is not main minus sub-meters', function () {
+        // Arrange
+        $row = reconciliationRow($this, ['variance' => 50]);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_reconciliations')->insert($row))
+            ->toThrow(QueryException::class, 'ck_meter_reconciliations_variance');
+    });
+
+    it('accept a negative variance when the sub-meters read more', function () {
+        // Arrange
+        $row = reconciliationRow($this, ['submeter_total' => 103, 'variance' => -3]);
+
+        // Act
+        $id = DB::table('meter_reconciliations')->insertGetId($row);
+
+        // Assert
+        expect((float) DB::table('meter_reconciliations')->where('id', $id)->value('variance'))->toBe(-3.0);
+    });
+
+    it('refuse a sub-meter as the main meter', function () {
+        // Arrange
+        $row = reconciliationRow($this, ['main_meter_id' => TestRecords::meter($this->buildingId)]);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_reconciliations')->insert($row))
+            ->toThrow(QueryException::class, 'fk_meter_reconciliation_main_meter');
+    });
+
+    it('refuse a sub-meter passed off with another meter type', function () {
+        // Arrange
+        $row = reconciliationRow($this, ['main_meter_id' => TestRecords::meter($this->buildingId), 'main_meter_type' => 'sub_meter']);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_reconciliations')->insert($row))
+            ->toThrow(QueryException::class, 'ck_meter_reconciliations_main_meter_type');
+    });
+
+    it('keep a reconciled main meter from being retyped', function () {
+        // Arrange
+        DB::table('meter_reconciliations')->insert(reconciliationRow($this));
+
+        // Act & Assert
+        expect(fn () => DB::table('meters')->where('id', $this->mainMeterId)->update(['meter_type' => 'sub_meter']))
+            ->toThrow(QueryException::class, 'fk_meter_reconciliation_main_meter');
+    });
+});
+
+describe('reconciliation review', function () {
+    beforeEach(function () {
+        $this->id = DB::table('meter_reconciliations')->insertGetId(reconciliationRow($this));
+    });
+
+    it('records the decision with its note', function () {
+        // Act
+        DB::table('meter_reconciliations')->where('id', $this->id)
+            ->update(['status' => 'accepted', 'resolution_note' => 'Within the 5% loss allowance', 'reviewed_at' => now()]);
+
+        // Assert
+        expect(DB::table('meter_reconciliations')->where('id', $this->id)->value('resolution_note'))->toBe('Within the 5% loss allowance');
+    });
+
+    it('refuse to start already decided', function () {
+        // Arrange
+        $row = reconciliationRow($this, ['reading_period_id' => TestRecords::readingPeriod($this->buildingId, 11), 'status' => 'accepted']);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_reconciliations')->insert($row))
+            ->toThrow(QueryException::class, 'Status "accepted" is not an initial status for meter_reconciliations');
+    });
+
+    it('cannot be reopened once decided', function () {
+        // Arrange
+        DB::table('meter_reconciliations')->where('id', $this->id)->update(['status' => 'accepted']);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_reconciliations')->where('id', $this->id)->update(['status' => 'pending_review']))
+            ->toThrow(QueryException::class, 'Status transition accepted -> pending_review is not allowed');
+    });
+
+    it('keep its numbers once decided', function () {
+        // Arrange
+        DB::table('meter_reconciliations')->where('id', $this->id)->update(['status' => 'rejected']);
+
+        // Act & Assert
+        expect(fn () => DB::table('meter_reconciliations')->where('id', $this->id)
+            ->update(['main_consumption' => 96, 'variance' => 0]))
+            ->toThrow(QueryException::class, "meter_reconciliations {$this->id} is rejected: main_consumption, variance can no longer change");
     });
 });

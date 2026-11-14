@@ -245,7 +245,8 @@ and it never changes once saved.
   period is approved, locked or cancelled), 9 tariffs and reconciliation (`000021` tariff
   versions and building charge rules, `000022` meter reconciliations, `000023`
   the frozen-columns guard, `000024` approved tariffs frozen and started inside
-  their vendor assignment).
+  their vendor assignment, `000025` reconciliation checks, review transitions and
+  freeze).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
