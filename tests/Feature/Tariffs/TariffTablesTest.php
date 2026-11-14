@@ -206,6 +206,25 @@ describe('building charge rules', function () {
         expect(fn () => TestRecords::chargeRule(overrides: $row))->toThrow(QueryException::class, 'ck_building_charge_rules_effective_range');
     });
 
+    it('refuse a percentage above 100', function () {
+        // Arrange
+        $row = ['calculation_type' => 'percentage', 'amount' => 100.5];
+
+        // Act & Assert
+        expect(fn () => TestRecords::chargeRule(overrides: $row))->toThrow(QueryException::class, 'ck_building_charge_rules_percentage');
+    });
+
+    it('accept a fixed amount above 100', function () {
+        // Arrange
+        $row = ['calculation_type' => 'fixed_per_invoice', 'amount' => 250];
+
+        // Act
+        $id = TestRecords::chargeRule(overrides: $row);
+
+        // Assert
+        expect((float) DB::table('building_charge_rules')->where('id', $id)->value('amount'))->toBe(250.0);
+    });
+
     it('refuse a second active rule with the same code on the same days', function () {
         // Arrange
         $buildingId = TestRecords::building();

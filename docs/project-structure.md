@@ -246,7 +246,7 @@ and it never changes once saved.
   versions and building charge rules, `000022` meter reconciliations, `000023`
   the frozen-columns guard, `000024` approved tariffs frozen and started inside
   their vendor assignment, `000025` reconciliation checks, review transitions and
-  freeze).
+  freeze, `000026` percentage charges at most 100).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
