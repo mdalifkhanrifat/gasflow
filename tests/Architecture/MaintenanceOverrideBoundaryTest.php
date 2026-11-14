@@ -5,7 +5,7 @@
  * job or API endpoint may set app.maintenance_override or use the operator
  * connection. Only the gasflow:maintenance command may.
  */
-const PROJECT_ROOT = __DIR__.'/../../..';
+const PROJECT_ROOT = __DIR__.'/../..';
 const SCANNED_DIRECTORIES = ['app', 'bootstrap', 'config', 'routes'];
 const MAINTENANCE_COMMAND = 'app/Console/Commands/Lifecycle/MaintenanceOverrideCommand.php';
 

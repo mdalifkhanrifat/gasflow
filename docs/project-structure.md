@@ -237,7 +237,7 @@ page never hard-codes them. Details arrive with the UI design system (Phase 3).
 tests/
 ├── Feature/<Domain>/       through Laravel and PostgreSQL (RefreshPostgresDatabase)
 ├── Unit/<Domain>/          plain PHP, no application
-├── Unit/Architecture/      rules about the code itself (moves to tests/Architecture)
+├── Architecture/          rules about the code itself (Pest arch tests)
 ├── Support/                helpers shared by tests (TestLicense, LicenseFixtures, ...)
 ├── Fixtures/               test-only models, enums and tables (tests/Fixtures/migrations)
 └── Concerns/               test case traits
@@ -249,17 +249,27 @@ tests/
   active license signed by a throw-away key (`Tests\TestCase`).
 - Database behaviour is tested on the test-only tables in
   `tests/Fixtures/migrations`, so a test does not depend on a business table.
+- Architecture tests (`tests/Architecture`) fail the suite when code breaks a
+  rule:
+    - Pest's `php`, `security` and `laravel` presets: no debug leftovers, no weak
+      hashes, and Laravel naming (commands end in `Command`, and so on)
+    - actions, services and models never depend on the HTTP layer
+    - controllers never talk to the database directly
+    - `Lifecycle` and `RequestContext` never depend on a business domain
+    - `env()` only in `config/`
+    - only the maintenance command may use the override
+      When a new domain or rule is added, add its line there.
 
 ## Naming
 
-| Kind            | Pattern                   | Example                 |
-| --------------- | ------------------------- | ----------------------- |
-| action          | verb + noun               | `IssueInvoice`          |
-| controller      | noun + `Controller`       | `InvoiceController`     |
-| form request    | action name + `Request`   | `IssueInvoiceRequest`   |
-| policy          | model + `Policy`          | `InvoicePolicy`         |
-| status enum     | model + `Status`          | `InvoiceStatus`         |
-| job             | what it does              | `SendInvoiceSms`        |
-| event           | what happened, past tense | `InvoiceIssued`         |
-| artisan command | `<area>:<verb>`           | `audit:geoip-update`    |
-| migration       | Laravel default           | `create_invoices_table` |
+| Kind            | Pattern                           | Example                                            |
+| --------------- | --------------------------------- | -------------------------------------------------- |
+| action          | verb + noun                       | `IssueInvoice`                                     |
+| controller      | noun + `Controller`               | `InvoiceController`                                |
+| form request    | action name + `Request`           | `IssueInvoiceRequest`                              |
+| policy          | model + `Policy`                  | `InvoicePolicy`                                    |
+| status enum     | model + `Status`                  | `InvoiceStatus`                                    |
+| job             | what it does                      | `SendInvoiceSms`                                   |
+| event           | what happened, past tense         | `InvoiceIssued`                                    |
+| artisan command | `<area>:<verb>`, class `…Command` | `audit:geoip-update`, `UpdateGeoIpDatabaseCommand` |
+| migration       | Laravel default                   | `create_invoices_table`                            |
