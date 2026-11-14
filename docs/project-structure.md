@@ -248,7 +248,8 @@ and it never changes once saved.
   their vendor assignment, `000025` reconciliation checks, review transitions and
   freeze, `000026` percentage charges at most 100,
   `000027` ended gas vendor assignments also in the overlap check, `000028`
-  the tariff timeline functions, `000029` the gas supply change register).
+  the tariff timeline functions, `000029` the gas supply change register, `000030` charge quantities with six
+  decimals, `000031` splitting a charge by meter readings).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -279,6 +280,12 @@ and it never changes once saved.
   `tariff_charge_segments()` splits a consumption over those days by the daily
   average and prices each part. Billing, retro adjustments and reports call
   these functions instead of looking up a rate themselves.
+- When the gas supply changes (another company's gas, another price), the
+  change and the meter readings at that moment go into `supply_changes` /
+  `supply_change_readings`. `metered_charge_segments(..., meter, split)` then
+  splits a consumption by the flat's own readings (`own_meter`), the main
+  meter's usage (`main_meter`), the daily average (`days`) or the best one
+  available (`auto`), and says which method it used.
 - An invoice's total is always subtotal plus tax, and once it leaves draft
   what it bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
