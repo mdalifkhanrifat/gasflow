@@ -260,7 +260,9 @@ and it never changes once saved.
   rules, `000038` billing cycle rules: calculate only from an approved
   period, no new invoices once approved, cancel only with void invoices,
   `000039` an invoice's billing mode is its cycle's and its customer is the
-  billed occupant or of an organization with access to the building.
+  billed occupant or of an organization with access to the building,
+  `000040` an invoice leaves draft only when its amounts are the sums of its
+  lines (`invoice_line_totals()`).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -312,8 +314,14 @@ and it never changes once saved.
   splits a consumption by the flat's own readings (`own_meter`), the main
   meter's usage (`main_meter`), the daily average (`days`) or the best one
   available (`auto`), and says which method it used.
-- An invoice's total is always subtotal plus tax, and once it leaves draft
-  what it bills is frozen: a mistake is fixed by voiding it and issuing a new
+- An invoice's amounts are added up from its lines by one SQL function,
+  `invoice_line_totals(invoice)` (discount and credit lines are negative;
+  previous-balance lines are shown, never billed again). The billing action
+  fills a draft from it, and the database refuses to approve an invoice whose
+  amounts differ.
+- An invoice's total is always subtotal plus tax minus discount and credit
+  (a SaaS invoice: subtotal plus tax), and once it leaves draft what it
+  bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
 - Catalogue tables keep English in their base columns and other languages in
   `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.

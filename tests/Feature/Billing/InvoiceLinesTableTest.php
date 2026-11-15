@@ -201,7 +201,7 @@ describe('lines of a closed invoice', function () {
     it('can no longer change once the invoice is approved (design 95)', function () {
         // Arrange
         $id = TestRecords::gasChargeLine($this->invoiceId);
-        DB::table('invoices')->where('id', $this->invoiceId)->update(['status' => 'approved']);
+        TestRecords::moveInvoice($this->invoiceId, ['approved']);
 
         // Act & Assert
         expect(fn () => DB::table('invoice_lines')->where('id', $id)->update(['line_total' => 2900]))
@@ -226,4 +226,75 @@ describe('lines of a closed invoice', function () {
         'void' => [['void']],
         'written off' => [['approved', 'issued', 'written_off']],
     ]);
+});
+
+describe('invoice amounts from their lines (D46)', function () {
+    beforeEach(function () {
+        TestRecords::gasChargeLine($this->invoiceId);
+        TestRecords::gasChargeLine($this->invoiceId, overrides: ['segment_from' => '2026-10-11', 'segment_to' => '2026-10-31', 'line_total' => 4500]);
+        foreach ([['service_charge', 100], ['tax', 380], ['discount', -200], ['credit', -50], ['previous_balance', 999]] as [$type, $total]) {
+            DB::table('invoice_lines')->insert(['invoice_id' => $this->invoiceId, 'line_type' => $type, 'description' => $type, 'line_total' => $total]);
+        }
+    });
+
+    it('are added up by type, leaving the previous balance out', function () {
+        // Act
+        $totals = DB::selectOne('select * from invoice_line_totals(?)', [$this->invoiceId]);
+
+        // Assert
+        expect((array) $totals)->toBe([
+            'subtotal' => '7600.00', 'tax_total' => '380.00', 'discount_total' => '200.00', 'credit_total' => '50.00', 'total' => '7730.00',
+        ]);
+    });
+
+    it('count only the invoice\'s own lines', function () {
+        // Arrange
+        TestRecords::gasChargeLine(TestRecords::invoice());
+
+        // Act
+        $totals = DB::selectOne('select * from invoice_line_totals(?)', [$this->invoiceId]);
+
+        // Assert
+        expect($totals->subtotal)->toBe('7600.00');
+    });
+
+    it('let the invoice be approved when its amounts match', function () {
+        // Act
+        TestRecords::moveInvoice($this->invoiceId, ['approved']);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $this->invoiceId)->first(['status', 'total']))
+            ->toEqual((object) ['status' => 'approved', 'total' => '7730.00']);
+    });
+
+    it('refuse to approve an invoice whose amounts differ from its lines', function (string $column, int $amount) {
+        // Arrange
+        $totals = (array) DB::selectOne('select * from invoice_line_totals(?)', [$this->invoiceId]);
+        $totals[$column] += $amount;
+        $totals['total'] = $totals['subtotal'] + $totals['tax_total'] - $totals['discount_total'] - $totals['credit_total'];
+        DB::table('invoices')->where('id', $this->invoiceId)->update($totals);
+
+        // Act & Assert
+        expect(fn () => DB::table('invoices')->where('id', $this->invoiceId)->update(['status' => 'approved']))
+            ->toThrow(QueryException::class, 'does not match its lines');
+    })->with([
+        'subtotal' => ['subtotal', 1],
+        'tax' => ['tax_total', 1],
+        'discount' => ['discount_total', 1],
+        'credit' => ['credit_total', 1],
+    ]);
+
+    it('may void a draft whose amounts differ from its lines', function () {
+        // Act
+        DB::table('invoices')->where('id', $this->invoiceId)->update(['status' => 'void']);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $this->invoiceId)->value('status'))->toBe('void');
+    });
+
+    it('refuse a discount or credit line that adds to the bill', function (string $type) {
+        // Act & Assert
+        expect(fn () => DB::table('invoice_lines')->insert(['invoice_id' => $this->invoiceId, 'line_type' => $type, 'description' => $type, 'line_total' => 10]))
+            ->toThrow(QueryException::class, 'ck_invoice_lines_deduction_sign');
+    })->with(['discount', 'credit']);
 });

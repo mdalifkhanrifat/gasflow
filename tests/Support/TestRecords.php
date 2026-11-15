@@ -375,6 +375,23 @@ final class TestRecords
     }
 
     /**
+     * The approved general DOMESTIC tariff version of the vendor assignment,
+     * from the assignment's start (created and approved on first use).
+     */
+    public static function approvedTariffVersion(int $vendorAssignmentId): int
+    {
+        $id = DB::table('tariff_versions')->where('building_vendor_assignment_id', $vendorAssignmentId)
+            ->where('tariff_code', 'DOMESTIC')->whereNull('customer_category')->whereIn('status', ['approved', 'active'])->value('id');
+        if ($id !== null) {
+            return (int) $id;
+        }
+        $id = self::tariffVersion($vendorAssignmentId, (string) DB::table('building_vendor_assignments')->where('id', $vendorAssignmentId)->value('valid_from'));
+        DB::table('tariff_versions')->where('id', $id)->update(['status' => 'approved']);
+
+        return $id;
+    }
+
+    /**
      * An active fixed service charge of 100 BDT per invoice in the building (a
      * new building when none is given) from the given day.
      *
@@ -469,7 +486,7 @@ final class TestRecords
     }
 
     /**
-     * A draft invoice of 3,000 BDT in the billing cycle (a new cycle when none
+     * A draft invoice without lines (amounts 0) in the billing cycle (a new cycle when none
      * is given) for a new flat of its building and a new customer of the
      * building's tenant (the occupant when a billed occupancy is given),
      * billed for the building's first gas vendor assignment (a new one from
@@ -502,16 +519,15 @@ final class TestRecords
             'flat_code_snapshot' => 'A-1',
             'unit_snapshot' => 'm3',
             'consumption' => 100,
-            'subtotal' => 3000,
-            'total' => 3000,
             ...$overrides,
         ]);
     }
 
     /**
      * A gas line of the invoice for 1–10 October 2026: 100 m3 at 30 BDT,
-     * split by the daily average, priced with the given tariff version (a
-     * new version of the invoice's vendor assignment when none is given).
+     * split by the daily average, priced with the given tariff version (the
+     * approved DOMESTIC rate of the invoice's vendor assignment when none is
+     * given).
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -525,13 +541,30 @@ final class TestRecords
             'unit' => 'm3',
             'unit_rate' => 30,
             'line_total' => 3000,
-            'tariff_version_id' => $tariffVersionId
-                ?? self::tariffVersion(DB::table('invoices')->where('id', $invoiceId)->value('building_vendor_assignment_id')),
+            'tariff_version_id' => $tariffVersionId ?? self::approvedTariffVersion(
+                (int) DB::table('invoices')->where('id', $invoiceId)->value('building_vendor_assignment_id'),
+            ),
             'segment_from' => '2026-10-01',
             'segment_to' => '2026-10-10',
             'split_method' => 'days',
             ...$overrides,
         ]);
+    }
+
+    /**
+     * Moves a draft invoice along the given statuses, first filling its
+     * amounts from its lines with invoice_line_totals(), as the billing
+     * action does.
+     *
+     * @param  list<string>  $statuses
+     */
+    public static function moveInvoice(int $invoiceId, array $statuses): void
+    {
+        $totals = (array) DB::selectOne('select * from invoice_line_totals(?)', [$invoiceId]);
+        DB::table('invoices')->where('id', $invoiceId)->where('status', 'draft')->update($totals);
+        foreach ($statuses as $status) {
+            DB::table('invoices')->where('id', $invoiceId)->update(['status' => $status]);
+        }
     }
 
     /**

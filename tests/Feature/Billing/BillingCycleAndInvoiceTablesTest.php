@@ -425,6 +425,7 @@ describe('invoice amounts', function () {
     it('let a draft get its final amounts in the update that approves it', function () {
         // Arrange
         $id = TestRecords::invoice($this->cycleId);
+        TestRecords::gasChargeLine($id, overrides: ['quantity' => 120, 'line_total' => 3600]);
 
         // Act
         DB::table('invoices')->where('id', $id)->update(['status' => 'approved', 'subtotal' => 3600, 'total' => 3600]);
