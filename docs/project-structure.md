@@ -266,7 +266,8 @@ and it never changes once saved.
   covers its days, a gas line stays inside its cycle, and a retro line
   corrects an issued gas line of the same flat and vendor, `000042` credit
   notes only on issued invoices, frozen once decided, never more than the
-  invoice total.
+  invoice total, `000043` retro adjustments tied to an issued gas line of
+  their building and to their settlement, frozen once decided.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
