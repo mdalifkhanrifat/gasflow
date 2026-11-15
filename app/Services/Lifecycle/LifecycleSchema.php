@@ -74,6 +74,93 @@ final class LifecycleSchema
     }
 
     /**
+     * Refuses new children once their parent is closed: an INSERT, or a move
+     * to another parent, while the parent has one of the given statuses.
+     * Existing children may still change (an invoice of a locked billing
+     * cycle can still be paid); use freezeWhenParentClosed() to stop that too.
+     *
+     *     LifecycleSchema::refuseNewChildrenWhenParentClosed('invoices', parent: 'billing_cycles',
+     *         foreignKey: 'billing_cycle_id', closedStatuses: ['approved', 'issued', 'locked']);
+     *
+     * Calls lifecycle_refuse_children_of_closed_parent(), which creates
+     * trg_<table>_closed_parent_insert. Calling it again replaces the rule.
+     *
+     * @param  list<string>  $closedStatuses  at least one (checked by the database)
+     */
+    public static function refuseNewChildrenWhenParentClosed(
+        string $table,
+        string $parent,
+        string $foreignKey,
+        array $closedStatuses,
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_refuse_children_of_closed_parent(?::text, ?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)))',
+            [$table, $parent, $foreignKey, json_encode($closedStatuses, JSON_THROW_ON_ERROR)],
+        );
+    }
+
+    /**
+     * Lets a row be written in the given statuses (every status when none
+     * are given) only while its parent has one of the required statuses.
+     * Checked when the row is created or changes its status or parent.
+     *
+     *     LifecycleSchema::requireParentStatus('billing_cycles', parent: 'reading_periods',
+     *         foreignKey: 'reading_period_id', parentStatuses: ['approved', 'locked'],
+     *         whenStatuses: ['calculating', 'review', 'approved', 'issued', 'locked']);
+     *
+     * Calls lifecycle_require_parent_status(), which creates
+     * trg_<table>_parent_<name> (name defaults to the parent table). Calling
+     * it again with the same name replaces the rule.
+     *
+     * @param  list<string>  $parentStatuses  at least one
+     * @param  list<string>  $whenStatuses  statuses of the row that need it; empty = all
+     */
+    public static function requireParentStatus(
+        string $table,
+        string $parent,
+        string $foreignKey,
+        array $parentStatuses,
+        array $whenStatuses = [],
+        ?string $name = null,
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_require_parent_status(?::text, ?::text, ?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)), array(select jsonb_array_elements_text(?::jsonb)))',
+            [$table, $name ?? $parent, $parent, $foreignKey, json_encode($parentStatuses, JSON_THROW_ON_ERROR), json_encode($whenStatuses, JSON_THROW_ON_ERROR)],
+        );
+    }
+
+    /**
+     * Lets a parent enter the given statuses only when every visible child
+     * has one of the allowed statuses.
+     *
+     *     LifecycleSchema::requireChildrenStatus('billing_cycles', child: 'invoices',
+     *         foreignKey: 'billing_cycle_id', whenStatuses: ['cancelled'], childStatuses: ['void']);
+     *
+     * Calls lifecycle_require_children_status(), which creates
+     * trg_<parent>_children_<name> (name defaults to the child table). Calling
+     * it again with the same name replaces the rule.
+     *
+     * @param  list<string>  $whenStatuses  statuses of the parent that need it
+     * @param  list<string>  $childStatuses  allowed statuses of the children
+     */
+    public static function requireChildrenStatus(
+        string $parent,
+        string $child,
+        string $foreignKey,
+        array $whenStatuses,
+        array $childStatuses,
+        ?string $name = null,
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_require_children_status(?::text, ?::text, ?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)), array(select jsonb_array_elements_text(?::jsonb)))',
+            [$parent, $name ?? $child, $child, $foreignKey, json_encode($whenStatuses, JSON_THROW_ON_ERROR), json_encode($childStatuses, JSON_THROW_ON_ERROR)],
+        );
+    }
+
+    /**
      * Freezes columns once a row leaves its editable statuses: an UPDATE that
      * changes one of them is refused while the row's current status is not
      * editable (only the maintenance override may still correct it).

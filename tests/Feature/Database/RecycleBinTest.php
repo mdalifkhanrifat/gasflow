@@ -47,7 +47,7 @@ describe('tables', function () {
 
         // Assert
         expect(array_values(array_filter($entities, fn (string $entity) => str_starts_with($entity, 'lifecycle_test_'))))
-            ->toBe(['lifecycle_test_codes', 'lifecycle_test_items', 'lifecycle_test_period_lines']);
+            ->toBe(['lifecycle_test_batch_items', 'lifecycle_test_codes', 'lifecycle_test_items', 'lifecycle_test_period_lines']);
     });
 
     it('include the users table, whose rows are hidden and never removed', function () {
@@ -72,7 +72,7 @@ describe('tables', function () {
 
         // Assert
         expect(array_filter($summary, fn (string $entity) => str_starts_with($entity, 'lifecycle_test_'), ARRAY_FILTER_USE_KEY))
-            ->toBe(['lifecycle_test_codes' => 1, 'lifecycle_test_items' => 2, 'lifecycle_test_period_lines' => 0]);
+            ->toBe(['lifecycle_test_batch_items' => 0, 'lifecycle_test_codes' => 1, 'lifecycle_test_items' => 2, 'lifecycle_test_period_lines' => 0]);
     });
 });
 

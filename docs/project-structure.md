@@ -255,7 +255,9 @@ and it never changes once saved.
   fields after draft, `000034` invoice lines: one gas line per rate segment
   with its tariff, days and split method, frozen with their invoice, `000035`
   credit notes and billing disputes, `000036` retroactive rate differences
-  per issued gas line and tariff version).
+  per issued gas line and tariff version), then the owner's group 10
+  decisions (V7.19, D46): `000037` the generic parent and children status
+  rules.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -280,6 +282,21 @@ and it never changes once saved.
   `LifecycleSchema::freezeColumns('tariff_versions', [...], editableStatuses: ['draft'])`.
   It creates `trg_<table>_freeze_<name>`; a correction is a new record, or the
   maintenance override.
+- Status rules between a parent and its children are declared, not
+  hand-written, with one call each (calling it again with the same name
+  replaces the rule, so a later migration can change the statuses):
+    - `LifecycleSchema::refuseNewChildrenWhenParentClosed('invoices', parent: 'billing_cycles', foreignKey: 'billing_cycle_id', closedStatuses: [...])`:
+      no new child (or move in) while the parent is closed; existing children
+      may still change (`trg_<table>_closed_parent_insert`)
+    - `LifecycleSchema::requireParentStatus('billing_cycles', parent: 'reading_periods', foreignKey: 'reading_period_id', parentStatuses: [...], whenStatuses: [...])`:
+      a row in those statuses (all when none are given) needs its parent in
+      the required ones (`trg_<table>_parent_<name>`)
+    - `LifecycleSchema::requireChildrenStatus('billing_cycles', child: 'invoices', foreignKey: 'billing_cycle_id', whenStatuses: ['cancelled'], childStatuses: ['void'])`:
+      the parent enters those statuses only when every visible child is in an
+      allowed one (`trg_<parent>_children_<name>`)
+
+    All of them let the maintenance override through, like the freeze guards.
+
 - Gas is priced only through the tariff timeline: `tariff_rate_segments()`
   says which vendor and rate applied on which days (several changes a month,
   customer category with the general rate as fallback, gaps shown), and
