@@ -258,7 +258,9 @@ and it never changes once saved.
   per issued gas line and tariff version), then the owner's group 10
   decisions (V7.19, D46): `000037` the generic parent and children status
   rules, `000038` billing cycle rules: calculate only from an approved
-  period, no new invoices once approved, cancel only with void invoices.
+  period, no new invoices once approved, cancel only with void invoices,
+  `000039` an invoice's billing mode is its cycle's and its customer is the
+  billed occupant or of an organization with access to the building.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

@@ -471,8 +471,9 @@ final class TestRecords
     /**
      * A draft invoice of 3,000 BDT in the billing cycle (a new cycle when none
      * is given) for a new flat of its building and a new customer of the
-     * building's tenant, billed for the building's first gas vendor
-     * assignment (a new one from 2026-01-01 when the building has none).
+     * building's tenant (the occupant when a billed occupancy is given),
+     * billed for the building's first gas vendor assignment (a new one from
+     * 2026-01-01 when the building has none).
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -488,7 +489,10 @@ final class TestRecords
             'building_id' => $cycle->building_id,
             'billing_cycle_id' => $cycle->id,
             'flat_id' => self::flat($cycle->building_id),
-            'customer_id' => self::customer($tenantId),
+            'customer_id' => isset($overrides['meter_occupancy_assignment_id'])
+                ? DB::table('meter_occupancy_assignments')->join('flat_occupancies', 'flat_occupancies.id', '=', 'meter_occupancy_assignments.flat_occupancy_id')
+                    ->where('meter_occupancy_assignments.id', $overrides['meter_occupancy_assignment_id'])->value('flat_occupancies.customer_id')
+                : self::customer($tenantId),
             'gas_vendor_organization_id' => DB::table('building_vendor_assignments')->where('id', $assignmentId)->value('vendor_organization_id'),
             'gas_vendor_name_snapshot' => 'Northstar Gas Services',
             'building_vendor_assignment_id' => $assignmentId,

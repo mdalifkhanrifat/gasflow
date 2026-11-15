@@ -623,3 +623,74 @@ describe('billing cycle rules (D46)', function () {
             ->toThrow(QueryException::class, "billing_cycles {$id} is cancelled: its invoices can no longer change");
     });
 });
+
+describe('invoices agree with their cycle and customer (D46)', function () {
+    beforeEach(function () {
+        $this->cycleId = TestRecords::billingCycle();
+        $this->buildingId = DB::table('billing_cycles')->where('id', $this->cycleId)->value('building_id');
+    });
+
+    it('refuse a billing mode other than the cycle\'s', function () {
+        // Arrange
+        $row = ['billing_mode' => 'internal_cost_allocation'];
+
+        // Act & Assert
+        expect(fn () => TestRecords::invoice($this->cycleId, $row))
+            ->toThrow(QueryException::class, 'fk_invoice_billing_cycle');
+    });
+
+    describe('with a billed occupancy', function () {
+        beforeEach(function () {
+            $this->flatId = TestRecords::flat($this->buildingId);
+            $this->assignmentId = TestRecords::meterAssignment(TestRecords::meter($this->buildingId), $this->flatId, '2026-01-01');
+            $this->occupancyId = TestRecords::occupancy($this->flatId, '2026-01-01');
+            $this->row = [
+                'flat_id' => $this->flatId,
+                'meter_assignment_id' => $this->assignmentId,
+                'meter_occupancy_assignment_id' => TestRecords::meterOccupancyAssignment($this->assignmentId, $this->occupancyId, '2026-01-01'),
+            ];
+        });
+
+        it('bill the occupant', function () {
+            // Act
+            $id = TestRecords::invoice($this->cycleId, $this->row);
+
+            // Assert
+            expect(DB::table('invoices')->where('id', $id)->value('customer_id'))
+                ->toBe(DB::table('flat_occupancies')->where('id', $this->occupancyId)->value('customer_id'));
+        });
+
+        it('refuse another customer of the same organization', function () {
+            // Arrange
+            $tenantId = DB::table('buildings')->where('id', $this->buildingId)->value('tenant_organization_id');
+            $row = [...$this->row, 'customer_id' => TestRecords::customer($tenantId)];
+
+            // Act & Assert
+            expect(fn () => TestRecords::invoice($this->cycleId, $row))
+                ->toThrow(QueryException::class, 'the occupant billed through meter occupancy assignment');
+        });
+    });
+
+    describe('without a billed occupancy', function () {
+        it('refuse a customer of an organization without access to the building', function () {
+            // Arrange
+            $row = ['customer_id' => TestRecords::customer()];
+
+            // Act & Assert
+            expect(fn () => TestRecords::invoice($this->cycleId, $row))
+                ->toThrow(QueryException::class, 'without access to this building');
+        });
+
+        it('accept a customer of an organization with a grant in the building', function () {
+            // Arrange
+            $grantee = TestRecords::organization();
+            TestRecords::accessGrant($this->buildingId, $grantee);
+
+            // Act
+            $id = TestRecords::invoice($this->cycleId, ['customer_id' => TestRecords::customer($grantee)]);
+
+            // Assert
+            expect(DB::table('invoices')->where('id', $id)->exists())->toBeTrue();
+        });
+    });
+});
