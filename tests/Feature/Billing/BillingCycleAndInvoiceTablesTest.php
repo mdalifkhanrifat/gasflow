@@ -510,3 +510,116 @@ describe('invoice amounts', function () {
         expect(DB::table('invoices')->where('id', $id)->value('status'))->toBe('paid');
     });
 });
+
+describe('billing cycle rules (D46)', function () {
+    it('cannot start calculating while its reading period is still open', function () {
+        // Arrange
+        $periodId = TestRecords::readingPeriod();
+        $id = TestRecords::billingCycle($periodId);
+
+        // Act & Assert
+        expect(fn () => moveBillingRow('billing_cycles', $id, ['calculating']))
+            ->toThrow(QueryException::class, "reading_periods {$periodId} is open: billing_cycles in status calculating needs it to be approved or locked");
+    });
+
+    it('may start calculating once its reading period is locked', function () {
+        // Arrange
+        $periodId = TestRecords::approvedReadingPeriod();
+        DB::table('reading_periods')->where('id', $periodId)->update(['status' => 'locked']);
+        $id = TestRecords::billingCycle($periodId);
+
+        // Act
+        moveBillingRow('billing_cycles', $id, ['calculating']);
+
+        // Assert
+        expect(DB::table('billing_cycles')->where('id', $id)->value('status'))->toBe('calculating');
+    });
+
+    it('can still be cancelled while its reading period is open', function () {
+        // Arrange
+        $id = TestRecords::billingCycle(TestRecords::readingPeriod());
+
+        // Act
+        moveBillingRow('billing_cycles', $id, ['cancelled']);
+
+        // Assert
+        expect(DB::table('billing_cycles')->where('id', $id)->value('status'))->toBe('cancelled');
+    });
+
+    it('take new invoices while calculating or in review', function (array $statuses) {
+        // Arrange
+        $id = TestRecords::billingCycle();
+        moveBillingRow('billing_cycles', $id, $statuses);
+
+        // Act
+        TestRecords::invoice($id);
+
+        // Assert
+        expect(DB::table('invoices')->where('billing_cycle_id', $id)->count())->toBe(1);
+    })->with([
+        'calculating' => [['calculating']],
+        'review' => [['calculating', 'review']],
+    ]);
+
+    it('take no new invoice once approved, issued or locked', function (array $statuses) {
+        // Arrange
+        $id = TestRecords::billingCycle();
+        moveBillingRow('billing_cycles', $id, $statuses);
+
+        // Act & Assert
+        expect(fn () => TestRecords::invoice($id))
+            ->toThrow(QueryException::class, 'its invoices can no longer change');
+    })->with([
+        'approved' => [['calculating', 'review', 'approved']],
+        'issued' => [['calculating', 'review', 'approved', 'issued']],
+        'locked' => [['calculating', 'review', 'approved', 'issued', 'locked']],
+    ]);
+
+    it('still let the invoices of a locked cycle be paid', function () {
+        // Arrange
+        $id = TestRecords::billingCycle();
+        $invoiceId = TestRecords::invoice($id);
+        moveBillingRow('invoices', $invoiceId, ['approved', 'issued']);
+        moveBillingRow('billing_cycles', $id, ['calculating', 'review', 'approved', 'issued', 'locked']);
+
+        // Act
+        moveBillingRow('invoices', $invoiceId, ['paid']);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $invoiceId)->value('status'))->toBe('paid');
+    });
+
+    it('cannot be cancelled while an invoice is not void', function () {
+        // Arrange
+        $id = TestRecords::billingCycle();
+        TestRecords::invoice($id);
+
+        // Act & Assert
+        expect(fn () => moveBillingRow('billing_cycles', $id, ['cancelled']))
+            ->toThrow(QueryException::class, "billing_cycles {$id} cannot become cancelled: 1 of its invoices are draft (must be void)");
+    });
+
+    it('can be cancelled once its invoices are void', function () {
+        // Arrange
+        $id = TestRecords::billingCycle();
+        moveBillingRow('invoices', TestRecords::invoice($id), ['void']);
+
+        // Act
+        moveBillingRow('billing_cycles', $id, ['cancelled']);
+
+        // Assert
+        expect(DB::table('billing_cycles')->where('id', $id)->value('status'))->toBe('cancelled');
+    });
+
+    it('freeze the invoices of a cancelled cycle', function () {
+        // Arrange
+        $id = TestRecords::billingCycle();
+        $invoiceId = TestRecords::invoice($id);
+        moveBillingRow('invoices', $invoiceId, ['void']);
+        moveBillingRow('billing_cycles', $id, ['cancelled']);
+
+        // Act & Assert
+        expect(fn () => DB::table('invoices')->where('id', $invoiceId)->update(['due_at' => '2026-12-31 23:59:59+06']))
+            ->toThrow(QueryException::class, "billing_cycles {$id} is cancelled: its invoices can no longer change");
+    });
+});

@@ -257,7 +257,8 @@ and it never changes once saved.
   credit notes and billing disputes, `000036` retroactive rate differences
   per issued gas line and tariff version), then the owner's group 10
   decisions (V7.19, D46): `000037` the generic parent and children status
-  rules.
+  rules, `000038` billing cycle rules: calculate only from an approved
+  period, no new invoices once approved, cancel only with void invoices.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

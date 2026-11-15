@@ -431,15 +431,29 @@ final class TestRecords
     }
 
     /**
+     * The given month of 2026 as an approved reading period of the building
+     * (a new building when none is given), ready to be billed.
+     */
+    public static function approvedReadingPeriod(?int $buildingId = null, int $month = 10): int
+    {
+        $id = self::readingPeriod($buildingId, $month);
+        foreach (['collecting', 'review', 'approved'] as $status) {
+            DB::table('reading_periods')->where('id', $id)->update(['status' => $status]);
+        }
+
+        return $id;
+    }
+
+    /**
      * The draft billing cycle of the reading period's building and month (a
-     * new October 2026 period of a new building when none is given), due 15
-     * days after the month.
+     * new approved October 2026 period of a new building when none is given),
+     * due 15 days after the month.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function billingCycle(?int $readingPeriodId = null, array $overrides = []): int
     {
-        $period = DB::table('reading_periods')->where('id', $readingPeriodId ?? self::readingPeriod())->first();
+        $period = DB::table('reading_periods')->where('id', $readingPeriodId ?? self::approvedReadingPeriod())->first();
 
         return (int) DB::table('billing_cycles')->insertGetId([
             'building_id' => $period->building_id,
