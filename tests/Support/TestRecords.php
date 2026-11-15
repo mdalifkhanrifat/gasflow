@@ -431,6 +431,66 @@ final class TestRecords
     }
 
     /**
+     * The draft billing cycle of the reading period's building and month (a
+     * new October 2026 period of a new building when none is given), due 15
+     * days after the month.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function billingCycle(?int $readingPeriodId = null, array $overrides = []): int
+    {
+        $period = DB::table('reading_periods')->where('id', $readingPeriodId ?? self::readingPeriod())->first();
+
+        return (int) DB::table('billing_cycles')->insertGetId([
+            'building_id' => $period->building_id,
+            'reading_period_id' => $period->id,
+            'period_year' => $period->period_year,
+            'period_month' => $period->period_month,
+            'billing_mode' => 'authorized_meter_billing',
+            'starts_on' => $period->starts_on,
+            'ends_on' => $period->ends_on,
+            'due_on' => now()->parse($period->ends_on)->addDays(15)->toDateString(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A draft invoice of 3,000 BDT in the billing cycle (a new cycle when none
+     * is given) for a new flat of its building and a new customer of the
+     * building's tenant, billed for the building's first gas vendor
+     * assignment (a new one from 2026-01-01 when the building has none).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function invoice(?int $billingCycleId = null, array $overrides = []): int
+    {
+        $cycle = DB::table('billing_cycles')->where('id', $billingCycleId ?? self::billingCycle())->first();
+        $tenantId = DB::table('buildings')->where('id', $cycle->building_id)->value('tenant_organization_id');
+        $assignmentId = DB::table('building_vendor_assignments')->where('building_id', $cycle->building_id)->min('id')
+            ?? self::vendorAssignment($cycle->building_id, '2026-01-01');
+
+        return (int) DB::table('invoices')->insertGetId([
+            'public_id' => strtolower((string) Str::ulid()),
+            'building_id' => $cycle->building_id,
+            'billing_cycle_id' => $cycle->id,
+            'flat_id' => self::flat($cycle->building_id),
+            'customer_id' => self::customer($tenantId),
+            'gas_vendor_organization_id' => DB::table('building_vendor_assignments')->where('id', $assignmentId)->value('vendor_organization_id'),
+            'gas_vendor_name_snapshot' => 'Northstar Gas Services',
+            'building_vendor_assignment_id' => $assignmentId,
+            'invoice_no' => 'INV-'.Str::upper(Str::random(10)),
+            'billing_mode' => $cycle->billing_mode,
+            'customer_name_snapshot' => 'Rahima Begum',
+            'flat_code_snapshot' => 'A-1',
+            'unit_snapshot' => 'm3',
+            'consumption' => 100,
+            'subtotal' => 3000,
+            'total' => 3000,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
