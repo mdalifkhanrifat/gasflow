@@ -254,7 +254,8 @@ and it never changes once saved.
   reading period, cycle and flat, `000033` invoice totals and frozen billed
   fields after draft, `000034` invoice lines: one gas line per rate segment
   with its tariff, days and split method, frozen with their invoice, `000035`
-  credit notes and billing disputes).
+  credit notes and billing disputes, `000036` retroactive rate differences
+  per issued gas line and tariff version).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

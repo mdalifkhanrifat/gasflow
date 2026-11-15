@@ -556,6 +556,31 @@ final class TestRecords
     }
 
     /**
+     * The pending retro difference of the gas line under the tariff version
+     * of its building: the line's days and quantity, billed 3,000 BDT,
+     * recalculated 3,300 BDT.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function retroAdjustment(int $originalLineId, int $tariffVersionId, array $overrides = []): int
+    {
+        $line = DB::table('invoice_lines')->where('id', $originalLineId)->first(['segment_from', 'segment_to', 'quantity']);
+
+        return (int) DB::table('tariff_retro_adjustments')->insertGetId([
+            'building_id' => DB::table('tariff_versions')->where('id', $tariffVersionId)->value('building_id'),
+            'tariff_version_id' => $tariffVersionId,
+            'original_invoice_line_id' => $originalLineId,
+            'segment_from' => $line->segment_from,
+            'segment_to' => $line->segment_to,
+            'quantity' => $line->quantity,
+            'billed_amount' => 3000,
+            'recalculated_amount' => 3300,
+            'difference' => 300,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
