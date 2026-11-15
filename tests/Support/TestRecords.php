@@ -491,6 +491,32 @@ final class TestRecords
     }
 
     /**
+     * A gas line of the invoice for 1–10 October 2026: 100 m3 at 30 BDT,
+     * split by the daily average, priced with the given tariff version (a
+     * new version of the invoice's vendor assignment when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function gasChargeLine(int $invoiceId, ?int $tariffVersionId = null, array $overrides = []): int
+    {
+        return (int) DB::table('invoice_lines')->insertGetId([
+            'invoice_id' => $invoiceId,
+            'line_type' => 'gas_charge',
+            'description' => 'Gas 1–10 Oct at 30.00',
+            'quantity' => 100,
+            'unit' => 'm3',
+            'unit_rate' => 30,
+            'line_total' => 3000,
+            'tariff_version_id' => $tariffVersionId
+                ?? self::tariffVersion(DB::table('invoices')->where('id', $invoiceId)->value('building_vendor_assignment_id')),
+            'segment_from' => '2026-10-01',
+            'segment_to' => '2026-10-10',
+            'split_method' => 'days',
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

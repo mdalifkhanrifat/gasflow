@@ -252,7 +252,8 @@ and it never changes once saved.
   decimals, `000031` splitting a charge by meter readings), 10 billing
   (`2026_11_15_000032` billing cycles and invoices, tied to their building's
   reading period, cycle and flat, `000033` invoice totals and frozen billed
-  fields after draft).
+  fields after draft, `000034` invoice lines: one gas line per rate segment
+  with its tariff, days and split method, frozen with their invoice).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
