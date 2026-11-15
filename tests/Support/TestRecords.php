@@ -517,6 +517,45 @@ final class TestRecords
     }
 
     /**
+     * A credit note of 200 BDT on the invoice (a new draft invoice when none
+     * is given), raised by a new user and waiting for approval.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function creditNote(?int $invoiceId = null, array $overrides = []): int
+    {
+        return (int) DB::table('credit_notes')->insertGetId([
+            'invoice_id' => $invoiceId ?? self::invoice(),
+            'credit_note_no' => 'CN-'.Str::upper(Str::random(10)),
+            'amount' => 200,
+            'reason' => 'Meter read twice',
+            'created_by' => self::user(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * An open dispute of the invoice's customer about the invoice (a new
+     * draft invoice when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function billingDispute(?int $invoiceId = null, array $overrides = []): int
+    {
+        $invoice = DB::table('invoices')->where('id', $invoiceId ?? self::invoice())->first(['id', 'building_id', 'customer_id']);
+
+        return (int) DB::table('billing_disputes')->insertGetId([
+            'building_id' => $invoice->building_id,
+            'invoice_id' => $invoice->id,
+            'customer_id' => $invoice->customer_id,
+            'dispute_no' => 'DSP-'.Str::upper(Str::random(10)),
+            'category' => 'reading',
+            'description' => 'The reading on the bill is higher than my meter shows.',
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
