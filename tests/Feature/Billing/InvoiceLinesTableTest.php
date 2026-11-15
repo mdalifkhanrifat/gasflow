@@ -44,7 +44,7 @@ describe('lifecycle registration', function () {
 describe('gas lines', function () {
     it('record the rate, the days and how the quantity was split', function () {
         // Arrange
-        $tariffId = TestRecords::tariffVersion(DB::table('invoices')->where('id', $this->invoiceId)->value('building_vendor_assignment_id'));
+        $tariffId = TestRecords::approvedTariffVersion(DB::table('invoices')->where('id', $this->invoiceId)->value('building_vendor_assignment_id'), 'HOMES');
 
         // Act
         $id = TestRecords::gasChargeLine($this->invoiceId, $tariffId, ['split_method' => 'own_meter']);
@@ -142,24 +142,23 @@ describe('other lines', function () {
     describe('retro adjustments', function () {
         beforeEach(function () {
             $this->originalLineId = TestRecords::gasChargeLine($this->invoiceId);
-            $this->assignmentId = DB::table('invoices')->where('id', $this->invoiceId)->value('building_vendor_assignment_id');
-            $this->supplementaryId = TestRecords::invoice(
-                DB::table('invoices')->where('id', $this->invoiceId)->value('billing_cycle_id'),
-                ['segment_no' => 2, 'subtotal' => 300, 'total' => 300],
-            );
-        });
-
-        it('name the new rate and the line they correct', function (string $column) {
-            // Arrange
-            $row = [
+            TestRecords::moveInvoice($this->invoiceId, ['approved', 'issued']);
+            $this->original = DB::table('invoices')->where('id', $this->invoiceId)->first();
+            $this->retroTariffId = TestRecords::approvedTariffVersion($this->original->building_vendor_assignment_id, 'RETRO');
+            $this->supplementaryId = TestRecords::invoice($this->original->billing_cycle_id, ['flat_id' => $this->original->flat_id, 'segment_no' => 2]);
+            $this->row = [
                 'invoice_id' => $this->supplementaryId,
                 'line_type' => 'retro_adjustment',
                 'description' => 'Retro rate 1–10 Oct',
                 'line_total' => 300,
-                'tariff_version_id' => TestRecords::tariffVersion($this->assignmentId),
+                'tariff_version_id' => $this->retroTariffId,
                 'adjusts_invoice_line_id' => $this->originalLineId,
-                $column => null,
             ];
+        });
+
+        it('name the new rate and the line they correct', function (string $column) {
+            // Arrange
+            $row = [...$this->row, $column => null];
 
             // Act & Assert
             expect(fn () => DB::table('invoice_lines')->insert($row))
@@ -167,23 +166,117 @@ describe('other lines', function () {
         })->with(['tariff_version_id', 'adjusts_invoice_line_id']);
 
         it('bill the difference on a supplementary invoice', function () {
-            // Arrange
-            $row = [
-                'invoice_id' => $this->supplementaryId,
-                'line_type' => 'retro_adjustment',
-                'description' => 'Retro rate 1–10 Oct',
-                'line_total' => 300,
-                'tariff_version_id' => TestRecords::tariffVersion($this->assignmentId),
-                'adjusts_invoice_line_id' => $this->originalLineId,
-            ];
-
             // Act
-            $id = DB::table('invoice_lines')->insertGetId($row);
+            $id = DB::table('invoice_lines')->insertGetId([...$this->row, 'segment_from' => '2026-10-05', 'segment_to' => '2026-10-10']);
 
             // Assert
             expect(DB::table('invoice_lines')->where('id', $id)->value('adjusts_invoice_line_id'))->toBe($this->originalLineId);
         });
+
+        it('bill an earlier month\'s difference in a later cycle', function () {
+            // Arrange
+            $novemberCycleId = TestRecords::billingCycle(TestRecords::approvedReadingPeriod($this->original->building_id, 11));
+            $laterInvoiceId = TestRecords::invoice($novemberCycleId, ['flat_id' => $this->original->flat_id]);
+
+            // Act
+            $id = DB::table('invoice_lines')->insertGetId(
+                [...$this->row, 'invoice_id' => $laterInvoiceId, 'segment_from' => '2026-10-01', 'segment_to' => '2026-10-10'],
+            );
+
+            // Assert
+            expect(DB::table('invoice_lines')->where('id', $id)->value('segment_to'))->toBe('2026-10-10');
+        });
+
+        it('correct only a gas line (D46)', function () {
+            // Arrange
+            $serviceLineId = DB::table('invoice_lines')->insertGetId(
+                ['invoice_id' => TestRecords::invoice($this->original->billing_cycle_id, ['flat_id' => $this->original->flat_id, 'segment_no' => 3]), 'line_type' => 'service_charge', 'description' => 'Service', 'line_total' => 100],
+            );
+
+            // Act & Assert
+            expect(fn () => DB::table('invoice_lines')->insert([...$this->row, 'adjusts_invoice_line_id' => $serviceLineId]))
+                ->toThrow(QueryException::class, 'corrects a gas line, not a service_charge line');
+        });
+
+        it('correct only a line of the same flat (D46)', function () {
+            // Arrange
+            $otherFlatInvoiceId = TestRecords::invoice($this->original->billing_cycle_id, ['segment_no' => 2]);
+
+            // Act & Assert
+            expect(fn () => DB::table('invoice_lines')->insert([...$this->row, 'invoice_id' => $otherFlatInvoiceId]))
+                ->toThrow(QueryException::class, 'belongs to another flat or vendor assignment');
+        });
+
+        it('correct only a line of an issued invoice (D46)', function () {
+            // Arrange
+            $draftLineId = TestRecords::gasChargeLine(TestRecords::invoice($this->original->billing_cycle_id, ['flat_id' => $this->original->flat_id, 'segment_no' => 3]));
+
+            // Act & Assert
+            expect(fn () => DB::table('invoice_lines')->insert([...$this->row, 'adjusts_invoice_line_id' => $draftLineId]))
+                ->toThrow(QueryException::class, 'is draft: only issued lines get a retro adjustment');
+        });
+
+        it('stay inside the days of the corrected line (D46)', function () {
+            // Act & Assert
+            expect(fn () => DB::table('invoice_lines')->insert([...$this->row, 'segment_from' => '2026-10-05', 'segment_to' => '2026-10-12']))
+                ->toThrow(QueryException::class, 'outside the corrected line');
+        });
+
+        it('are the only lines that name a corrected line (D46)', function () {
+            // Act & Assert
+            expect(fn () => TestRecords::gasChargeLine($this->supplementaryId, overrides: ['adjusts_invoice_line_id' => $this->originalLineId]))
+                ->toThrow(QueryException::class, 'ck_invoice_lines_adjusts_only_retro');
+        });
     });
+});
+
+describe('gas line days and rate (D46)', function () {
+    beforeEach(function () {
+        $this->assignmentId = DB::table('invoices')->where('id', $this->invoiceId)->value('building_vendor_assignment_id');
+    });
+
+    it('refuse a draft rate', function () {
+        // Arrange
+        $draftId = TestRecords::tariffVersion($this->assignmentId, overrides: ['tariff_code' => 'DRAFT']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::gasChargeLine($this->invoiceId, $draftId))
+            ->toThrow(QueryException::class, "Tariff version {$draftId} is draft");
+    });
+
+    it('accept a rate that was retired after it priced these days', function () {
+        // Arrange
+        $tariffId = TestRecords::approvedTariffVersion($this->assignmentId, 'OLD');
+        DB::table('tariff_versions')->where('id', $tariffId)->update(['status' => 'retired']);
+
+        // Act
+        $id = TestRecords::gasChargeLine($this->invoiceId, $tariffId);
+
+        // Assert
+        expect(DB::table('invoice_lines')->where('id', $id)->value('tariff_version_id'))->toBe($tariffId);
+    });
+
+    it('refuse days outside the rate', function (array $rate) {
+        // Arrange
+        $tariffId = TestRecords::tariffVersion($this->assignmentId, $rate[0], ['tariff_code' => 'SHORT', 'effective_to' => $rate[1]]);
+        DB::table('tariff_versions')->where('id', $tariffId)->update(['status' => 'approved']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::gasChargeLine($this->invoiceId, $tariffId))
+            ->toThrow(QueryException::class, "outside tariff version {$tariffId}");
+    })->with([
+        'rate starts later' => [['2026-10-05', null]],
+        'rate ends earlier' => [['2026-01-01', '2026-10-05']],
+    ]);
+
+    it('refuse days outside the billing cycle', function (array $days) {
+        // Act & Assert
+        expect(fn () => TestRecords::gasChargeLine($this->invoiceId, overrides: ['segment_from' => $days[0], 'segment_to' => $days[1]]))
+            ->toThrow(QueryException::class, 'outside the billing cycle');
+    })->with([
+        'before' => [['2026-09-30', '2026-10-10']],
+        'after' => [['2026-10-20', '2026-11-01']],
+    ]);
 });
 
 describe('lines of a closed invoice', function () {

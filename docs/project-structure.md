@@ -262,7 +262,9 @@ and it never changes once saved.
   `000039` an invoice's billing mode is its cycle's and its customer is the
   billed occupant or of an organization with access to the building,
   `000040` an invoice leaves draft only when its amounts are the sums of its
-  lines (`invoice_line_totals()`).
+  lines (`invoice_line_totals()`), `000041` a line's rate is approved and
+  covers its days, a gas line stays inside its cycle, and a retro line
+  corrects an issued gas line of the same flat and vendor.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

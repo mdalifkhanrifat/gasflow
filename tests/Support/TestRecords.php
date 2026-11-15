@@ -375,17 +375,19 @@ final class TestRecords
     }
 
     /**
-     * The approved general DOMESTIC tariff version of the vendor assignment,
-     * from the assignment's start (created and approved on first use).
+     * The approved general tariff version of the vendor assignment for the
+     * tariff code, from the assignment's start (created and approved on first
+     * use).
      */
-    public static function approvedTariffVersion(int $vendorAssignmentId): int
+    public static function approvedTariffVersion(int $vendorAssignmentId, string $tariffCode = 'DOMESTIC'): int
     {
         $id = DB::table('tariff_versions')->where('building_vendor_assignment_id', $vendorAssignmentId)
-            ->where('tariff_code', 'DOMESTIC')->whereNull('customer_category')->whereIn('status', ['approved', 'active'])->value('id');
+            ->where('tariff_code', $tariffCode)->whereNull('customer_category')->whereIn('status', ['approved', 'active'])->value('id');
         if ($id !== null) {
             return (int) $id;
         }
-        $id = self::tariffVersion($vendorAssignmentId, (string) DB::table('building_vendor_assignments')->where('id', $vendorAssignmentId)->value('valid_from'));
+        $id = self::tariffVersion($vendorAssignmentId, (string) DB::table('building_vendor_assignments')->where('id', $vendorAssignmentId)->value('valid_from'),
+            ['tariff_code' => $tariffCode]);
         DB::table('tariff_versions')->where('id', $id)->update(['status' => 'approved']);
 
         return $id;
