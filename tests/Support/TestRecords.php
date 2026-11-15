@@ -570,15 +570,30 @@ final class TestRecords
     }
 
     /**
-     * A credit note of 200 BDT on the invoice (a new draft invoice when none
-     * is given), raised by a new user and waiting for approval.
+     * An issued invoice of 3,000 BDT with one gas line, in the billing cycle
+     * (a new cycle when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function issuedInvoice(?int $billingCycleId = null, array $overrides = []): int
+    {
+        $id = self::invoice($billingCycleId, $overrides);
+        self::gasChargeLine($id);
+        self::moveInvoice($id, ['approved', 'issued']);
+
+        return $id;
+    }
+
+    /**
+     * A credit note of 200 BDT on the invoice (a new issued invoice of 3,000
+     * BDT when none is given), raised by a new user and waiting for approval.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function creditNote(?int $invoiceId = null, array $overrides = []): int
     {
         return (int) DB::table('credit_notes')->insertGetId([
-            'invoice_id' => $invoiceId ?? self::invoice(),
+            'invoice_id' => $invoiceId ?? self::issuedInvoice(),
             'credit_note_no' => 'CN-'.Str::upper(Str::random(10)),
             'amount' => 200,
             'reason' => 'Meter read twice',

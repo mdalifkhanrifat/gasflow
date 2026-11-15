@@ -264,7 +264,9 @@ and it never changes once saved.
   `000040` an invoice leaves draft only when its amounts are the sums of its
   lines (`invoice_line_totals()`), `000041` a line's rate is approved and
   covers its days, a gas line stays inside its cycle, and a retro line
-  corrects an issued gas line of the same flat and vendor.
+  corrects an issued gas line of the same flat and vendor, `000042` credit
+  notes only on issued invoices, frozen once decided, never more than the
+  invoice total.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

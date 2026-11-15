@@ -143,3 +143,119 @@ describe('billing disputes', function () {
         expect(DB::table('billing_disputes')->where('id', $id)->value('status'))->toBe($status);
     })->with(['resolved', 'rejected', 'closed']);
 });
+
+describe('credit note limits (D46)', function () {
+    beforeEach(function () {
+        $this->invoiceId = TestRecords::issuedInvoice();
+    });
+
+    it('are refused on an invoice that was not issued', function (array $statuses) {
+        // Arrange
+        $invoiceId = TestRecords::invoice();
+        TestRecords::moveInvoice($invoiceId, $statuses);
+
+        // Act & Assert
+        expect(fn () => TestRecords::creditNote($invoiceId, ['amount' => 1]))
+            ->toThrow(QueryException::class, 'credit_notes in status pending_approval needs it to be issued or partially_paid or paid or overdue');
+    })->with([
+        'draft' => [[]],
+        'approved' => [['approved']],
+        'void' => [['void']],
+    ]);
+
+    it('cannot be approved once the invoice is written off', function () {
+        // Arrange
+        $id = TestRecords::creditNote($this->invoiceId);
+        DB::table('invoices')->where('id', $this->invoiceId)->update(['status' => 'written_off']);
+
+        // Act & Assert
+        expect(fn () => DB::table('credit_notes')->where('id', $id)->update(['status' => 'approved']))
+            ->toThrow(QueryException::class, 'is written_off: credit_notes in status approved');
+    });
+
+    it('can still be rejected once the invoice is written off', function () {
+        // Arrange
+        $id = TestRecords::creditNote($this->invoiceId);
+        DB::table('invoices')->where('id', $this->invoiceId)->update(['status' => 'written_off']);
+
+        // Act
+        DB::table('credit_notes')->where('id', $id)->update(['status' => 'rejected']);
+
+        // Assert
+        expect(DB::table('credit_notes')->where('id', $id)->value('status'))->toBe('rejected');
+    });
+
+    it('refuse an amount larger than the invoice total', function () {
+        // Act & Assert
+        expect(fn () => TestRecords::creditNote($this->invoiceId, ['amount' => 3000.01]))
+            ->toThrow(QueryException::class, 'is larger than the invoice total 3000.00');
+    });
+
+    it('may credit the whole invoice', function () {
+        // Arrange
+        $id = TestRecords::creditNote($this->invoiceId, ['amount' => 3000]);
+
+        // Act
+        DB::table('credit_notes')->where('id', $id)->update(['status' => 'approved']);
+
+        // Assert
+        expect(DB::table('credit_notes')->where('id', $id)->value('status'))->toBe('approved');
+    });
+
+    it('refuse an approval that would credit more than the invoice total', function (string $earlierStatus) {
+        // Arrange
+        $earlierId = TestRecords::creditNote($this->invoiceId, ['amount' => 2000]);
+        DB::table('credit_notes')->where('id', $earlierId)->update(['status' => 'approved']);
+        if ($earlierStatus === 'applied') {
+            DB::table('credit_notes')->where('id', $earlierId)->update(['status' => 'applied']);
+        }
+        $id = TestRecords::creditNote($this->invoiceId, ['amount' => 1500]);
+
+        // Act & Assert
+        expect(fn () => DB::table('credit_notes')->where('id', $id)->update(['status' => 'approved']))
+            ->toThrow(QueryException::class, 'would credit 3500.00 of invoice total 3000.00 (2000.00 already credited)');
+    })->with(['approved', 'applied']);
+
+    it('do not count pending, rejected or other invoices\' notes against the total', function () {
+        // Arrange
+        TestRecords::creditNote($this->invoiceId, ['amount' => 2500]);
+        $rejectedId = TestRecords::creditNote($this->invoiceId, ['amount' => 2500]);
+        DB::table('credit_notes')->where('id', $rejectedId)->update(['status' => 'rejected']);
+        $otherId = TestRecords::creditNote(overrides: ['amount' => 2500]);
+        DB::table('credit_notes')->where('id', $otherId)->update(['status' => 'approved']);
+        $id = TestRecords::creditNote($this->invoiceId, ['amount' => 2500]);
+
+        // Act
+        DB::table('credit_notes')->where('id', $id)->update(['status' => 'approved']);
+
+        // Assert
+        expect(DB::table('credit_notes')->where('id', $id)->value('status'))->toBe('approved');
+    });
+
+    it('can change their amount while pending', function () {
+        // Arrange
+        $id = TestRecords::creditNote($this->invoiceId);
+
+        // Act
+        DB::table('credit_notes')->where('id', $id)->update(['amount' => 250]);
+
+        // Assert
+        expect(DB::table('credit_notes')->where('id', $id)->value('amount'))->toBe('250.00');
+    });
+
+    it('keep what they credit once decided', function (Closure $change) {
+        // Arrange
+        $id = TestRecords::creditNote($this->invoiceId);
+        DB::table('credit_notes')->where('id', $id)->update(['status' => 'approved']);
+
+        // Act & Assert
+        expect(fn () => DB::table('credit_notes')->where('id', $id)->update($change()))
+            ->toThrow(QueryException::class, 'can no longer change');
+    })->with([
+        'amount' => fn () => ['amount' => 100],
+        'reason' => fn () => ['reason' => 'Changed my mind'],
+        'number' => fn () => ['credit_note_no' => 'CN-CHANGED'],
+        'invoice' => fn () => ['invoice_id' => TestRecords::issuedInvoice()],
+        'approval' => fn () => ['approved_by' => TestRecords::user()],
+    ]);
+});

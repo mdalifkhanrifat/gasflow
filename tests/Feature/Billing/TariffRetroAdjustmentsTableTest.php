@@ -16,6 +16,7 @@ beforeEach(function () {
     $this->invoiceId = TestRecords::invoice();
     $this->assignmentId = DB::table('invoices')->where('id', $this->invoiceId)->value('building_vendor_assignment_id');
     $this->lineId = TestRecords::gasChargeLine($this->invoiceId);
+    TestRecords::moveInvoice($this->invoiceId, ['approved', 'issued']);
     $this->retroTariffId = TestRecords::tariffVersion($this->assignmentId, overrides: ['rate' => 33]);
 });
 
