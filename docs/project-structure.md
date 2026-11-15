@@ -267,7 +267,8 @@ and it never changes once saved.
   corrects an issued gas line of the same flat and vendor, `000042` credit
   notes only on issued invoices, frozen once decided, never more than the
   invoice total, `000043` retro adjustments tied to an issued gas line of
-  their building and to their settlement, frozen once decided.
+  their building and to their settlement, frozen once decided, `000044` a
+  dispute is raised by the invoice's own customer.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

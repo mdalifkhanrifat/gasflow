@@ -123,6 +123,18 @@ describe('billing disputes', function () {
             ->toThrow(QueryException::class, 'fk_billing_dispute_invoice');
     });
 
+    it('refuse a customer other than the invoice\'s (D46)', function () {
+        // Arrange
+        $invoiceId = TestRecords::invoice();
+        $tenantId = DB::table('invoices')->join('buildings', 'buildings.id', '=', 'invoices.building_id')
+            ->where('invoices.id', $invoiceId)->value('buildings.tenant_organization_id');
+        $row = ['customer_id' => TestRecords::customer($tenantId)];
+
+        // Act & Assert
+        expect(fn () => TestRecords::billingDispute($invoiceId, $row))
+            ->toThrow(QueryException::class, 'fk_billing_dispute_invoice');
+    });
+
     it('refuse a number that is already used', function () {
         // Arrange
         TestRecords::billingDispute(overrides: ['dispute_no' => 'DSP-2026-0001']);
