@@ -251,7 +251,8 @@ and it never changes once saved.
   the tariff timeline functions, `000029` the gas supply change register, `000030` charge quantities with six
   decimals, `000031` splitting a charge by meter readings), 10 billing
   (`2026_11_15_000032` billing cycles and invoices, tied to their building's
-  reading period, cycle and flat).
+  reading period, cycle and flat, `000033` invoice totals and frozen billed
+  fields after draft).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

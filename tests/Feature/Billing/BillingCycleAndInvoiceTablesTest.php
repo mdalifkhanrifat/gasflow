@@ -373,3 +373,140 @@ describe('invoices', function () {
         });
     });
 });
+
+describe('invoice amounts', function () {
+    beforeEach(function () {
+        $this->cycleId = TestRecords::billingCycle();
+    });
+
+    it('refuse a total that is not subtotal plus tax minus discount and credit', function () {
+        // Arrange
+        $row = ['subtotal' => 3000, 'tax_total' => 150, 'discount_total' => 100, 'credit_total' => 50, 'total' => 3100];
+
+        // Act & Assert
+        expect(fn () => TestRecords::invoice($this->cycleId, $row))
+            ->toThrow(QueryException::class, 'ck_invoices_total_sum');
+    });
+
+    it('accept a total that is subtotal plus tax minus discount and credit', function () {
+        // Arrange
+        $row = ['subtotal' => 3000, 'tax_total' => 150, 'discount_total' => 100, 'credit_total' => 50, 'total' => 3000];
+
+        // Act
+        $id = TestRecords::invoice($this->cycleId, $row);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $id)->value('total'))->toBe('3000.00');
+    });
+
+    it('refuse a negative discount or credit, which would add to the total', function (string $column, string $constraint) {
+        // Arrange
+        $row = [$column => -100, 'total' => 3100];
+
+        // Act & Assert
+        expect(fn () => TestRecords::invoice($this->cycleId, $row))
+            ->toThrow(QueryException::class, $constraint);
+    })->with([
+        ['discount_total', 'ck_invoices_discount_total'],
+        ['credit_total', 'ck_invoices_credit_total'],
+    ]);
+
+    it('let a draft change what it bills', function () {
+        // Arrange
+        $id = TestRecords::invoice($this->cycleId);
+
+        // Act
+        DB::table('invoices')->where('id', $id)->update(['consumption' => 120, 'subtotal' => 3600, 'total' => 3600]);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $id)->value('total'))->toBe('3600.00');
+    });
+
+    it('let a draft get its final amounts in the update that approves it', function () {
+        // Arrange
+        $id = TestRecords::invoice($this->cycleId);
+
+        // Act
+        DB::table('invoices')->where('id', $id)->update(['status' => 'approved', 'subtotal' => 3600, 'total' => 3600]);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $id)->first())
+            ->status->toBe('approved')
+            ->total->toBe('3600.00');
+    });
+
+    it('freeze what an approved invoice bills', function (Closure $change) {
+        // Arrange
+        $id = TestRecords::invoice($this->cycleId);
+        moveBillingRow('invoices', $id, ['approved']);
+
+        // Act & Assert
+        expect(fn () => DB::table('invoices')->where('id', $id)->update($change()))
+            ->toThrow(QueryException::class, 'can no longer change');
+    })->with([
+        'amounts' => fn () => ['subtotal' => 2000, 'total' => 2000],
+        'discount' => fn () => ['discount_total' => 100, 'total' => 2900],
+        'credit' => fn () => ['credit_total' => 100, 'total' => 2900],
+        'tax' => fn () => ['tax_total' => 150, 'total' => 3150],
+        'number' => fn () => ['invoice_no' => 'INV-CHANGED'],
+        'currency' => fn () => ['currency' => 'USD'],
+        'consumption' => fn () => ['consumption' => 120],
+        'readings' => fn () => ['previous_reading' => 10, 'current_reading' => 110],
+        'customer' => fn () => ['customer_id' => TestRecords::customer()],
+        'customer name' => fn () => ['customer_name_snapshot' => 'Someone else'],
+        'vendor name' => fn () => ['gas_vendor_name_snapshot' => 'Other Gas Ltd'],
+        'tariff snapshot' => fn () => ['tariff_rate_snapshot' => 35],
+        'segment' => fn () => ['segment_no' => 2],
+    ]);
+
+    it('freeze every column of an approved invoice except its status, due date and issue time', function () {
+        // Arrange
+        $mayChange = ['id', 'status', 'due_at', 'issued_at', 'is_active', 'is_deleted', 'deleted_at', 'created_at', 'updated_at',
+            'created_by', 'updated_by', 'created_session_id', 'updated_session_id'];
+        $columns = DB::table('information_schema.columns')->where('table_name', 'invoices')->pluck('column_name')->all();
+
+        // Act
+        $definition = DB::selectOne(
+            "select pg_get_triggerdef(oid) as definition from pg_trigger where tgname = 'trg_invoices_freeze_billed'",
+        )->definition;
+        preg_match_all("/'([a-z_]+)'/", $definition, $arguments);
+
+        // Assert
+        expect(array_slice($arguments[1], 1))->toEqualCanonicalizing(array_values(array_diff($columns, $mayChange)));
+    });
+
+    it('set the issue time once, when the approved invoice is issued', function () {
+        // Arrange
+        $id = TestRecords::invoice($this->cycleId);
+        moveBillingRow('invoices', $id, ['approved']);
+
+        // Act
+        DB::table('invoices')->where('id', $id)->update(['status' => 'issued', 'issued_at' => '2026-11-01 10:00:00+06']);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $id)->value('status'))->toBe('issued');
+    });
+
+    it('keep the issue time of an issued invoice', function () {
+        // Arrange
+        $id = TestRecords::invoice($this->cycleId);
+        moveBillingRow('invoices', $id, ['approved']);
+        DB::table('invoices')->where('id', $id)->update(['status' => 'issued', 'issued_at' => '2026-11-01 10:00:00+06']);
+
+        // Act & Assert
+        expect(fn () => DB::table('invoices')->where('id', $id)->update(['issued_at' => '2026-11-05 10:00:00+06']))
+            ->toThrow(QueryException::class, 'issued_at can no longer change');
+    });
+
+    it('still let an issued invoice be paid or given more time', function () {
+        // Arrange
+        $id = TestRecords::invoice($this->cycleId);
+        moveBillingRow('invoices', $id, ['approved', 'issued']);
+
+        // Act
+        DB::table('invoices')->where('id', $id)->update(['status' => 'paid', 'due_at' => '2026-12-31 23:59:59+06']);
+
+        // Assert
+        expect(DB::table('invoices')->where('id', $id)->value('status'))->toBe('paid');
+    });
+});
