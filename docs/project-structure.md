@@ -289,7 +289,9 @@ and it never changes once saved.
   `invoice_balance()`: a payment never gives more than it has, an invoice is
   never settled beyond its total, an invoice's status says what its balance
   says (checked again at COMMIT), a payment is refunded only when all of it
-  was given back, and a paid invoice may go back after a reversal.
+  was given back, and a paid invoice may go back after a reversal, `000052`
+  payment attempts for their payment's amount and currency, with enforced
+  transitions, and frozen once decided.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

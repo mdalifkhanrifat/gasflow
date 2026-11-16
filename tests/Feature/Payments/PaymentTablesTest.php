@@ -26,6 +26,16 @@ function movePayment(int $id, array $statuses): void
     }
 }
 
+/**
+ * Moves an attempt to the status, writing the given columns in the same update.
+ *
+ * @param  array<string, mixed>  $columns
+ */
+function moveAttempt(int $id, string $status, array $columns = []): void
+{
+    DB::table('payment_attempts')->where('id', $id)->update(['status' => $status, ...$columns]);
+}
+
 describe('lifecycle registration', function () {
     it('registers each table with the policies of the design', function (string $table, array $expected) {
         // Arrange: migration group 11 has run
@@ -38,7 +48,7 @@ describe('lifecycle registration', function () {
             ->toBe($expected);
     })->with([
         ['payments', ['payments', 'financial', 'protected', 'forbidden', true, 'initiated']],
-        ['payment_attempts', ['payments', 'financial', 'protected', 'forbidden', false, 'initiated']],
+        ['payment_attempts', ['payments', 'financial', 'protected', 'forbidden', true, 'initiated']],
     ]);
 
     it('can never delete or hide a row', function (string $table, Closure $create) {
@@ -438,5 +448,83 @@ describe('payment statuses and their children (D47)', function () {
 
         // Assert
         expect(DB::table('payments')->where('id', $paymentId)->value('status'))->toBe('reversed');
+    });
+});
+
+describe('payment attempts follow their payment (D47)', function () {
+    it('refuse an amount or currency other than the payment\'s', function (array $row) {
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt(overrides: $row))
+            ->toThrow(QueryException::class, 'fk_payment_attempt_payment_amount');
+    })->with([
+        'amount' => [['amount' => 2999]],
+        'currency' => [['currency' => 'USD']],
+    ]);
+
+    it('succeed after waiting, with what the provider confirmed', function () {
+        // Arrange
+        $id = TestRecords::paymentAttempt();
+        moveAttempt($id, 'pending');
+
+        // Act
+        moveAttempt($id, 'succeeded', ['provider_transaction_id' => 'TRX9A8B7C6D', 'verified_at' => now()]);
+
+        // Assert
+        expect(DB::table('payment_attempts')->where('id', $id)->value('status'))->toBe('succeeded');
+    });
+
+    it('cannot succeed without the provider transaction and verification', function (array $columns) {
+        // Arrange
+        $id = TestRecords::paymentAttempt();
+
+        // Act & Assert
+        expect(fn () => moveAttempt($id, 'succeeded', $columns))
+            ->toThrow(QueryException::class, 'ck_payment_attempts_succeeded');
+    })->with([
+        'no transaction' => [['verified_at' => '2026-11-16 10:00:00+06']],
+        'no verification' => [['provider_transaction_id' => 'TRX1']],
+    ]);
+
+    it('cannot change once decided', function (string $status, string $next) {
+        // Arrange
+        $id = TestRecords::paymentAttempt();
+        moveAttempt($id, $status, ['provider_transaction_id' => 'TRX1', 'verified_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => moveAttempt($id, $next))
+            ->toThrow(QueryException::class, "Status transition {$status} -> {$next} is not allowed");
+    })->with([
+        'succeeded back to initiated' => ['succeeded', 'initiated'],
+        'succeeded to failed' => ['succeeded', 'failed'],
+        'failed to succeeded' => ['failed', 'succeeded'],
+        'expired to pending' => ['expired', 'pending'],
+    ]);
+
+    it('keep what the provider confirmed once decided', function (string $column, string $value) {
+        // Arrange
+        $id = TestRecords::paymentAttempt();
+        moveAttempt($id, 'succeeded', ['provider_transaction_id' => 'TRX1', 'verified_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => DB::table('payment_attempts')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "payment_attempts {$id} is succeeded: {$column} can no longer change");
+    })->with([
+        'transaction' => ['provider_transaction_id', 'TRX2'],
+        'verification' => ['verified_at', '2026-01-01 10:00:00+06'],
+        'idempotency key' => ['idempotency_key', '0195f2a4-7c1e-7b3a-9d2f-4e6a8b0c1d2e'],
+        'request reference' => ['request_reference', 'REQ-2'],
+        'provider' => ['provider', 'nagad'],
+    ]);
+
+    it('still take more provider metadata once decided', function () {
+        // Arrange
+        $id = TestRecords::paymentAttempt();
+        moveAttempt($id, 'succeeded', ['provider_transaction_id' => 'TRX1', 'verified_at' => now()]);
+
+        // Act
+        DB::table('payment_attempts')->where('id', $id)->update(['provider_metadata' => '{"settled":true}']);
+
+        // Assert
+        expect(DB::table('payment_attempts')->where('id', $id)->value('provider_metadata'))->toBe('{"settled": true}');
     });
 });
