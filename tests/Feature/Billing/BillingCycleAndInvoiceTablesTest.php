@@ -320,12 +320,15 @@ describe('invoices', function () {
     });
 
     describe('status', function () {
-        it('reach paid through approval and issue', function () {
+        it('reach paid through approval, issue and payments', function () {
             // Arrange
             $id = TestRecords::invoice($this->cycleId);
+            TestRecords::gasChargeLine($id);
+            TestRecords::moveInvoice($id, ['approved', 'issued']);
 
             // Act
-            moveBillingRow('invoices', $id, ['approved', 'issued', 'partially_paid', 'paid']);
+            TestRecords::payInvoice($id, 1000);
+            TestRecords::payInvoice($id);
 
             // Assert
             expect(DB::table('invoices')->where('id', $id)->value('status'))->toBe('paid');
@@ -363,7 +366,8 @@ describe('invoices', function () {
         it('can be written off once overdue', function () {
             // Arrange
             $id = TestRecords::invoice($this->cycleId);
-            moveBillingRow('invoices', $id, ['approved', 'issued', 'overdue']);
+            TestRecords::gasChargeLine($id);
+            TestRecords::moveInvoice($id, ['approved', 'issued', 'overdue']);
 
             // Act
             moveBillingRow('invoices', $id, ['written_off']);

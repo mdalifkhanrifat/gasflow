@@ -10,13 +10,18 @@ use Illuminate\Support\Facades\DB;
 use Tests\Support\TestRecords;
 
 /**
- * Moves a payment along the given statuses, one enforced transition at a time.
+ * Moves a payment along the given statuses, one enforced transition at a
+ * time. A succeeded payment is first given back in full before it becomes
+ * refunded, as the refund action does.
  *
  * @param  list<string>  $statuses
  */
 function movePayment(int $id, array $statuses): void
 {
     foreach ($statuses as $status) {
+        if ($status === 'refunded' && DB::table('payments')->where('id', $id)->value('status') === 'succeeded') {
+            TestRecords::completeRefund($id);
+        }
         DB::table('payments')->where('id', $id)->update(['status' => $status]);
     }
 }

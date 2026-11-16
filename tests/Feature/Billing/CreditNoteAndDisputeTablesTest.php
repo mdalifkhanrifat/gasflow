@@ -225,7 +225,7 @@ describe('credit note limits (D46)', function () {
 
         // Act & Assert
         expect(fn () => DB::table('credit_notes')->where('id', $id)->update(['status' => 'approved']))
-            ->toThrow(QueryException::class, 'would credit 3500.00 of invoice total 3000.00 (2000.00 already credited)');
+            ->toThrow(QueryException::class, 'of 3000.00 would be settled beyond its total: 3500.00 credited and 0.00 paid');
     })->with(['approved', 'applied']);
 
     it('do not count pending, rejected or other invoices\' notes against the total', function () {

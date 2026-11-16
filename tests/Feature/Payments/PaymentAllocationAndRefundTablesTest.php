@@ -385,27 +385,30 @@ describe('allocation status and changes (D47)', function () {
 });
 
 describe('parent statuses (D47)', function () {
-    it('allocate only to an issued, partially paid or overdue invoice', function (array $statuses, string $status) {
+    it('allocate only to an issued, partially paid or overdue invoice', function (Closure $move, string $status) {
         // Arrange
         $invoiceId = TestRecords::invoice();
         TestRecords::gasChargeLine($invoiceId);
-        TestRecords::moveInvoice($invoiceId, $statuses);
+        $move($invoiceId);
 
         // Act & Assert
         expect(fn () => TestRecords::paymentAllocation($invoiceId))
             ->toThrow(QueryException::class, "invoices {$invoiceId} is {$status}: payment_allocations in status active needs it to be issued or partially_paid or overdue");
     })->with([
-        'draft' => [[], 'draft'],
-        'approved' => [['approved'], 'approved'],
-        'void' => [['void'], 'void'],
-        'paid' => [['approved', 'issued', 'paid'], 'paid'],
-        'written off' => [['approved', 'issued', 'written_off'], 'written_off'],
+        'draft' => [fn (int $id) => TestRecords::moveInvoice($id, []), 'draft'],
+        'approved' => [fn (int $id) => TestRecords::moveInvoice($id, ['approved']), 'approved'],
+        'void' => [fn (int $id) => TestRecords::moveInvoice($id, ['void']), 'void'],
+        'paid' => [function (int $id) {
+            TestRecords::moveInvoice($id, ['approved', 'issued']);
+            TestRecords::payInvoice($id);
+        }, 'paid'],
+        'written off' => [fn (int $id) => TestRecords::moveInvoice($id, ['approved', 'issued', 'written_off']), 'written_off'],
     ]);
 
     it('allocate to a partially paid or overdue invoice', function (string $status) {
         // Arrange
         $invoiceId = TestRecords::issuedInvoice();
-        TestRecords::moveInvoice($invoiceId, [$status]);
+        $status === 'partially_paid' ? TestRecords::payInvoice($invoiceId, 500) : TestRecords::moveInvoice($invoiceId, [$status]);
 
         // Act
         $id = TestRecords::paymentAllocation($invoiceId);
@@ -419,6 +422,9 @@ describe('parent statuses (D47)', function () {
         $invoiceId = TestRecords::issuedInvoice();
         $paymentId = TestRecords::receivedPayment($invoiceId, ['status' => 'initiated']);
         foreach ($statuses as $next) {
+            if ($next === 'refunded') {
+                TestRecords::completeRefund($paymentId);
+            }
             DB::table('payments')->where('id', $paymentId)->update(['status' => $next]);
         }
 
@@ -436,8 +442,7 @@ describe('parent statuses (D47)', function () {
     it('still reverse an allocation of an invoice that is paid by now', function () {
         // Arrange
         $invoiceId = TestRecords::issuedInvoice();
-        $id = TestRecords::paymentAllocation($invoiceId);
-        TestRecords::moveInvoice($invoiceId, ['paid']);
+        $id = TestRecords::payInvoice($invoiceId);
 
         // Act
         DB::table('payment_allocations')->where('id', $id)->update(['status' => 'reversed']);

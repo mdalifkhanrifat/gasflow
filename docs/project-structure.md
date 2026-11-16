@@ -285,7 +285,11 @@ and it never changes once saved.
   allocations need an issued (or partially paid, overdue) invoice and a
   succeeded payment, refunds a succeeded payment, no new attempt once the
   payment is decided, and a payment is reversed or refunded only after its
-  allocations are reversed.
+  allocations are reversed, `000051` `payment_balance()` and
+  `invoice_balance()`: a payment never gives more than it has, an invoice is
+  never settled beyond its total, an invoice's status says what its balance
+  says (checked again at COMMIT), a payment is refunded only when all of it
+  was given back, and a paid invoice may go back after a reversal.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -354,6 +358,12 @@ and it never changes once saved.
   A payment records its `billing_mode` and its collector
   (`payee_organization_id`), and settles only invoices of the same stream and
   collector.
+- What a payment has left and what an invoice still owes come from two SQL
+  functions, `payment_balance(payment)` and `invoice_balance(invoice)`. The
+  database uses them to refuse over-allocation and wrong statuses; the
+  payment actions and reports read the same numbers. A payment action moves
+  the invoice to the status its balance gives in the same transaction (the
+  check runs again at COMMIT).
 - Catalogue tables keep English in their base columns and other languages in
   `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.
   Tests for tables shared by several domains live in `tests/Feature/Catalogs`.

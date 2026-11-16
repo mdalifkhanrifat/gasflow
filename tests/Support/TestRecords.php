@@ -743,6 +743,22 @@ final class TestRecords
     }
 
     /**
+     * Settles the issued invoice as the payment action does: a received
+     * payment of the given amount (the whole due when none is given) is
+     * allocated to it, and the invoice moves to paid or partially paid in
+     * the same transaction. Returns the allocation.
+     */
+    public static function payInvoice(int $invoiceId, float|string|null $amount = null): int
+    {
+        $amount ??= DB::selectOne('select due from invoice_balance(?)', [$invoiceId])->due;
+        $allocationId = self::paymentAllocation($invoiceId, self::receivedPayment($invoiceId, ['amount' => $amount]), ['amount' => $amount]);
+        $due = (float) DB::selectOne('select due from invoice_balance(?)', [$invoiceId])->due;
+        DB::table('invoices')->where('id', $invoiceId)->update(['status' => $due > 0 ? 'partially_paid' : 'paid']);
+
+        return $allocationId;
+    }
+
+    /**
      * A requested refund of 500 BDT from the payment (a new succeeded
      * payment of 3,000 BDT when none is given), raised by a new user.
      *
@@ -758,6 +774,21 @@ final class TestRecords
             'created_by' => self::user(),
             ...$overrides,
         ]);
+    }
+
+    /**
+     * A refund of the payment's unallocated money (or the given amount),
+     * approved, processed and completed. Returns the refund.
+     */
+    public static function completeRefund(int $paymentId, float|string|null $amount = null): int
+    {
+        $amount ??= DB::selectOne('select unallocated from payment_balance(?)', [$paymentId])->unallocated;
+        $id = self::refund($paymentId, ['amount' => $amount]);
+        foreach (['approved', 'processing', 'completed'] as $status) {
+            DB::table('refunds')->where('id', $id)->update(['status' => $status]);
+        }
+
+        return $id;
     }
 
     /**

@@ -301,23 +301,28 @@ describe('lines of a closed invoice', function () {
             ->toThrow(QueryException::class, 'its invoice_lines can no longer change');
     });
 
-    it('cannot be added once the invoice has left draft', function (array $statuses) {
+    it('cannot be added once the invoice has left draft', function (Closure $move) {
         // Arrange
-        foreach ($statuses as $status) {
-            DB::table('invoices')->where('id', $this->invoiceId)->update(['status' => $status]);
-        }
+        TestRecords::gasChargeLine($this->invoiceId);
+        $move($this->invoiceId);
 
         // Act & Assert
         expect(fn () => TestRecords::gasChargeLine($this->invoiceId))
             ->toThrow(QueryException::class, 'its invoice_lines can no longer change');
     })->with([
-        'approved' => [['approved']],
-        'issued' => [['approved', 'issued']],
-        'partially paid' => [['approved', 'issued', 'partially_paid']],
-        'paid' => [['approved', 'issued', 'paid']],
-        'overdue' => [['approved', 'issued', 'overdue']],
-        'void' => [['void']],
-        'written off' => [['approved', 'issued', 'written_off']],
+        'approved' => [fn (int $id) => TestRecords::moveInvoice($id, ['approved'])],
+        'issued' => [fn (int $id) => TestRecords::moveInvoice($id, ['approved', 'issued'])],
+        'partially paid' => [function (int $id) {
+            TestRecords::moveInvoice($id, ['approved', 'issued']);
+            TestRecords::payInvoice($id, 1000);
+        }],
+        'paid' => [function (int $id) {
+            TestRecords::moveInvoice($id, ['approved', 'issued']);
+            TestRecords::payInvoice($id);
+        }],
+        'overdue' => [fn (int $id) => TestRecords::moveInvoice($id, ['approved', 'issued', 'overdue'])],
+        'void' => [fn (int $id) => TestRecords::moveInvoice($id, ['void'])],
+        'written off' => [fn (int $id) => TestRecords::moveInvoice($id, ['approved', 'issued', 'written_off'])],
     ]);
 });
 
