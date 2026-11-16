@@ -139,6 +139,7 @@ describe('posting', function () {
 
         // Act
         postJournal($id);
+        TestRecords::financialTransaction($id);
         ledgerCheckAtCommit();
 
         // Assert

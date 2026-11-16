@@ -862,6 +862,45 @@ final class TestRecords
     }
 
     /**
+     * The financial transaction of the posted journal: its organization,
+     * source, currency and debit total, as an invoice issue.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function financialTransaction(int $journalId, array $overrides = []): int
+    {
+        $journal = DB::table('financial_journals')->where('id', $journalId)->first();
+
+        return (int) DB::table('financial_transactions')->insertGetId([
+            'public_id' => strtolower((string) Str::ulid()),
+            'transaction_no' => 'FT-'.Str::upper(Str::random(10)),
+            'organization_id' => $journal->organization_id,
+            'building_id' => $journal->building_id,
+            'journal_id' => $journal->id,
+            'transaction_type' => 'invoice_issued',
+            'direction' => 'debit',
+            'amount' => DB::table('financial_journal_lines')->where('journal_id', $journalId)->sum('debit'),
+            'currency' => $journal->currency,
+            'source_type' => $journal->source_type,
+            'source_id' => $journal->source_id,
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A balanced journal of the organization, posted with its financial
+     * transaction, as the posting service does. Returns the journal.
+     */
+    public static function postedEntry(?int $organizationId = null, float|int $amount = 100): int
+    {
+        $id = self::balancedJournal($organizationId, $amount);
+        DB::table('financial_journals')->where('id', $id)->update(['status' => 'posted', 'posted_at' => now()]);
+        self::financialTransaction($id);
+
+        return $id;
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
