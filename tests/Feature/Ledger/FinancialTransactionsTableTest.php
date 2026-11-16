@@ -98,7 +98,7 @@ describe('a financial transaction', function () {
         TestRecords::financialTransaction($this->journalId);
 
         // Act & Assert
-        expect(fn () => TestRecords::financialTransaction($this->journalId, ['transaction_type' => 'payment_received']))
+        expect(fn () => TestRecords::financialTransaction($this->journalId, ['transaction_type' => 'installation_settled']))
             ->toThrow(QueryException::class, 'uq_financial_transaction_journal');
     });
 
@@ -144,7 +144,7 @@ describe('the maintenance override (design 46–48, 50)', function () {
         $op->table('financial_journals')->where('id', $this->journalId)->update(['status' => 'posted', 'posted_at' => now()]);
         $this->transactionId = $op->table('financial_transactions')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()), 'transaction_no' => 'FT-OVR', 'organization_id' => $organizationId,
-            'journal_id' => $this->journalId, 'transaction_type' => 'invoice_issued', 'direction' => 'debit', 'amount' => 100,
+            'journal_id' => $this->journalId, 'transaction_type' => 'saas_subscription_paid', 'direction' => 'debit', 'amount' => 100,
             'source_type' => 'invoice', 'source_id' => 1,
         ]);
         transactionsCheckAtCommit($op);
@@ -232,4 +232,98 @@ describe('ledger_posted_lines', function () {
         // Assert
         expect($journals)->toBe([$posted]);
     });
+});
+
+describe('a transaction agrees with what it names (D49)', function () {
+    /**
+     * A posted journal in the organization's books for the source.
+     */
+    function postedJournalOf(int $organizationId, string $sourceType, int $sourceId, ?int $buildingId = null): int
+    {
+        $journalId = TestRecords::journal($organizationId, ['source_type' => $sourceType, 'source_id' => $sourceId, 'building_id' => $buildingId]);
+        foreach ([100, -100] as $amount) {
+            TestRecords::journalLine($journalId, TestRecords::financialAccount($organizationId), $amount, ['building_id' => $buildingId]);
+        }
+        DB::table('financial_journals')->where('id', $journalId)->update(['status' => 'posted', 'posted_at' => now()]);
+
+        return $journalId;
+    }
+
+    beforeEach(function () {
+        $this->invoiceId = TestRecords::issuedInvoice();
+        $this->invoice = DB::table('invoices')->where('id', $this->invoiceId)->first();
+        $this->paymentId = TestRecords::receivedPayment($this->invoiceId);
+        $this->vendorId = (int) $this->invoice->gas_vendor_organization_id;
+        TestRecords::accessGrant((int) $this->invoice->building_id, $this->vendorId);
+    });
+
+    it('posts a payment in its collector\'s books', function () {
+        // Arrange
+        $journalId = postedJournalOf($this->vendorId, 'payment', $this->paymentId, (int) $this->invoice->building_id);
+
+        // Act
+        $id = TestRecords::financialTransaction($journalId, [
+            'transaction_type' => 'payment_received', 'payment_id' => $this->paymentId,
+            'building_id' => $this->invoice->building_id, 'customer_id' => $this->invoice->customer_id,
+        ]);
+
+        // Assert
+        expect(DB::table('financial_transactions')->where('id', $id)->value('organization_id'))->toBe($this->vendorId);
+    });
+
+    it('refuse a payment or invoice in the books of an organization that does not collect it', function (string $type, string $link, string $error) {
+        // Arrange
+        $owner = (int) DB::table('buildings')->where('id', $this->invoice->building_id)->value('tenant_organization_id');
+        $id = $link === 'payment_id' ? $this->paymentId : $this->invoiceId;
+        $journalId = postedJournalOf($owner, 'record', $id, (int) $this->invoice->building_id);
+
+        // Act & Assert
+        expect(fn () => TestRecords::financialTransaction($journalId, [
+            'transaction_type' => $type, $link => $id, 'building_id' => $this->invoice->building_id, 'customer_id' => $this->invoice->customer_id,
+        ]))->toThrow(QueryException::class, $error);
+    })->with([
+        'payment' => ['payment_received', 'payment_id', 'so it is posted in its books, not in organization'],
+        'invoice' => ['invoice_issued', 'invoice_id', 'is collected by organization'],
+    ]);
+
+    it('refuse a customer other than its invoice\'s or payment\'s', function (string $type, string $link, string $key) {
+        // Arrange
+        $id = $link === 'payment_id' ? $this->paymentId : $this->invoiceId;
+        $journalId = postedJournalOf($this->vendorId, 'record', $id, (int) $this->invoice->building_id);
+
+        // Act & Assert
+        expect(fn () => TestRecords::financialTransaction($journalId, [
+            'transaction_type' => $type, $link => $id, 'building_id' => $this->invoice->building_id,
+            'customer_id' => TestRecords::customer((int) DB::table('buildings')->where('id', $this->invoice->building_id)->value('tenant_organization_id')),
+        ]))->toThrow(QueryException::class, $key);
+    })->with([
+        'invoice' => ['invoice_issued', 'invoice_id', 'fk_fin_tx_invoice_customer'],
+        'payment' => ['payment_received', 'payment_id', 'fk_fin_tx_payment_customer'],
+    ]);
+
+    it('refuse a journal line customer other than its invoice\'s', function () {
+        // Arrange
+        $journalId = TestRecords::journal($this->vendorId, ['building_id' => $this->invoice->building_id]);
+
+        // Act & Assert
+        expect(fn () => TestRecords::journalLine($journalId, TestRecords::financialAccount($this->vendorId), 100, [
+            'building_id' => $this->invoice->building_id, 'invoice_id' => $this->invoiceId, 'customer_id' => TestRecords::customer(),
+        ]))->toThrow(QueryException::class, 'fk_journal_line_invoice_customer');
+    });
+
+    it('refuse a type without the record it needs', function (string $type, string $error) {
+        // Arrange
+        $journalId = TestRecords::balancedJournal();
+        DB::table('financial_journals')->where('id', $journalId)->update(['status' => 'posted', 'posted_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => TestRecords::financialTransaction($journalId, ['transaction_type' => $type]))
+            ->toThrow(QueryException::class, $error);
+    })->with([
+        'invoice issued' => ['invoice_issued', 'ck_fin_tx_invoice_issued'],
+        'payment received' => ['payment_received', 'ck_fin_tx_payment_types'],
+        'refund issued' => ['refund_issued', 'ck_fin_tx_payment_types'],
+        'credit note applied' => ['credit_note_applied', 'ck_fin_tx_invoice_types'],
+        'reversal' => ['reversal', 'ck_fin_tx_reversal'],
+    ]);
 });

@@ -301,7 +301,9 @@ and it never changes once saved.
   `ledger_posted_lines` view, the only source for accounting reports), then
   the owner's group 12 decisions (V7.21, D49): `000056` books only in
   buildings the organization may access, posting time required, accounts
-  frozen once written, a hidden journal never keeps a visible transaction.
+  frozen once written, a hidden journal never keeps a visible transaction,
+  `000057` a transaction is in the books of whoever collects its payment or
+  invoice, has their customer, and names the records its type needs.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

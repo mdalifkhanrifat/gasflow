@@ -863,7 +863,8 @@ final class TestRecords
 
     /**
      * The financial transaction of the posted journal: its organization,
-     * source, currency and debit total, as an invoice issue.
+     * source, currency and debit total, as a SaaS subscription payment (a
+     * type that names no invoice or payment).
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -877,7 +878,7 @@ final class TestRecords
             'organization_id' => $journal->organization_id,
             'building_id' => $journal->building_id,
             'journal_id' => $journal->id,
-            'transaction_type' => 'invoice_issued',
+            'transaction_type' => 'saas_subscription_paid',
             'direction' => 'debit',
             'amount' => DB::table('financial_journal_lines')->where('journal_id', $journalId)->sum('debit'),
             'currency' => $journal->currency,
