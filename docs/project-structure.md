@@ -278,7 +278,10 @@ and it never changes once saved.
   from the first write, `000048` who collects a payment: its billing mode
   and collector (a gas vendor of the building for authorized billing, the
   building's owner for its internal cost allocation), and a customer of an
-  organization with access to the building.
+  organization with access to the building, `000049` an allocation keeps
+  the customer, billing mode, collector (`invoice_payee_organization_id()`)
+  and currency of its payment and invoice, is frozen once written and is
+  undone only by reversing it.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

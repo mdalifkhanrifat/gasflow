@@ -722,18 +722,21 @@ final class TestRecords
     /**
      * 1,000 BDT of the payment (a new received payment of the invoice's
      * customer when none is given) settling the invoice (a new issued
-     * invoice of 3,000 BDT when none is given).
+     * invoice of 3,000 BDT when none is given), for the invoice's customer
+     * and billing mode.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function paymentAllocation(?int $invoiceId = null, ?int $paymentId = null, array $overrides = []): int
     {
-        $invoiceId ??= self::issuedInvoice();
+        $invoice = DB::table('invoices')->where('id', $invoiceId ?? self::issuedInvoice())->first(['id', 'building_id', 'customer_id', 'billing_mode']);
 
         return (int) DB::table('payment_allocations')->insertGetId([
-            'payment_id' => $paymentId ?? self::receivedPayment($invoiceId),
-            'invoice_id' => $invoiceId,
-            'building_id' => DB::table('invoices')->where('id', $invoiceId)->value('building_id'),
+            'payment_id' => $paymentId ?? self::receivedPayment($invoice->id),
+            'invoice_id' => $invoice->id,
+            'building_id' => $invoice->building_id,
+            'customer_id' => $invoice->customer_id,
+            'billing_mode' => $invoice->billing_mode,
             'amount' => 1000,
             ...$overrides,
         ]);
