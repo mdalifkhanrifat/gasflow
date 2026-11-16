@@ -140,9 +140,38 @@ describe('freezeColumns()', function () {
         'lifecycle column' => [['lifecycle_test_periods', ['status'], ['open']], 'Lifecycle columns follow the lifecycle rules and cannot be frozen: status'],
         'unknown status' => [['lifecycle_test_periods', ['budget'], ['drafted']], 'Unknown status of lifecycle_test_periods: drafted'],
         'unregistered table' => [['lifecycle_test_entries', ['reference'], ['open']], 'Table lifecycle_test_entries is not registered'],
-        'no editable status' => [['lifecycle_test_periods', ['budget'], []], 'Name the columns to freeze and at least one editable status'],
+        'no column' => [['lifecycle_test_periods', [], ['open']], 'Name the columns to freeze of lifecycle_test_periods'],
         'unsafe name' => [['lifecycle_test_periods', ['budget'], ['open'], 'Budget; drop'], 'must be lower_snake_case'],
     ]);
+
+    describe('with no editable status (D47)', function () {
+        beforeEach(function () {
+            LifecycleSchema::freezeColumns('lifecycle_test_periods', ['note'], editableStatuses: [], name: 'written', connection: 'pgsql_migrations');
+            $this->periodId = $this->owner->table('lifecycle_test_periods')->insertGetId(['name' => 'October', 'note' => 'Read on the 1st']);
+        });
+
+        it('lets the first write set the columns', function () {
+            // Act
+            $note = $this->owner->table('lifecycle_test_periods')->where('id', $this->periodId)->value('note');
+
+            // Assert
+            expect($note)->toBe('Read on the 1st');
+        });
+
+        it('freezes them from the first write, even in an editable-looking status', function () {
+            // Act & Assert
+            expect(fn () => $this->owner->table('lifecycle_test_periods')->where('id', $this->periodId)->update(['note' => 'Read on the 2nd']))
+                ->toThrow(QueryException::class, "lifecycle_test_periods {$this->periodId} is open: note can no longer change");
+        });
+
+        it('still lets the row change its status and other columns', function () {
+            // Act
+            $this->owner->table('lifecycle_test_periods')->where('id', $this->periodId)->update(['status' => 'collecting', 'budget' => 1200]);
+
+            // Assert
+            expect($this->owner->table('lifecycle_test_periods')->where('id', $this->periodId)->value('status'))->toBe('collecting');
+        });
+    });
 
     it('cannot be called by the runtime role', function () {
         // Act & Assert

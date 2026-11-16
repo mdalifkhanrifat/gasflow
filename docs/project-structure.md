@@ -297,7 +297,8 @@ and it never changes once saved.
   invoice's amounts) get one call after the table's statuses exist:
   `LifecycleSchema::freezeColumns('tariff_versions', [...], editableStatuses: ['draft'])`.
   It creates `trg_<table>_freeze_<name>`; a correction is a new record, or the
-  maintenance override.
+  maintenance override. With `editableStatuses: []` the columns are frozen
+  from the first write (a payment allocation is reversed, never changed).
 - Status rules between a parent and its children are declared, not
   hand-written, with one call each (calling it again with the same name
   replaces the rule, so a later migration can change the statuses):

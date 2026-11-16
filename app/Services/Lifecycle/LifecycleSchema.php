@@ -170,10 +170,14 @@ final class LifecycleSchema
      * Calls the PostgreSQL function lifecycle_freeze_columns(), which checks
      * the table, columns and statuses and creates the trigger
      * trg_<table>_freeze_<name>. Use a different name for each column group
-     * with its own editable statuses.
+     * with its own editable statuses. With no editable status the columns are
+     * frozen from the first write (a payment allocation never changes; it is
+     * reversed instead):
+     *
+     *     LifecycleSchema::freezeColumns('payment_allocations', ['amount'], editableStatuses: [], name: 'written');
      *
      * @param  list<string>  $columns
-     * @param  list<string>  $editableStatuses
+     * @param  list<string>  $editableStatuses  empty = frozen once written
      */
     public static function freezeColumns(
         string $table,
