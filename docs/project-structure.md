@@ -298,7 +298,10 @@ and it never changes once saved.
   per line, the journal's organization and currency, balanced at COMMIT,
   immutable once posted, reversed by a new journal, `000055` the financial
   transaction register (one per posted journal, never changed) and the
-  `ledger_posted_lines` view, the only source for accounting reports).
+  `ledger_posted_lines` view, the only source for accounting reports), then
+  the owner's group 12 decisions (V7.21, D49): `000056` books only in
+  buildings the organization may access, posting time required, accounts
+  frozen once written, a hidden journal never keeps a visible transaction.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

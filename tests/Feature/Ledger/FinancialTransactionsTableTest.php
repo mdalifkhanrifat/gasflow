@@ -33,7 +33,7 @@ describe('lifecycle registration', function () {
 describe('a financial transaction', function () {
     beforeEach(function () {
         $this->journalId = TestRecords::balancedJournal();
-        DB::table('financial_journals')->where('id', $this->journalId)->update(['status' => 'posted']);
+        DB::table('financial_journals')->where('id', $this->journalId)->update(['status' => 'posted', 'posted_at' => now()]);
     });
 
     it('is written for a posted journal', function () {
@@ -63,12 +63,12 @@ describe('a financial transaction', function () {
 
     it('refuse another building than its journal\'s', function () {
         // Arrange
-        $buildingId = TestRecords::building();
-        $journalId = TestRecords::journal(overrides: ['building_id' => $buildingId]);
-        $organizationId = (int) DB::table('financial_journals')->where('id', $journalId)->value('organization_id');
-        TestRecords::journalLine($journalId, TestRecords::financialAccount($organizationId), 100);
-        TestRecords::journalLine($journalId, TestRecords::financialAccount($organizationId), -100);
-        DB::table('financial_journals')->where('id', $journalId)->update(['status' => 'posted']);
+        $organizationId = TestRecords::organization();
+        $line = ['building_id' => TestRecords::building($organizationId)];
+        $journalId = TestRecords::journal($organizationId, $line);
+        TestRecords::journalLine($journalId, TestRecords::financialAccount($organizationId), 100, $line);
+        TestRecords::journalLine($journalId, TestRecords::financialAccount($organizationId), -100, $line);
+        DB::table('financial_journals')->where('id', $journalId)->update(['status' => 'posted', 'posted_at' => now()]);
 
         // Act & Assert
         expect(fn () => TestRecords::financialTransaction($journalId, ['building_id' => TestRecords::building()]))
@@ -141,7 +141,7 @@ describe('the maintenance override (design 46–48, 50)', function () {
                 'journal_id' => $this->journalId, 'account_id' => $account, 'organization_id' => $organizationId, 'debit' => $debit, 'credit' => $credit,
             ]);
         }
-        $op->table('financial_journals')->where('id', $this->journalId)->update(['status' => 'posted']);
+        $op->table('financial_journals')->where('id', $this->journalId)->update(['status' => 'posted', 'posted_at' => now()]);
         $this->transactionId = $op->table('financial_transactions')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()), 'transaction_no' => 'FT-OVR', 'organization_id' => $organizationId,
             'journal_id' => $this->journalId, 'transaction_type' => 'invoice_issued', 'direction' => 'debit', 'amount' => 100,
@@ -162,6 +162,16 @@ describe('the maintenance override (design 46–48, 50)', function () {
         // Act & Assert
         expect(fn () => transactionsCheckAtCommit($this->operator))
             ->toThrow(QueryException::class, "Posted journal {$this->journalId} must have exactly one visible financial transaction; found 0");
+    });
+
+    it('refuse hiding a journal while its transaction stays visible (D49)', function () {
+        // Arrange
+        $this->operator->table('financial_journal_lines')->where('journal_id', $this->journalId)->update(['is_deleted' => true]);
+        $this->operator->table('financial_journals')->where('id', $this->journalId)->update(['is_deleted' => true]);
+
+        // Act & Assert
+        expect(fn () => transactionsCheckAtCommit($this->operator))
+            ->toThrow(QueryException::class, "Hidden journal {$this->journalId} still has a visible financial transaction");
     });
 
     it('hide the whole entry and leave it out of the books (design 47, 48)', function () {

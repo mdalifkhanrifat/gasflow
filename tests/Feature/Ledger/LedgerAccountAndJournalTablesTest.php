@@ -240,7 +240,7 @@ describe('maintenance override', function () {
             'organization_id' => $organizationId, 'journal_no' => 'J-OVR', 'journal_date' => '2026-01-30', 'source_type' => 'invoice', 'source_id' => 1,
             'status' => 'draft',
         ]);
-        $this->operator->table('financial_journals')->where('id', $id)->update(['status' => 'posted']);
+        $this->operator->table('financial_journals')->where('id', $id)->update(['status' => 'posted', 'posted_at' => now()]);
         $this->operator->select(
             "select set_config('app.maintenance_override', 'on', true), set_config('app.lifecycle_reason', ?, true)",
             ['Audit request #17: wrong journal date'],
@@ -251,5 +251,75 @@ describe('maintenance override', function () {
 
         // Assert
         expect($this->operator->table('financial_journals')->where('id', $id)->value('journal_date'))->toBe('2026-01-31');
+    });
+});
+
+describe('books stay in the organization\'s buildings and keep their facts (D49)', function () {
+    it('refuse an account or journal of a building the organization cannot access', function (string $table, Closure $create) {
+        // Act & Assert
+        expect(fn () => $create(TestRecords::organization(), TestRecords::building()))
+            ->toThrow(QueryException::class, "{$table} of organization");
+    })->with([
+        'account' => ['financial_accounts', fn (int $org, int $building) => TestRecords::financialAccount($org, ['building_id' => $building])],
+        'journal' => ['financial_journals', fn (int $org, int $building) => TestRecords::journal($org, ['building_id' => $building])],
+    ]);
+
+    it('accept a building the organization owns or has a grant in', function (bool $owner) {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $buildingId = $owner ? TestRecords::building($organizationId) : TestRecords::building();
+        if (! $owner) {
+            TestRecords::accessGrant($buildingId, $organizationId);
+        }
+
+        // Act
+        $id = TestRecords::journal($organizationId, ['building_id' => $buildingId]);
+
+        // Assert
+        expect(DB::table('financial_journals')->where('id', $id)->value('building_id'))->toBe($buildingId);
+    })->with(['owner' => [true], 'grantee' => [false]]);
+
+    it('refuse a line of another building than its journal\'s', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $journalId = TestRecords::journal($organizationId, ['building_id' => TestRecords::building($organizationId)]);
+
+        // Act & Assert
+        expect(fn () => TestRecords::journalLine($journalId, TestRecords::financialAccount($organizationId), 100, ['building_id' => TestRecords::building($organizationId)]))
+            ->toThrow(QueryException::class, "belongs to journal {$journalId} of building");
+    });
+
+    it('refuse a posted journal without its posting time', function () {
+        // Arrange
+        $id = TestRecords::balancedJournal();
+
+        // Act & Assert
+        expect(fn () => DB::table('financial_journals')->where('id', $id)->update(['status' => 'posted']))
+            ->toThrow(QueryException::class, 'ck_financial_journals_posted_at');
+    });
+
+    it('keep an account\'s identity from the first write', function (string $column, Closure $value) {
+        // Arrange
+        $id = TestRecords::financialAccount();
+
+        // Act & Assert
+        expect(fn () => DB::table('financial_accounts')->where('id', $id)->update([$column => $value()]))
+            ->toThrow(QueryException::class, "financial_accounts {$id} is active: {$column} can no longer change");
+    })->with([
+        'organization' => ['organization_id', fn () => TestRecords::organization()],
+        'code' => ['code', fn () => '9999'],
+        'type' => ['account_type', fn () => 'expense'],
+        'currency' => ['currency', fn () => 'USD'],
+    ]);
+
+    it('still let an account be renamed', function () {
+        // Arrange
+        $id = TestRecords::financialAccount();
+
+        // Act
+        DB::table('financial_accounts')->where('id', $id)->update(['name' => 'Customer receivables']);
+
+        // Assert
+        expect(DB::table('financial_accounts')->where('id', $id)->value('name'))->toBe('Customer receivables');
     });
 });
