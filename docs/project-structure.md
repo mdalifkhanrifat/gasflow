@@ -281,7 +281,11 @@ and it never changes once saved.
   organization with access to the building, `000049` an allocation keeps
   the customer, billing mode, collector (`invoice_payee_organization_id()`)
   and currency of its payment and invoice, is frozen once written and is
-  undone only by reversing it.
+  undone only by reversing it, `000050` the generic status rules: active
+  allocations need an issued (or partially paid, overdue) invoice and a
+  succeeded payment, refunds a succeeded payment, no new attempt once the
+  payment is decided, and a payment is reversed or refunded only after its
+  allocations are reversed.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

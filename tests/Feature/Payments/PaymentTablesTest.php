@@ -381,3 +381,57 @@ describe('the customer of a payment (D47)', function () {
         expect(DB::table('payments')->where('id', $id)->value('customer_id'))->toBe($customerId);
     });
 });
+
+describe('payment statuses and their children (D47)', function () {
+    it('take new attempts while initiated or pending', function (array $statuses) {
+        // Arrange
+        $paymentId = TestRecords::payment();
+        movePayment($paymentId, $statuses);
+
+        // Act
+        TestRecords::paymentAttempt($paymentId);
+
+        // Assert
+        expect(DB::table('payment_attempts')->where('payment_id', $paymentId)->count())->toBe(1);
+    })->with(['initiated' => [[]], 'pending' => [['pending']]]);
+
+    it('take no new attempt once decided', function (array $statuses, string $status) {
+        // Arrange
+        $paymentId = TestRecords::payment();
+        movePayment($paymentId, $statuses);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt($paymentId))
+            ->toThrow(QueryException::class, "payments {$paymentId} is {$status}");
+    })->with([
+        'succeeded' => [['succeeded'], 'succeeded'],
+        'failed' => [['failed'], 'failed'],
+        'reversed' => [['succeeded', 'reversed'], 'reversed'],
+        'refunded' => [['succeeded', 'refunded'], 'refunded'],
+    ]);
+
+    it('cannot be reversed or refunded while it still settles an invoice', function (string $status) {
+        // Arrange
+        $invoiceId = TestRecords::issuedInvoice();
+        $paymentId = TestRecords::receivedPayment($invoiceId);
+        TestRecords::paymentAllocation($invoiceId, $paymentId);
+
+        // Act & Assert
+        expect(fn () => movePayment($paymentId, [$status]))
+            ->toThrow(QueryException::class, "payments {$paymentId} cannot become {$status}: 1 of its payment_allocations are active (must be reversed)");
+    })->with(['reversed', 'refunded']);
+
+    it('can be reversed once its allocations are reversed', function () {
+        // Arrange
+        $invoiceId = TestRecords::issuedInvoice();
+        $paymentId = TestRecords::receivedPayment($invoiceId);
+        $allocationId = TestRecords::paymentAllocation($invoiceId, $paymentId);
+        DB::table('payment_allocations')->where('id', $allocationId)->update(['status' => 'reversed']);
+
+        // Act
+        movePayment($paymentId, ['reversed']);
+
+        // Assert
+        expect(DB::table('payments')->where('id', $paymentId)->value('status'))->toBe('reversed');
+    });
+});

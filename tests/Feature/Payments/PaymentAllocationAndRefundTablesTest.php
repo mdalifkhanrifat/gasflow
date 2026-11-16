@@ -383,3 +383,99 @@ describe('allocation status and changes (D47)', function () {
         expect($columns->reject(fn (string $column) => str_contains((string) $frozen, "'{$column}'"))->values()->all())->toBe([]);
     });
 });
+
+describe('parent statuses (D47)', function () {
+    it('allocate only to an issued, partially paid or overdue invoice', function (array $statuses, string $status) {
+        // Arrange
+        $invoiceId = TestRecords::invoice();
+        TestRecords::gasChargeLine($invoiceId);
+        TestRecords::moveInvoice($invoiceId, $statuses);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAllocation($invoiceId))
+            ->toThrow(QueryException::class, "invoices {$invoiceId} is {$status}: payment_allocations in status active needs it to be issued or partially_paid or overdue");
+    })->with([
+        'draft' => [[], 'draft'],
+        'approved' => [['approved'], 'approved'],
+        'void' => [['void'], 'void'],
+        'paid' => [['approved', 'issued', 'paid'], 'paid'],
+        'written off' => [['approved', 'issued', 'written_off'], 'written_off'],
+    ]);
+
+    it('allocate to a partially paid or overdue invoice', function (string $status) {
+        // Arrange
+        $invoiceId = TestRecords::issuedInvoice();
+        TestRecords::moveInvoice($invoiceId, [$status]);
+
+        // Act
+        $id = TestRecords::paymentAllocation($invoiceId);
+
+        // Assert
+        expect(DB::table('payment_allocations')->where('id', $id)->value('status'))->toBe('active');
+    })->with(['partially_paid', 'overdue']);
+
+    it('allocate only from a succeeded payment', function (array $statuses, string $status) {
+        // Arrange
+        $invoiceId = TestRecords::issuedInvoice();
+        $paymentId = TestRecords::receivedPayment($invoiceId, ['status' => 'initiated']);
+        foreach ($statuses as $next) {
+            DB::table('payments')->where('id', $paymentId)->update(['status' => $next]);
+        }
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAllocation($invoiceId, $paymentId))
+            ->toThrow(QueryException::class, "payments {$paymentId} is {$status}: payment_allocations in status active needs it to be succeeded");
+    })->with([
+        'initiated' => [[], 'initiated'],
+        'pending' => [['pending'], 'pending'],
+        'failed' => [['failed'], 'failed'],
+        'reversed' => [['succeeded', 'reversed'], 'reversed'],
+        'refunded' => [['succeeded', 'refunded'], 'refunded'],
+    ]);
+
+    it('still reverse an allocation of an invoice that is paid by now', function () {
+        // Arrange
+        $invoiceId = TestRecords::issuedInvoice();
+        $id = TestRecords::paymentAllocation($invoiceId);
+        TestRecords::moveInvoice($invoiceId, ['paid']);
+
+        // Act
+        DB::table('payment_allocations')->where('id', $id)->update(['status' => 'reversed']);
+
+        // Assert
+        expect(DB::table('payment_allocations')->where('id', $id)->value('status'))->toBe('reversed');
+    });
+
+    it('raise a refund only from a succeeded payment', function () {
+        // Arrange
+        $paymentId = TestRecords::payment();
+
+        // Act & Assert
+        expect(fn () => TestRecords::refund($paymentId))
+            ->toThrow(QueryException::class, "payments {$paymentId} is initiated: refunds in status requested needs it to be succeeded");
+    });
+
+    it('stop a refund on its way once the payment is reversed', function () {
+        // Arrange
+        $paymentId = TestRecords::payment(overrides: ['status' => 'succeeded', 'received_at' => now()]);
+        $id = TestRecords::refund($paymentId);
+        DB::table('payments')->where('id', $paymentId)->update(['status' => 'reversed']);
+
+        // Act & Assert
+        expect(fn () => moveRefund($id, ['approved']))
+            ->toThrow(QueryException::class, "payments {$paymentId} is reversed: refunds in status approved needs it to be succeeded");
+    });
+
+    it('still reject a refund whose payment is reversed', function () {
+        // Arrange
+        $paymentId = TestRecords::payment(overrides: ['status' => 'succeeded', 'received_at' => now()]);
+        $id = TestRecords::refund($paymentId);
+        DB::table('payments')->where('id', $paymentId)->update(['status' => 'reversed']);
+
+        // Act
+        moveRefund($id, ['rejected']);
+
+        // Assert
+        expect(DB::table('refunds')->where('id', $id)->value('status'))->toBe('rejected');
+    });
+});
