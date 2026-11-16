@@ -902,6 +902,32 @@ final class TestRecords
     }
 
     /**
+     * A draft reversal journal of the journal: source journal_reversal, the
+     * original's lines with their sides swapped (or the given amount on two
+     * new accounts when one is given). Returns the reversal journal.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function reversalJournal(int $originalId, ?int $amount = null, array $overrides = []): int
+    {
+        $original = DB::table('financial_journals')->where('id', $originalId)->first();
+        $id = self::journal((int) $original->organization_id, [
+            'source_type' => 'journal_reversal', 'source_id' => $originalId, 'reversal_of_journal_id' => $originalId, ...$overrides,
+        ]);
+        if ($amount !== null) {
+            self::journalLine($id, self::financialAccount((int) $original->organization_id), $amount);
+            self::journalLine($id, self::financialAccount((int) $original->organization_id), -$amount);
+
+            return $id;
+        }
+        foreach (DB::table('financial_journal_lines')->where('journal_id', $originalId)->get() as $line) {
+            self::journalLine($id, (int) $line->account_id, (float) $line->credit - (float) $line->debit);
+        }
+
+        return $id;
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

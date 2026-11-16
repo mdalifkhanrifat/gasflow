@@ -303,7 +303,10 @@ and it never changes once saved.
   buildings the organization may access, posting time required, accounts
   frozen once written, a hidden journal never keeps a visible transaction,
   `000057` a transaction is in the books of whoever collects its payment or
-  invoice, has their customer, and names the records its type needs.
+  invoice, has their customer, and names the records its type needs,
+  `000058` a reversal journal (source `journal_reversal`) reverses one posted
+  journal of its organization and mirrors its lines; its transaction names
+  the reversed one.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

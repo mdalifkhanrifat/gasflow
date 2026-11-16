@@ -203,21 +203,88 @@ describe('posting', function () {
     });
 });
 
-describe('reversals', function () {
-    it('reverse a journal of the same organization once', function () {
+describe('reversals (D49)', function () {
+    beforeEach(function () {
+        $this->organizationId = TestRecords::organization();
+        $this->originalId = TestRecords::postedEntry($this->organizationId);
+    });
+
+    it('post a reversal that mirrors its original', function () {
         // Arrange
-        $original = TestRecords::balancedJournal($organizationId = TestRecords::organization());
-        TestRecords::journal($organizationId, ['reversal_of_journal_id' => $original]);
+        $id = TestRecords::reversalJournal($this->originalId);
+
+        // Act
+        postJournal($id);
+        TestRecords::financialTransaction($id, [
+            'transaction_type' => 'reversal',
+            'reversal_of_transaction_id' => DB::table('financial_transactions')->where('journal_id', $this->originalId)->value('id'),
+        ]);
+        ledgerCheckAtCommit();
+
+        // Assert
+        expect(DB::table('financial_journals')->where('id', $this->originalId)->value('status'))->toBe('posted');
+    });
+
+    it('refuse a reversal that does not mirror its original, at COMMIT', function () {
+        // Arrange
+        $id = TestRecords::reversalJournal($this->originalId, 37);
+        postJournal($id);
+        TestRecords::financialTransaction($id, [
+            'transaction_type' => 'reversal',
+            'reversal_of_transaction_id' => DB::table('financial_transactions')->where('journal_id', $this->originalId)->value('id'),
+        ]);
 
         // Act & Assert
-        expect(fn () => TestRecords::journal($organizationId, ['reversal_of_journal_id' => $original]))
+        expect(fn () => ledgerCheckAtCommit())
+            ->toThrow(QueryException::class, "Reversal journal {$id} does not mirror journal {$this->originalId}");
+    });
+
+    it('reverse only a posted journal', function () {
+        // Arrange
+        $draftId = TestRecords::balancedJournal($this->organizationId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::reversalJournal($draftId))
+            ->toThrow(QueryException::class, "financial_journals {$draftId} is draft: financial_journals in status draft needs it to be posted");
+    });
+
+    it('refuse a reversal without the reversal source, or that source without a reversal', function (Closure $create) {
+        // Act & Assert
+        expect(fn () => $create($this->organizationId, $this->originalId))
+            ->toThrow(QueryException::class, 'ck_financial_journals_reversal_source');
+    })->with([
+        'other source' => [fn (int $org, int $original) => TestRecords::journal($org, ['reversal_of_journal_id' => $original])],
+        'no original' => [fn (int $org, int $original) => TestRecords::journal($org, ['source_type' => 'journal_reversal', 'source_id' => $original])],
+        'another original id' => [fn (int $org, int $original) => TestRecords::reversalJournal($original, overrides: ['source_id' => 1])],
+    ]);
+
+    it('reverse a journal once', function () {
+        // Arrange
+        $first = TestRecords::reversalJournal($this->originalId);
+        postJournal($first);
+
+        // Act & Assert
+        expect(fn () => TestRecords::reversalJournal($this->originalId))
             ->toThrow(QueryException::class, 'uq_journal_one_reversal');
     });
 
     it('refuse reversing a journal of another organization', function () {
         // Act & Assert
-        expect(fn () => TestRecords::journal(overrides: ['reversal_of_journal_id' => TestRecords::balancedJournal()]))
-            ->toThrow(QueryException::class, 'fk_journal_reversal_same_org');
+        expect(fn () => TestRecords::journal(overrides: [
+            'source_type' => 'journal_reversal', 'source_id' => $this->originalId, 'reversal_of_journal_id' => $this->originalId,
+        ]))->toThrow(QueryException::class, 'fk_journal_reversal_same_org');
+    });
+
+    it('post a reversal transaction only with the journal that reverses the original\'s', function () {
+        // Arrange
+        $journalId = TestRecords::balancedJournal($this->organizationId);
+        postJournal($journalId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::financialTransaction($journalId, [
+            'transaction_type' => 'reversal',
+            'reversal_of_transaction_id' => DB::table('financial_transactions')->where('journal_id', $this->originalId)->value('id'),
+        ]))->toThrow(QueryException::class, "Reversal transaction must be posted with the journal that reverses journal {$this->originalId}");
     });
 });
 
