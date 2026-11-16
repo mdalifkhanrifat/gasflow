@@ -293,7 +293,10 @@ and it never changes once saved.
   payment attempts for their payment's amount and currency, with enforced
   transitions, and frozen once decided, `000053` a received payment and a
   decided refund keep their facts (a received payment has its receive time,
-  a completed refund its processing time).
+  a completed refund its processing time). 12 ledger (`000054` each
+  organization's accounts and its double-entry journals and lines: one side
+  per line, the journal's organization and currency, balanced at COMMIT,
+  immutable once posted, reversed by a new journal).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

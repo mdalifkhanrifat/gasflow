@@ -796,6 +796,72 @@ final class TestRecords
     }
 
     /**
+     * An asset account (BDT) of the organization (a new one when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function financialAccount(?int $organizationId = null, array $overrides = []): int
+    {
+        return (int) DB::table('financial_accounts')->insertGetId([
+            'organization_id' => $organizationId ?? self::organization(),
+            'code' => 'A-'.Str::upper(Str::random(6)),
+            'name' => 'Accounts receivable',
+            'account_type' => 'asset',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A draft journal (BDT, today) of the organization (a new one when none
+     * is given) for a new invoice source.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function journal(?int $organizationId = null, array $overrides = []): int
+    {
+        return (int) DB::table('financial_journals')->insertGetId([
+            'organization_id' => $organizationId ?? self::organization(),
+            'journal_no' => 'J-'.Str::upper(Str::random(10)),
+            'journal_date' => today()->toDateString(),
+            'source_type' => 'invoice',
+            'source_id' => random_int(1, PHP_INT_MAX),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * One side of a journal: a debit (positive amount) or credit (negative
+     * amount) on the account, in the journal's organization.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function journalLine(int $journalId, int $accountId, float|int $amount, array $overrides = []): int
+    {
+        return (int) DB::table('financial_journal_lines')->insertGetId([
+            'journal_id' => $journalId,
+            'account_id' => $accountId,
+            'organization_id' => DB::table('financial_journals')->where('id', $journalId)->value('organization_id'),
+            'debit' => max($amount, 0),
+            'credit' => max(-$amount, 0),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A draft journal of the organization with two balanced lines: the
+     * amount debited to a receivable and credited to a revenue account.
+     */
+    public static function balancedJournal(?int $organizationId = null, float|int $amount = 100): int
+    {
+        $organizationId ??= self::organization();
+        $id = self::journal($organizationId);
+        self::journalLine($id, self::financialAccount($organizationId), $amount);
+        self::journalLine($id, self::financialAccount($organizationId, ['name' => 'Gas revenue', 'account_type' => 'revenue']), -$amount);
+
+        return $id;
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.
