@@ -260,3 +260,124 @@ describe('payment attempts', function () {
         expect($metadata)->toBe('{}');
     });
 });
+
+describe('who collects a payment (D47)', function () {
+    beforeEach(function () {
+        $this->buildingId = TestRecords::building();
+        $this->ownerId = (int) DB::table('buildings')->where('id', $this->buildingId)->value('tenant_organization_id');
+        $this->vendorId = (int) DB::table('building_vendor_assignments')
+            ->where('id', TestRecords::vendorAssignment($this->buildingId, '2026-01-01'))->value('vendor_organization_id');
+    });
+
+    it('refuse an unknown billing mode', function () {
+        // Arrange
+        $row = ['billing_mode' => 'resale'];
+
+        // Act & Assert
+        expect(fn () => TestRecords::payment($this->buildingId, $row))
+            ->toThrow(QueryException::class, 'ck_payments_billing_mode');
+    });
+
+    describe('for the owner\'s internal cost allocation', function () {
+        it('are collected by the building\'s owner organization', function () {
+            // Arrange
+            $row = ['billing_mode' => 'internal_cost_allocation', 'payee_organization_id' => $this->ownerId];
+
+            // Act
+            $id = TestRecords::payment($this->buildingId, $row);
+
+            // Assert
+            expect(DB::table('payments')->where('id', $id)->value('payee_organization_id'))->toBe($this->ownerId);
+        });
+
+        it('refuse the gas vendor as collector', function () {
+            // Arrange
+            $row = ['billing_mode' => 'internal_cost_allocation', 'payee_organization_id' => $this->vendorId];
+
+            // Act & Assert
+            expect(fn () => TestRecords::payment($this->buildingId, $row))
+                ->toThrow(QueryException::class, "only its owner organization {$this->ownerId} may collect it");
+        });
+    });
+
+    describe('for authorized gas billing', function () {
+        it('are collected by a gas vendor of the building', function () {
+            // Arrange
+            $row = ['billing_mode' => 'authorized_meter_billing', 'payee_organization_id' => $this->vendorId];
+
+            // Act
+            $id = TestRecords::payment($this->buildingId, $row);
+
+            // Assert
+            expect(DB::table('payments')->where('id', $id)->value('payee_organization_id'))->toBe($this->vendorId);
+        });
+
+        it('may still be collected by a vendor whose assignment has ended', function () {
+            // Arrange
+            DB::table('building_vendor_assignments')->where('vendor_organization_id', $this->vendorId)
+                ->update(['valid_to' => '2026-06-30', 'status' => 'ended']);
+            $row = ['billing_mode' => 'authorized_meter_billing', 'payee_organization_id' => $this->vendorId];
+
+            // Act
+            $id = TestRecords::payment($this->buildingId, $row);
+
+            // Assert
+            expect(DB::table('payments')->where('id', $id)->value('payee_organization_id'))->toBe($this->vendorId);
+        });
+
+        it('refuse an organization assigned to the building for something other than gas', function () {
+            // Arrange
+            $contractorId = TestRecords::organization();
+            TestRecords::vendorAssignment($this->buildingId, '2026-01-01', ['vendor_organization_id' => $contractorId, 'assignment_type' => 'meter_maintenance']);
+            $row = ['billing_mode' => 'authorized_meter_billing', 'payee_organization_id' => $contractorId];
+
+            // Act & Assert
+            expect(fn () => TestRecords::payment($this->buildingId, $row))
+                ->toThrow(QueryException::class, "not organization {$contractorId}");
+        });
+
+        it('refuse an organization that is not a gas vendor of the building', function (string $who) {
+            // Arrange
+            $payee = $who === 'owner' ? $this->ownerId : TestRecords::organization();
+            $row = ['billing_mode' => 'authorized_meter_billing', 'payee_organization_id' => $payee];
+
+            // Act & Assert
+            expect(fn () => TestRecords::payment($this->buildingId, $row))
+                ->toThrow(QueryException::class, "is collected by a gas vendor of building {$this->buildingId}, not organization {$payee}");
+        })->with(['owner', 'another organization']);
+    });
+
+    it('cannot later move to a collector that does not fit', function () {
+        // Arrange
+        $id = TestRecords::payment($this->buildingId);
+
+        // Act & Assert
+        expect(fn () => DB::table('payments')->where('id', $id)->update(['payee_organization_id' => $this->vendorId]))
+            ->toThrow(QueryException::class, 'only its owner organization');
+    });
+});
+
+describe('the customer of a payment (D47)', function () {
+    it('refuse a customer of an organization without access to the building', function () {
+        // Arrange
+        $row = ['customer_id' => TestRecords::customer()];
+
+        // Act & Assert
+        expect(fn () => TestRecords::payment(overrides: $row))
+            ->toThrow(QueryException::class, 'belongs to an organization without access to building');
+    });
+
+    it('accept a customer of an organization with a grant in the building', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $granteeId = TestRecords::organization();
+        TestRecords::accessGrant($buildingId, $granteeId);
+        $customerId = TestRecords::customer($granteeId);
+
+        // Act
+        $id = TestRecords::payment($buildingId, ['customer_id' => $customerId]);
+
+        // Assert
+        expect(DB::table('payments')->where('id', $id)->value('customer_id'))->toBe($customerId);
+    });
+});

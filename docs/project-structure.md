@@ -273,7 +273,12 @@ and it never changes once saved.
   (id, building) key for the rows that must stay in their building, and
   payment attempts, unique per idempotency key and per provider transaction),
   `000046` payment allocations, tied to the payment's and the invoice's
-  building by composite keys, and refunds with their enforced transitions).
+  building by composite keys, and refunds with their enforced transitions),
+  then the owner's group 11 decisions (V7.20, D47): `000047` columns frozen
+  from the first write, `000048` who collects a payment: its billing mode
+  and collector (a gas vendor of the building for authorized billing, the
+  building's owner for its internal cost allocation), and a customer of an
+  organization with access to the building.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -335,6 +340,13 @@ and it never changes once saved.
   (a SaaS invoice: subtotal plus tax), and once it leaves draft what it
   bills is frozen: a mistake is fixed by voiding it and issuing a new
   one. Only the maintenance override may correct it in place.
+- Money is collected in two streams that never mix, named by the billing
+  mode: `authorized_meter_billing` (the gas vendor bills and collects from the
+  customers it supplies) and `internal_cost_allocation` (the building's owner
+  shares the gas cost among its own tenants and may collect in its own way).
+  A payment records its `billing_mode` and its collector
+  (`payee_organization_id`), and settles only invoices of the same stream and
+  collector.
 - Catalogue tables keep English in their base columns and other languages in
   `translations` (`{"bn": {"name": ...}}`); every seeded row has a Bangla text.
   Tests for tables shared by several domains live in `tests/Feature/Catalogs`.

@@ -650,23 +650,25 @@ final class TestRecords
 
     /**
      * A cash payment of 3,000 BDT by a new customer of the building's tenant
-     * (a new building when none is given), as initiated.
+     * (a new building when none is given), as initiated, collected by the
+     * building's owner organization for its internal cost allocation.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function payment(?int $buildingId = null, array $overrides = []): int
     {
         $buildingId ??= self::building();
+        $ownerId = (int) DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id');
 
         return (int) DB::table('payments')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()),
             'building_id' => $buildingId,
-            'customer_id' => $overrides['customer_id'] ?? self::customer(
-                (int) DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id'),
-            ),
+            'customer_id' => $overrides['customer_id'] ?? self::customer($ownerId),
             'payment_no' => 'PAY-'.Str::upper(Str::random(10)),
             'amount' => 3000,
             'method' => 'cash',
+            'billing_mode' => 'internal_cost_allocation',
+            'payee_organization_id' => $ownerId,
             ...$overrides,
         ]);
     }
@@ -693,16 +695,24 @@ final class TestRecords
 
     /**
      * A succeeded cash payment of 3,000 BDT by the invoice's customer in the
-     * invoice's building, received now.
+     * invoice's building, received now by whoever collects the invoice: its
+     * gas vendor for authorized billing, the building's owner for internal
+     * cost allocation.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function receivedPayment(int $invoiceId, array $overrides = []): int
     {
-        $invoice = DB::table('invoices')->where('id', $invoiceId)->first(['building_id', 'customer_id']);
+        $invoice = DB::table('invoices')->join('buildings', 'buildings.id', '=', 'invoices.building_id')
+            ->where('invoices.id', $invoiceId)
+            ->first(['invoices.building_id', 'invoices.customer_id', 'invoices.billing_mode', 'invoices.gas_vendor_organization_id', 'buildings.tenant_organization_id']);
 
         return self::payment($invoice->building_id, [
             'customer_id' => $invoice->customer_id,
+            'billing_mode' => $invoice->billing_mode,
+            'payee_organization_id' => $invoice->billing_mode === 'authorized_meter_billing'
+                ? $invoice->gas_vendor_organization_id
+                : $invoice->tenant_organization_id,
             'status' => 'succeeded',
             'received_at' => now(),
             ...$overrides,
