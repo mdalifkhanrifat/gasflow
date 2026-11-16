@@ -649,6 +649,49 @@ final class TestRecords
     }
 
     /**
+     * A cash payment of 3,000 BDT by a new customer of the building's tenant
+     * (a new building when none is given), as initiated.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function payment(?int $buildingId = null, array $overrides = []): int
+    {
+        $buildingId ??= self::building();
+
+        return (int) DB::table('payments')->insertGetId([
+            'public_id' => strtolower((string) Str::ulid()),
+            'building_id' => $buildingId,
+            'customer_id' => $overrides['customer_id'] ?? self::customer(
+                (int) DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id'),
+            ),
+            'payment_no' => 'PAY-'.Str::upper(Str::random(10)),
+            'amount' => 3000,
+            'method' => 'cash',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * An initiated bKash attempt for the whole payment (a new payment when
+     * none is given), with a new idempotency key.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function paymentAttempt(?int $paymentId = null, array $overrides = []): int
+    {
+        $payment = DB::table('payments')->where('id', $paymentId ?? self::payment())->first(['id', 'amount', 'currency']);
+
+        return (int) DB::table('payment_attempts')->insertGetId([
+            'payment_id' => $payment->id,
+            'provider' => 'bkash',
+            'idempotency_key' => (string) Str::uuid(),
+            'amount' => $payment->amount,
+            'currency' => $payment->currency,
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

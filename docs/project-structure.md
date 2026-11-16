@@ -268,7 +268,10 @@ and it never changes once saved.
   notes only on issued invoices, frozen once decided, never more than the
   invoice total, `000043` retro adjustments tied to an issued gas line of
   their building and to their settlement, frozen once decided, `000044` a
-  dispute is raised by the invoice's own customer.
+  dispute is raised by the invoice's own customer. 11 payments
+  (`2026_11_16_000045` payments, by a method of the catalogue, with an
+  (id, building) key for the rows that must stay in their building, and
+  payment attempts, unique per idempotency key and per provider transaction).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
