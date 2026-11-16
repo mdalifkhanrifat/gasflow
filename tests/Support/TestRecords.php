@@ -692,6 +692,62 @@ final class TestRecords
     }
 
     /**
+     * A succeeded cash payment of 3,000 BDT by the invoice's customer in the
+     * invoice's building, received now.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function receivedPayment(int $invoiceId, array $overrides = []): int
+    {
+        $invoice = DB::table('invoices')->where('id', $invoiceId)->first(['building_id', 'customer_id']);
+
+        return self::payment($invoice->building_id, [
+            'customer_id' => $invoice->customer_id,
+            'status' => 'succeeded',
+            'received_at' => now(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * 1,000 BDT of the payment (a new received payment of the invoice's
+     * customer when none is given) settling the invoice (a new issued
+     * invoice of 3,000 BDT when none is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function paymentAllocation(?int $invoiceId = null, ?int $paymentId = null, array $overrides = []): int
+    {
+        $invoiceId ??= self::issuedInvoice();
+
+        return (int) DB::table('payment_allocations')->insertGetId([
+            'payment_id' => $paymentId ?? self::receivedPayment($invoiceId),
+            'invoice_id' => $invoiceId,
+            'building_id' => DB::table('invoices')->where('id', $invoiceId)->value('building_id'),
+            'amount' => 1000,
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A requested refund of 500 BDT from the payment (a new succeeded
+     * payment of 3,000 BDT when none is given), raised by a new user.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function refund(?int $paymentId = null, array $overrides = []): int
+    {
+        return (int) DB::table('refunds')->insertGetId([
+            'payment_id' => $paymentId ?? self::payment(overrides: ['status' => 'succeeded', 'received_at' => now()]),
+            'refund_no' => 'RF-'.Str::upper(Str::random(10)),
+            'amount' => 500,
+            'reason' => 'Paid twice',
+            'created_by' => self::user(),
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * A login of the given user (a new user when none is given). Row-level
      * security lets a session be written by its own user, so app.user_id is
      * set for this transaction.

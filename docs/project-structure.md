@@ -271,7 +271,9 @@ and it never changes once saved.
   dispute is raised by the invoice's own customer. 11 payments
   (`2026_11_16_000045` payments, by a method of the catalogue, with an
   (id, building) key for the rows that must stay in their building, and
-  payment attempts, unique per idempotency key and per provider transaction).
+  payment attempts, unique per idempotency key and per provider transaction),
+  `000046` payment allocations, tied to the payment's and the invoice's
+  building by composite keys, and refunds with their enforced transitions).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
