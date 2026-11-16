@@ -22,7 +22,7 @@ function movePayment(int $id, array $statuses): void
         if ($status === 'refunded' && DB::table('payments')->where('id', $id)->value('status') === 'succeeded') {
             TestRecords::completeRefund($id);
         }
-        DB::table('payments')->where('id', $id)->update(['status' => $status]);
+        DB::table('payments')->where('id', $id)->update(['status' => $status, ...($status === 'succeeded' ? ['received_at' => now()] : [])]);
     }
 }
 
@@ -526,5 +526,75 @@ describe('payment attempts follow their payment (D47)', function () {
 
         // Assert
         expect(DB::table('payment_attempts')->where('id', $id)->value('provider_metadata'))->toBe('{"settled": true}');
+    });
+});
+
+describe('a received payment keeps its facts (D47)', function () {
+    it('cannot be received without a receive time', function () {
+        // Arrange
+        $id = TestRecords::payment();
+
+        // Act & Assert
+        expect(fn () => DB::table('payments')->where('id', $id)->update(['status' => 'succeeded']))
+            ->toThrow(QueryException::class, 'ck_payments_received');
+    });
+
+    it('may still be corrected while initiated or pending', function (array $statuses) {
+        // Arrange
+        $id = TestRecords::payment();
+        movePayment($id, $statuses);
+
+        // Act
+        DB::table('payments')->where('id', $id)->update(['amount' => 2500, 'method' => 'bkash']);
+
+        // Assert
+        expect(DB::table('payments')->where('id', $id)->value('amount'))->toBe('2500.00');
+    })->with(['initiated' => [[]], 'pending' => [['pending']]]);
+
+    it('keep what was received once succeeded', function (string $column, Closure $value) {
+        // Arrange
+        $id = TestRecords::payment(overrides: ['status' => 'succeeded']);
+
+        // Act & Assert
+        expect(fn () => DB::table('payments')->where('id', $id)->update([$column => $value($id)]))
+            ->toThrow(QueryException::class, "payments {$id} is succeeded: {$column} can no longer change");
+    })->with([
+        'amount' => ['amount', fn () => 2500],
+        'currency' => ['currency', fn () => 'USD'],
+        'method' => ['method', fn () => 'bkash'],
+        'number' => ['payment_no', fn () => 'PAY-CHANGED'],
+        'public id' => ['public_id', fn () => '01jcf3k8m2n4p6q8r0s2t4v6w8'],
+        'customer' => ['customer_id', fn (int $id) => TestRecords::customer(
+            (int) DB::table('payments')->where('id', $id)->value('payee_organization_id'),
+        )],
+        'receive time' => ['received_at', fn () => '2020-01-01 10:00:00+06'],
+        'receiver' => ['received_by', fn () => TestRecords::user()],
+        'building' => ['building_id', fn () => TestRecords::building()],
+        'billing mode' => ['billing_mode', fn () => 'authorized_meter_billing'],
+        'collector' => ['payee_organization_id', fn () => TestRecords::organization()],
+    ]);
+
+    it('still take notes once succeeded', function () {
+        // Arrange
+        $id = TestRecords::payment(overrides: ['status' => 'succeeded']);
+
+        // Act
+        DB::table('payments')->where('id', $id)->update(['notes' => 'Paid by the flat owner for the tenant']);
+
+        // Assert
+        expect(DB::table('payments')->where('id', $id)->value('notes'))->toBe('Paid by the flat owner for the tenant');
+    });
+
+    it('freeze every column but its notes and status', function () {
+        // Arrange: migration 000053 has run
+        $free = ['id', 'notes', 'status', 'is_active', 'is_deleted', 'deleted_at', 'created_at', 'updated_at', 'created_by', 'updated_by', 'created_session_id', 'updated_session_id'];
+
+        // Act
+        $frozen = (string) DB::scalar("select pg_get_triggerdef(oid) from pg_trigger where tgname = 'trg_payments_freeze_received'");
+        $columns = collect(DB::select("select column_name from information_schema.columns where table_name = 'payments'"))
+            ->pluck('column_name')->diff($free);
+
+        // Assert
+        expect($columns->reject(fn (string $column) => str_contains($frozen, "'{$column}'"))->values()->all())->toBe([]);
     });
 });

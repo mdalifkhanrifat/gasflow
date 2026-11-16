@@ -291,7 +291,9 @@ and it never changes once saved.
   says (checked again at COMMIT), a payment is refunded only when all of it
   was given back, and a paid invoice may go back after a reversal, `000052`
   payment attempts for their payment's amount and currency, with enforced
-  transitions, and frozen once decided.
+  transitions, and frozen once decided, `000053` a received payment and a
+  decided refund keep their facts (a received payment has its receive time,
+  a completed refund its processing time).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.

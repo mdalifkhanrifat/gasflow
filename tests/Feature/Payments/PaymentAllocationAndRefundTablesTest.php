@@ -10,14 +10,16 @@ use Illuminate\Support\Facades\DB;
 use Tests\Support\TestRecords;
 
 /**
- * Moves a refund along the given statuses, one enforced transition at a time.
+ * Moves a refund along the given statuses, one enforced transition at a
+ * time; a completed refund gets its processing time, as the provider
+ * reports it.
  *
  * @param  list<string>  $statuses
  */
 function moveRefund(int $id, array $statuses): void
 {
     foreach ($statuses as $status) {
-        DB::table('refunds')->where('id', $id)->update(['status' => $status]);
+        DB::table('refunds')->where('id', $id)->update(['status' => $status, ...($status === 'completed' ? ['processed_at' => now()] : [])]);
     }
 }
 
@@ -483,4 +485,67 @@ describe('parent statuses (D47)', function () {
         // Assert
         expect(DB::table('refunds')->where('id', $id)->value('status'))->toBe('rejected');
     });
+});
+
+describe('a decided refund keeps its facts (D47)', function () {
+    it('cannot be completed without a processing time', function () {
+        // Arrange
+        $id = TestRecords::refund();
+        moveRefund($id, ['approved', 'processing']);
+
+        // Act & Assert
+        expect(fn () => DB::table('refunds')->where('id', $id)->update(['status' => 'completed']))
+            ->toThrow(QueryException::class, 'ck_refunds_completed');
+    });
+
+    it('may still be corrected while requested', function () {
+        // Arrange
+        $id = TestRecords::refund();
+
+        // Act
+        DB::table('refunds')->where('id', $id)->update(['amount' => 400, 'reason' => 'Paid twice for October']);
+
+        // Assert
+        expect(DB::table('refunds')->where('id', $id)->value('amount'))->toBe('400.00');
+    });
+
+    it('keep what was decided once approved', function (string $column, Closure $value) {
+        // Arrange
+        $id = TestRecords::refund();
+        moveRefund($id, ['approved']);
+
+        // Act & Assert
+        expect(fn () => DB::table('refunds')->where('id', $id)->update([$column => $value()]))
+            ->toThrow(QueryException::class, "refunds {$id} is approved: {$column} can no longer change");
+    })->with([
+        'amount' => ['amount', fn () => 400],
+        'reason' => ['reason', fn () => 'Changed'],
+        'number' => ['refund_no', fn () => 'RF-CHANGED'],
+        'payment' => ['payment_id', fn () => TestRecords::payment(overrides: ['status' => 'succeeded'])],
+    ]);
+
+    it('take the provider reference while processing', function () {
+        // Arrange
+        $id = TestRecords::refund();
+        moveRefund($id, ['approved', 'processing']);
+
+        // Act
+        DB::table('refunds')->where('id', $id)->update(['provider_reference' => 'BK-RF-1']);
+
+        // Assert
+        expect(DB::table('refunds')->where('id', $id)->value('provider_reference'))->toBe('BK-RF-1');
+    });
+
+    it('keep the provider reference and processing time once completed', function (string $column, string $value) {
+        // Arrange
+        $id = TestRecords::refund();
+        moveRefund($id, ['approved', 'processing', 'completed']);
+
+        // Act & Assert
+        expect(fn () => DB::table('refunds')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "refunds {$id} is completed: {$column} can no longer change");
+    })->with([
+        'reference' => ['provider_reference', 'BK-RF-2'],
+        'processing time' => ['processed_at', '2026-01-01 10:00:00+06'],
+    ]);
 });

@@ -651,7 +651,8 @@ final class TestRecords
     /**
      * A cash payment of 3,000 BDT by a new customer of the building's tenant
      * (a new building when none is given), as initiated, collected by the
-     * building's owner organization for its internal cost allocation.
+     * building's owner organization for its internal cost allocation. A
+     * payment written as already received gets its receive time (now).
      *
      * @param  array<string, mixed>  $overrides
      */
@@ -659,6 +660,9 @@ final class TestRecords
     {
         $buildingId ??= self::building();
         $ownerId = (int) DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id');
+        if (in_array($overrides['status'] ?? null, ['succeeded', 'reversed', 'refunded'], true)) {
+            $overrides['received_at'] ??= now();
+        }
 
         return (int) DB::table('payments')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()),
@@ -784,9 +788,9 @@ final class TestRecords
     {
         $amount ??= DB::selectOne('select unallocated from payment_balance(?)', [$paymentId])->unallocated;
         $id = self::refund($paymentId, ['amount' => $amount]);
-        foreach (['approved', 'processing', 'completed'] as $status) {
-            DB::table('refunds')->where('id', $id)->update(['status' => $status]);
-        }
+        DB::table('refunds')->where('id', $id)->update(['status' => 'approved']);
+        DB::table('refunds')->where('id', $id)->update(['status' => 'processing']);
+        DB::table('refunds')->where('id', $id)->update(['status' => 'completed', 'processed_at' => now()]);
 
         return $id;
     }
