@@ -191,4 +191,37 @@ final class LifecycleSchema
             [$table, $name, json_encode($columns, JSON_THROW_ON_ERROR), json_encode($editableStatuses, JSON_THROW_ON_ERROR)],
         );
     }
+
+    /**
+     * Freezes some columns of a child once its parent has one of the given
+     * statuses: an UPDATE that changes one of them is refused while the
+     * row's parent is closed. The child's other columns (its status, what was
+     * paid) still change. New children are a separate rule
+     * (refuseNewChildrenWhenParentClosed()).
+     *
+     *     LifecycleSchema::freezeColumnsWithParent('installation_installments', parent: 'installation_agreements',
+     *         foreignKey: 'installation_agreement_id', columns: ['amount', 'due_date'],
+     *         closedStatuses: ['active', 'completed', 'defaulted', 'cancelled'], name: 'schedule');
+     *
+     * Calls lifecycle_freeze_columns_with_parent(), which checks the parent,
+     * columns and statuses and creates trg_<table>_parent_freeze_<name>.
+     * Calling it again with the same name replaces the rule.
+     *
+     * @param  list<string>  $columns
+     * @param  list<string>  $closedStatuses  at least one
+     */
+    public static function freezeColumnsWithParent(
+        string $table,
+        string $parent,
+        string $foreignKey,
+        array $columns,
+        array $closedStatuses,
+        string $name = 'fields',
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_freeze_columns_with_parent(?::text, ?::text, ?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)), array(select jsonb_array_elements_text(?::jsonb)))',
+            [$table, $name, $parent, $foreignKey, json_encode($columns, JSON_THROW_ON_ERROR), json_encode($closedStatuses, JSON_THROW_ON_ERROR)],
+        );
+    }
 }

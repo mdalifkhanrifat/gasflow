@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
  * - no new items once their batch is closed (existing items still change)
  * - an item may only be accepted while its batch is open
  * - a batch may only be cancelled once all its items are void
+ * - an item's amount stops changing once its batch is cancelled
  */
 return new class extends Migration
 {
@@ -51,6 +52,8 @@ return new class extends Migration
             foreignKey: 'batch_id', parentStatuses: ['open'], whenStatuses: ['accepted'], name: 'acceptance');
         LifecycleSchema::requireChildrenStatus('lifecycle_test_batches', child: 'lifecycle_test_batch_items',
             foreignKey: 'batch_id', whenStatuses: ['cancelled'], childStatuses: ['void'], name: 'cancel');
+        LifecycleSchema::freezeColumnsWithParent('lifecycle_test_batch_items', parent: 'lifecycle_test_batches',
+            foreignKey: 'batch_id', columns: ['amount'], closedStatuses: ['cancelled'], name: 'amount');
     }
 
     public function down(): void

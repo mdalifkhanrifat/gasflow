@@ -356,6 +356,10 @@ and it never changes once saved.
     - `LifecycleSchema::requireChildrenStatus('billing_cycles', child: 'invoices', foreignKey: 'billing_cycle_id', whenStatuses: ['cancelled'], childStatuses: ['void'])`:
       the parent enters those statuses only when every visible child is in an
       allowed one (`trg_<parent>_children_<name>`)
+    - `LifecycleSchema::freezeColumnsWithParent('installation_installments', parent: 'installation_agreements', foreignKey: 'installation_agreement_id', columns: [...], closedStatuses: [...])`:
+      the listed columns of a child stop changing once its parent has one of
+      the statuses; its other columns (status, paid amount) still change
+      (`trg_<table>_parent_freeze_<name>`, V7.23)
 
     All of them let the maintenance override through, like the freeze guards.
 
