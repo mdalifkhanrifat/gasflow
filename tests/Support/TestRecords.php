@@ -464,6 +464,23 @@ final class TestRecords
     }
 
     /**
+     * A billing setting of the building (a new building when none is given)
+     * for authorized meter billing: monthly from the 1st, from the given day.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function billingSetting(?int $buildingId = null, string $effectiveFrom = '2026-01-01', array $overrides = []): int
+    {
+        return (int) DB::table('building_billing_settings')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'billing_mode' => 'authorized_meter_billing',
+            'effective_from' => $effectiveFrom,
+            'frequency' => 'monthly',
+            ...$overrides,
+        ]);
+    }
+
+    /**
      * The draft billing cycle of the reading period's building and month (a
      * new approved October 2026 period of a new building when none is given),
      * due 15 days after the month.
