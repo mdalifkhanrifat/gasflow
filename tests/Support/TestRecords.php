@@ -1092,4 +1092,31 @@ final class TestRecords
             ...$overrides,
         ]);
     }
+
+    /**
+     * A draft receipt of 1 000 m3 at 40 BDT bought under the vendor assignment
+     * (a new one from 2026-01-01 of a new building when none is given), with
+     * a fresh supply number.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function gasSupplyReceipt(?int $assignmentId = null, array $overrides = []): int
+    {
+        $assignment = DB::table('building_vendor_assignments')
+            ->where('id', $assignmentId ?? self::vendorAssignment(self::building(), '2026-01-01'))
+            ->first(['id', 'building_id', 'vendor_organization_id']);
+
+        return (int) DB::table('gas_supply_receipts')->insertGetId([
+            'building_id' => $assignment->building_id,
+            'vendor_organization_id' => $assignment->vendor_organization_id,
+            'building_vendor_assignment_id' => $assignment->id,
+            'supply_no' => 'GS-'.Str::random(8),
+            'upstream_supplier_name' => 'Titas Gas',
+            'supply_date' => '2026-10-05',
+            'quantity' => 1000,
+            'unit_cost' => 40,
+            'total_cost' => 40000,
+            ...$overrides,
+        ]);
+    }
 }
