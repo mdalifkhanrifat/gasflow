@@ -1022,4 +1022,42 @@ final class TestRecords
             ...$overrides,
         ]);
     }
+
+    /**
+     * An inactive bKash sandbox payment gateway of a new organization (unless
+     * the overrides name the scope).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function paymentGateway(array $overrides = []): int
+    {
+        $scope = array_key_exists('organization_id', $overrides) || array_key_exists('building_id', $overrides)
+            ? [] : ['organization_id' => self::organization()];
+
+        return (int) DB::table('organization_payment_gateways')->insertGetId([
+            ...$scope,
+            'provider' => 'bkash',
+            'credentials_encrypted' => 'eyJpdiI6ImNyZWRlbnRpYWxzIn0=',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * An inactive generic SMS gateway of a new organization (unless the
+     * overrides name the scope).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function smsGateway(array $overrides = []): int
+    {
+        $scope = array_key_exists('organization_id', $overrides) || array_key_exists('building_id', $overrides)
+            ? [] : ['organization_id' => self::organization()];
+
+        return (int) DB::table('organization_sms_gateways')->insertGetId([
+            ...$scope,
+            'provider' => 'sms_generic',
+            'credentials_encrypted' => 'eyJpdiI6ImNyZWRlbnRpYWxzIn0=',
+            ...$overrides,
+        ]);
+    }
 }
