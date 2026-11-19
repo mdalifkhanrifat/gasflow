@@ -162,12 +162,12 @@ describe('licenses', function () {
         expect(DB::table('licenses')->where('id', $id)->value('signature'))->toBe('c2ln');
     });
 
-    it('go from draft through issue to active, suspended and back', function () {
+    it('go from issued to active, suspended and back', function () {
         // Arrange
-        $id = TestRecords::license();
+        $id = TestRecords::issuedLicense();
 
         // Act
-        foreach (['issued', 'active', 'suspended', 'active'] as $status) {
+        foreach (['active', 'suspended', 'active'] as $status) {
             DB::table('licenses')->where('id', $id)->update(['status' => $status]);
         }
 
@@ -177,7 +177,8 @@ describe('licenses', function () {
 
     it('refuse a move the design does not allow', function (array $before, string $to) {
         // Arrange
-        $id = TestRecords::license();
+        $id = $before === [] ? TestRecords::license() : TestRecords::issuedLicense();
+        array_shift($before);
         foreach ($before as $status) {
             DB::table('licenses')->where('id', $id)->update(['status' => $status]);
         }
@@ -195,7 +196,7 @@ describe('licenses', function () {
 describe('license activations', function () {
     it('refuse a second activation of the same installation', function () {
         // Arrange
-        $licenseId = TestRecords::license();
+        $licenseId = TestRecords::issuedLicense(['max_activations' => 2]);
         $installationId = (string) Str::uuid();
         TestRecords::licenseActivation($licenseId, ['installation_id' => $installationId]);
 
@@ -292,5 +293,107 @@ describe('installation licenses', function () {
         // Assert
         $values = trailValues('installation_licenses', $id);
         expect([$values['signature'], $values['activation_token']])->toBe(['[redacted]', '[redacted]']);
+    });
+});
+
+describe('a license used as it was signed', function () {
+    it('leaves draft only with its signature and issue time', function (Closure $draft) {
+        // Arrange
+        $id = $draft();
+
+        // Act & Assert
+        expect(fn () => DB::table('licenses')->where('id', $id)->update(['status' => 'issued']))
+            ->toThrow(QueryException::class, 'ck_licenses_issued_signed');
+    })->with([
+        'unsigned' => [fn () => TestRecords::license()],
+        'signed without issue time' => [fn () => TestRecords::license(['signing_key_id' => signingKey(['valid_from' => now()->subDay()]), 'signed_payload' => '{}', 'signature' => 'c2ln'])],
+    ]);
+
+    it('keeps its signed terms once issued', function (string $column, mixed $value) {
+        // Arrange
+        $id = TestRecords::issuedLicense();
+
+        // Act & Assert
+        expect(fn () => DB::table('licenses')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "{$column} can no longer change");
+    })->with([
+        ['max_activations', 99],
+        ['valid_until', '2099-12-31'],
+        ['allowed_domains', '{pirate.test}'],
+        ['signature', 'b3RoZXI='],
+    ]);
+
+    it('is signed only by an active key valid at the issue time', function (array $key) {
+        // Arrange
+        $keyId = signingKey($key);
+
+        // Act & Assert
+        expect(fn () => TestRecords::license(['signing_key_id' => $keyId, 'signed_payload' => '{}', 'signature' => 'c2ln', 'issued_at' => '2026-06-01 00:00:00+06']))
+            ->toThrow(QueryException::class, 'it cannot sign license');
+    })->with([
+        'revoked key' => [['status' => 'revoked', 'valid_from' => '2026-01-01 00:00:00+06']],
+        'expired key' => [['valid_from' => '2025-01-01 00:00:00+06', 'valid_to' => '2026-01-01 00:00:00+06']],
+        'key not yet valid' => [['valid_from' => '2026-07-01 00:00:00+06']],
+    ]);
+
+    it('is activated only once issued', function () {
+        // Arrange
+        $licenseId = TestRecords::license();
+
+        // Act & Assert
+        expect(fn () => TestRecords::licenseActivation($licenseId))->toThrow(QueryException::class, 'licenses');
+    });
+
+    it('is activated at most as often as it allows', function () {
+        // Arrange
+        $licenseId = TestRecords::issuedLicense(['max_activations' => 2]);
+        TestRecords::licenseActivation($licenseId);
+        TestRecords::licenseActivation($licenseId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::licenseActivation($licenseId))->toThrow(QueryException::class, 'allows 2 activations and already has 2');
+    });
+
+    it('counts a suspected clone as a live activation', function () {
+        // Arrange
+        $licenseId = TestRecords::issuedLicense();
+        $id = TestRecords::licenseActivation($licenseId);
+        DB::table('license_activations')->where('id', $id)->update(['status' => 'clone_suspected']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::licenseActivation($licenseId))->toThrow(QueryException::class, 'allows 1 activations and already has 1');
+    });
+
+    it('frees a place when an installation is deactivated', function () {
+        // Arrange
+        $licenseId = TestRecords::issuedLicense();
+        $id = TestRecords::licenseActivation($licenseId);
+        DB::table('license_activations')->where('id', $id)->update(['status' => 'deactivated']);
+
+        // Act
+        TestRecords::licenseActivation($licenseId);
+
+        // Assert
+        expect(DB::table('license_activations')->where('license_id', $licenseId)->count())->toBe(2);
+    });
+
+    it('is activated only on an allowed domain', function () {
+        // Arrange
+        $licenseId = TestRecords::issuedLicense(['allowed_domains' => '{gas.example.com}']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::licenseActivation($licenseId, ['domain' => 'pirate.test']))
+            ->toThrow(QueryException::class, 'does not allow domain pirate.test');
+    });
+
+    it('is activated on any domain when it names none', function () {
+        // Arrange
+        $licenseId = TestRecords::issuedLicense();
+
+        // Act
+        $id = TestRecords::licenseActivation($licenseId, ['domain' => 'anywhere.test']);
+
+        // Assert
+        expect(DB::table('license_activations')->where('id', $id)->value('domain'))->toBe('anywhere.test');
     });
 });

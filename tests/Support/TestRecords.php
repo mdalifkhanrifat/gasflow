@@ -1143,15 +1143,40 @@ final class TestRecords
     }
 
     /**
-     * An activation of the license (a new license when none is given) on a new
-     * installation.
+     * A trial license signed now with a new active signing key and moved to
+     * issued.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function issuedLicense(array $overrides = []): int
+    {
+        $keyId = (int) DB::table('license_signing_keys')->insertGetId([
+            'key_id' => 'k-'.Str::random(8),
+            'public_key' => 'MCowBQYDK2VwAyEA'.Str::random(32),
+            'valid_from' => now()->subDay(),
+        ]);
+        $id = self::license([
+            'signing_key_id' => $keyId,
+            'signed_payload' => '{"edition":"trial"}',
+            'signature' => 'c2lnbmF0dXJl',
+            'issued_at' => now(),
+            ...$overrides,
+        ]);
+        DB::table('licenses')->where('id', $id)->update(['status' => 'issued']);
+
+        return $id;
+    }
+
+    /**
+     * An activation of the license (a new issued license when none is given)
+     * on a new installation.
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function licenseActivation(?int $licenseId = null, array $overrides = []): int
     {
         return (int) DB::table('license_activations')->insertGetId([
-            'license_id' => $licenseId ?? self::license(),
+            'license_id' => $licenseId ?? self::issuedLicense(),
             'installation_id' => (string) Str::uuid(),
             'domain' => 'gas.example.test',
             'fingerprint_hash' => hash('sha256', Str::random(20)),
