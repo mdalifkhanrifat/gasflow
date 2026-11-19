@@ -318,7 +318,15 @@ and it never changes once saved.
   payment attempt, `000065` setup areas, pipeline zones and building setup
   tasks, `000066` gas supply receipts, `000067` installation statuses left to
   the status registry, `000068` license signing keys, licenses, activations,
-  check-ins and the installation's own license).
+  check-ins and the installation's own license), then the owner's group 13
+  decisions (V7.23, D50): `000069` the generic rule that freezes chosen child
+  columns once the parent is closed, `000070` installations inside their
+  building, `000071` installment schedules and statuses in step with their
+  agreement, `000072` guest links only for issued invoices and only while
+  active, `000073` attempts only through the collector's active gateway of
+  the right provider kind, `000074` setup tasks for the building's own people
+  (`user_can_access_building()`), `000075` gas supply receipts true to what
+  was bought, `000076` licenses used only as they were signed.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
