@@ -998,8 +998,11 @@ final class TestRecords
      */
     public static function installment(?int $agreementId = null, int $no = 1, array $overrides = []): int
     {
+        $agreementId ??= self::installationAgreement();
+
         return (int) DB::table('installation_installments')->insertGetId([
-            'installation_agreement_id' => $agreementId ?? self::installationAgreement(),
+            'installation_agreement_id' => $agreementId,
+            'building_id' => DB::table('installation_agreements')->where('id', $agreementId)->value('building_id'),
             'installment_no' => $no,
             'due_date' => sprintf('2026-%02d-01', min($no, 12)),
             'amount' => 1000,

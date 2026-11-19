@@ -142,3 +142,119 @@ describe('statuses', function () {
         expect($checks)->toBe([]);
     })->with(['installation_agreements', 'installation_installments']);
 });
+
+/**
+ * An installation_emi line of 1 000 BDT on the invoice.
+ */
+function emiLine(int $invoiceId): int
+{
+    return (int) DB::table('invoice_lines')->insertGetId([
+        'invoice_id' => $invoiceId, 'line_type' => 'installation_emi', 'description' => 'Installment 1 of 12',
+        'quantity' => 1, 'unit' => 'part', 'unit_rate' => 1000, 'line_total' => 1000,
+    ]);
+}
+
+/**
+ * An agreement for the customer of a new draft invoice, in that invoice's
+ * building.
+ *
+ * @return array{agreement: int, invoice: int}
+ */
+function agreementOfInvoiceCustomer(): array
+{
+    $invoice = DB::table('invoices')->where('id', TestRecords::invoice())->first();
+
+    return [
+        'agreement' => TestRecords::installationAgreement($invoice->building_id, ['customer_id' => $invoice->customer_id]),
+        'invoice' => $invoice->id,
+    ];
+}
+
+describe('the building of an installation', function () {
+    it('takes a customer of the building\'s organization', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $tenantId = DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id');
+
+        // Act
+        $id = TestRecords::installationAgreement($buildingId, ['customer_id' => TestRecords::customer($tenantId)]);
+
+        // Assert
+        expect(DB::table('installation_agreements')->where('id', $id)->value('customer_id'))->not->toBeNull();
+    });
+
+    it('takes a customer of an organization with access to the building', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $partnerId = TestRecords::organization();
+        TestRecords::accessGrant($buildingId, $partnerId);
+
+        // Act
+        $id = TestRecords::installationAgreement($buildingId, ['customer_id' => TestRecords::customer($partnerId)]);
+
+        // Assert
+        expect(DB::table('installation_agreements')->where('id', $id)->value('customer_id'))->not->toBeNull();
+    });
+
+    it('refuses a customer of an organization without access', function () {
+        // Arrange
+        $row = ['customer_id' => TestRecords::customer(TestRecords::organization())];
+
+        // Act & Assert
+        expect(fn () => TestRecords::installationAgreement(overrides: $row))
+            ->toThrow(QueryException::class, 'belongs to an organization without access to building');
+    });
+
+    it('keeps each installment in its agreement\'s building', function () {
+        // Arrange
+        $row = ['building_id' => TestRecords::building()];
+
+        // Act & Assert
+        expect(fn () => TestRecords::installment(overrides: $row))
+            ->toThrow(QueryException::class, 'fk_installment_agreement_building');
+    });
+
+    it('bills an installment through an installation line of the agreement\'s customer', function () {
+        // Arrange
+        ['agreement' => $agreementId, 'invoice' => $invoiceId] = agreementOfInvoiceCustomer();
+        $lineId = emiLine($invoiceId);
+
+        // Act
+        $id = TestRecords::installment($agreementId, 1, ['invoice_line_id' => $lineId]);
+
+        // Assert
+        expect(DB::table('installation_installments')->where('id', $id)->value('invoice_line_id'))->toBe($lineId);
+    });
+
+    it('refuses a gas line', function () {
+        // Arrange
+        ['agreement' => $agreementId, 'invoice' => $invoiceId] = agreementOfInvoiceCustomer();
+        $lineId = TestRecords::gasChargeLine($invoiceId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::installment($agreementId, 1, ['invoice_line_id' => $lineId]))
+            ->toThrow(QueryException::class, 'is billed by an installation_emi line, not a gas_charge line');
+    });
+
+    it('refuses a line of another building', function () {
+        // Arrange
+        $lineId = emiLine(TestRecords::invoice());
+
+        // Act & Assert
+        expect(fn () => TestRecords::installment(overrides: ['invoice_line_id' => $lineId]))
+            ->toThrow(QueryException::class, 'not to the installment\'s building');
+    });
+
+    it('refuses a line of another customer of the building', function () {
+        // Arrange
+        ['agreement' => $agreementId, 'invoice' => $invoiceId] = agreementOfInvoiceCustomer();
+        $invoice = DB::table('invoices')->where('id', $invoiceId)->first();
+        $tenantId = DB::table('buildings')->where('id', $invoice->building_id)->value('tenant_organization_id');
+        $otherInvoiceId = TestRecords::invoice($invoice->billing_cycle_id, ['customer_id' => TestRecords::customer($tenantId)]);
+        $lineId = emiLine($otherInvoiceId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::installment($agreementId, 1, ['invoice_line_id' => $lineId]))
+            ->toThrow(QueryException::class, 'not the agreement\'s customer');
+    });
+});
