@@ -127,10 +127,12 @@ describe('gateway configurations', function () {
     it('refuse a second default in a scope', function (string $kind, string $column, Closure $owner, string $index) {
         // Arrange
         $ownerId = $owner();
-        gatewayOf($kind, [$column => $ownerId, 'is_default' => true]);
+        DB::table('integration_providers')->insert(['code' => 'sms_backup', 'provider_type' => 'sms', 'display_name' => 'Backup SMS',
+            'driver_class' => 'App\\Services\\Integrations\\Drivers\\GenericSmsDriver']);
+        gatewayOf($kind, [$column => $ownerId, 'is_default' => true, 'status' => 'active']);
 
         // Act & Assert
-        expect(fn () => gatewayOf($kind, [$column => $ownerId, 'is_default' => true, 'provider' => $kind === 'payment' ? 'nagad' : 'bkash']))
+        expect(fn () => gatewayOf($kind, [$column => $ownerId, 'is_default' => true, 'status' => 'active', 'provider' => $kind === 'payment' ? 'nagad' : 'sms_backup']))
             ->toThrow(QueryException::class, $index);
     })->with([
         'payment, organization' => ['payment', 'organization_id', fn () => TestRecords::organization(), 'uq_org_payment_gateway_default'],
@@ -157,10 +159,12 @@ describe('gateway configurations', function () {
 describe('payment attempts', function () {
     it('may name the gateway configuration they went through', function () {
         // Arrange
-        $gatewayId = TestRecords::paymentGateway();
+        $paymentId = TestRecords::payment();
+        $collectorId = DB::table('payments')->where('id', $paymentId)->value('payee_organization_id');
+        $gatewayId = TestRecords::paymentGateway(['organization_id' => $collectorId, 'status' => 'active']);
 
         // Act
-        $id = TestRecords::paymentAttempt(overrides: ['gateway_configuration_id' => $gatewayId]);
+        $id = TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]);
 
         // Assert
         expect(DB::table('payment_attempts')->where('id', $id)->value('gateway_configuration_id'))->toBe($gatewayId);
@@ -173,5 +177,119 @@ describe('payment attempts', function () {
         // Act & Assert
         expect(fn () => TestRecords::paymentAttempt(overrides: $row))
             ->toThrow(QueryException::class, 'fk_payment_attempt_gateway_configuration');
+    });
+});
+
+/**
+ * A new internal cost allocation payment and its collector (the building's
+ * owner).
+ *
+ * @return array{payment: int, collector: int, building: int}
+ */
+function collectedPayment(): array
+{
+    $payment = DB::table('payments')->where('id', TestRecords::payment())->first();
+
+    return ['payment' => $payment->id, 'collector' => $payment->payee_organization_id, 'building' => $payment->building_id];
+}
+
+describe('which gateway a provider may run', function () {
+    it('refuses a provider of the other kind', function (string $kind) {
+        // Arrange
+        $row = ['provider' => $kind === 'payment' ? 'sms_generic' : 'bkash'];
+
+        // Act & Assert
+        expect(fn () => gatewayOf($kind, $row))->toThrow(QueryException::class, $kind === 'payment' ? 'fk_org_payment_gateway_provider' : 'fk_org_sms_gateway_provider');
+    })->with(['payment', 'sms']);
+
+    it('refuses a default that is not active', function (string $kind, string $constraint) {
+        // Arrange
+        $row = ['is_default' => true];
+
+        // Act & Assert
+        expect(fn () => gatewayOf($kind, $row))->toThrow(QueryException::class, $constraint);
+    })->with([
+        ['payment', 'ck_organization_payment_gateways_default_active'],
+        ['sms', 'ck_organization_sms_gateways_default_active'],
+    ]);
+});
+
+describe('the gateway of a payment attempt', function () {
+    it('may be a building gateway for the building\'s internal cost allocation', function () {
+        // Arrange
+        ['payment' => $paymentId, 'building' => $buildingId] = collectedPayment();
+        $gatewayId = TestRecords::paymentGateway(['building_id' => $buildingId, 'status' => 'active']);
+
+        // Act
+        $id = TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]);
+
+        // Assert
+        expect(DB::table('payment_attempts')->where('id', $id)->value('gateway_configuration_id'))->toBe($gatewayId);
+    });
+
+    it('refuses a gateway of an organization that does not collect the payment', function () {
+        // Arrange
+        ['payment' => $paymentId] = collectedPayment();
+        $gatewayId = TestRecords::paymentGateway(['status' => 'active']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]))
+            ->toThrow(QueryException::class, 'that collects payment');
+    });
+
+    it('refuses a gateway of another building', function () {
+        // Arrange
+        ['payment' => $paymentId] = collectedPayment();
+        $gatewayId = TestRecords::paymentGateway(['building_id' => TestRecords::building(), 'status' => 'active']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]))
+            ->toThrow(QueryException::class, 'serves only the internal cost allocation of building');
+    });
+
+    it('refuses a building gateway for an authorized meter billing payment', function () {
+        // Arrange
+        $invoiceId = TestRecords::issuedInvoice();
+        $paymentId = TestRecords::receivedPayment($invoiceId, ['status' => 'pending', 'received_at' => null]);
+        $buildingId = DB::table('payments')->where('id', $paymentId)->value('building_id');
+        $gatewayId = TestRecords::paymentGateway(['building_id' => $buildingId, 'status' => 'active']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]))
+            ->toThrow(QueryException::class, 'not a authorized_meter_billing payment');
+    });
+
+    it('refuses another provider than the gateway\'s', function () {
+        // Arrange
+        ['payment' => $paymentId, 'collector' => $collectorId] = collectedPayment();
+        $gatewayId = TestRecords::paymentGateway(['organization_id' => $collectorId, 'provider' => 'nagad', 'status' => 'active']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]))
+            ->toThrow(QueryException::class, "uses bkash, not the gateway's provider nagad");
+    });
+
+    it('refuses a gateway that is not active', function (string $status) {
+        // Arrange
+        ['payment' => $paymentId, 'collector' => $collectorId] = collectedPayment();
+        $gatewayId = TestRecords::paymentGateway(['organization_id' => $collectorId, 'status' => $status]);
+
+        // Act & Assert
+        expect(fn () => TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]))
+            ->toThrow(QueryException::class, 'only an active gateway takes new attempts');
+    })->with(['inactive', 'disabled']);
+
+    it('keeps an attempt whose gateway is disabled later, even when the attempt is written again', function () {
+        // Arrange
+        ['payment' => $paymentId, 'collector' => $collectorId] = collectedPayment();
+        $gatewayId = TestRecords::paymentGateway(['organization_id' => $collectorId, 'status' => 'active']);
+        $id = TestRecords::paymentAttempt($paymentId, ['gateway_configuration_id' => $gatewayId]);
+        DB::table('organization_payment_gateways')->where('id', $gatewayId)->update(['status' => 'disabled']);
+
+        // Act
+        DB::table('payment_attempts')->where('id', $id)->update(['status' => 'pending', 'provider' => 'bkash']);
+
+        // Assert
+        expect(DB::table('payment_attempts')->where('id', $id)->value('status'))->toBe('pending');
     });
 });
