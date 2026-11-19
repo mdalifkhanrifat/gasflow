@@ -9,8 +9,23 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\TestRecords;
 
+/**
+ * The parts of a new agreement of 2 000 BDT in two parts of 1 000, moved to
+ * active.
+ *
+ * @return list<int>
+ */
+function activeAgreementParts(): array
+{
+    $agreementId = TestRecords::installationAgreement(overrides: ['principal_amount' => 2000, 'installment_count' => 2]);
+    $parts = [TestRecords::installment($agreementId, 1), TestRecords::installment($agreementId, 2)];
+    DB::table('installation_agreements')->where('id', $agreementId)->update(['status' => 'active']);
+
+    return $parts;
+}
+
 describe('lifecycle registration', function () {
-    it('registers each table as a protected financial record', function (string $table, string $defaultStatus) {
+    it('registers each table as a protected financial record with enforced transitions', function (string $table, string $defaultStatus) {
         // Arrange: migration 2026_11_19_000062 has run
 
         // Act
@@ -18,7 +33,7 @@ describe('lifecycle registration', function () {
 
         // Assert
         expect([$entity->module, $entity->record_class, $entity->soft_delete_policy, $entity->hard_delete_policy, $entity->enforce_transitions, $entity->default_status])
-            ->toBe(['installations', 'financial', 'protected', 'forbidden', false, $defaultStatus]);
+            ->toBe(['installations', 'financial', 'protected', 'forbidden', true, $defaultStatus]);
     })->with([
         ['installation_agreements', 'draft'],
         ['installation_installments', 'scheduled'],
@@ -100,10 +115,11 @@ describe('installation installments', function () {
 
     it('accept a part paid in full', function () {
         // Arrange
-        $row = ['paid_amount' => 1000, 'status' => 'paid'];
+        $id = activeAgreementParts()[0];
+        DB::table('installation_installments')->where('id', $id)->update(['status' => 'invoiced']);
 
         // Act
-        $id = TestRecords::installment(overrides: $row);
+        DB::table('installation_installments')->where('id', $id)->update(['status' => 'paid', 'paid_amount' => 1000]);
 
         // Assert
         expect(DB::table('installation_installments')->where('id', $id)->value('paid_amount'))->toBe('1000.00');
@@ -136,7 +152,7 @@ describe('statuses', function () {
         // Arrange: migration 2026_11_19_000067 has run
 
         // Act
-        $checks = DB::select("select conname from pg_constraint where conrelid = ?::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%status%'", [$table]);
+        $checks = DB::select("select conname from pg_constraint where conrelid = ?::regclass and contype = 'c' and pg_get_constraintdef(oid) ~ '\\(?status\\)?(::text)? = ANY'", [$table]);
 
         // Assert
         expect($checks)->toBe([]);
@@ -256,5 +272,196 @@ describe('the building of an installation', function () {
         // Act & Assert
         expect(fn () => TestRecords::installment($agreementId, 1, ['invoice_line_id' => $lineId]))
             ->toThrow(QueryException::class, 'not the agreement\'s customer');
+    });
+});
+
+/**
+ * Moves a row along the given statuses, one enforced transition at a time.
+ *
+ * @param  list<string>  $statuses
+ */
+function moveInstallationRow(string $table, int $id, array $statuses): void
+{
+    foreach ($statuses as $status) {
+        DB::table($table)->where('id', $id)->update(['status' => $status]);
+    }
+}
+
+/**
+ * The agreement of an installment.
+ */
+function agreementOf(int $installmentId): int
+{
+    return (int) DB::table('installation_installments')->where('id', $installmentId)->value('installation_agreement_id');
+}
+
+describe('the schedule of an agreement', function () {
+    it('lets a draft become active once its parts match the principal', function () {
+        // Arrange & Act
+        $agreementId = agreementOf(activeAgreementParts()[0]);
+
+        // Assert
+        expect(DB::table('installation_agreements')->where('id', $agreementId)->value('status'))->toBe('active');
+    });
+
+    it('keeps a draft whose parts do not match', function (Closure $parts, string $message) {
+        // Arrange
+        $agreementId = TestRecords::installationAgreement(overrides: ['principal_amount' => 2000, 'installment_count' => 2]);
+        $parts($agreementId);
+
+        // Act & Assert
+        expect(fn () => moveInstallationRow('installation_agreements', $agreementId, ['active']))
+            ->toThrow(QueryException::class, $message);
+    })->with([
+        'too few parts' => [fn (int $id) => TestRecords::installment($id, 1), 'has 1 parts of 1000.00, not 2 parts of 2000.00'],
+        'a wrong sum' => [function (int $id) {
+            TestRecords::installment($id, 1);
+            TestRecords::installment($id, 2, ['amount' => 900]);
+        }, 'has 2 parts of 1900.00, not 2 parts of 2000.00'],
+    ]);
+
+    it('cannot start active without its parts', function () {
+        // Arrange
+        $row = ['status' => 'active'];
+
+        // Act & Assert
+        expect(fn () => TestRecords::installationAgreement(overrides: $row))->toThrow(QueryException::class, 'has 0 parts of 0.00');
+    });
+
+    it('lets a draft without parts be cancelled', function () {
+        // Arrange
+        $agreementId = TestRecords::installationAgreement();
+
+        // Act
+        moveInstallationRow('installation_agreements', $agreementId, ['cancelled']);
+
+        // Assert
+        expect(DB::table('installation_agreements')->where('id', $agreementId)->value('status'))->toBe('cancelled');
+    });
+
+    it('refuses a part due before the agreement starts', function () {
+        // Arrange
+        $row = ['due_date' => '2025-12-31'];
+
+        // Act & Assert
+        expect(fn () => TestRecords::installment(overrides: $row))
+            ->toThrow(QueryException::class, 'is due on 2025-12-31, before its agreement starts on 2026-01-01');
+    });
+
+    it('freezes the agreement\'s terms once active', function () {
+        // Arrange
+        $agreementId = agreementOf(activeAgreementParts()[0]);
+
+        // Act & Assert
+        expect(fn () => DB::table('installation_agreements')->where('id', $agreementId)->update(['principal_amount' => 1]))
+            ->toThrow(QueryException::class, 'principal_amount can no longer change');
+    });
+
+    it('takes no new part once active', function () {
+        // Arrange
+        $agreementId = agreementOf(activeAgreementParts()[0]);
+
+        // Act & Assert
+        expect(fn () => TestRecords::installment($agreementId, 3))->toThrow(QueryException::class, 'can no longer change');
+    });
+
+    it('freezes the schedule of its parts once active', function (string $column, mixed $value) {
+        // Arrange
+        $id = activeAgreementParts()[0];
+
+        // Act & Assert
+        expect(fn () => DB::table('installation_installments')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "{$column} of installation_installments {$id} can no longer change");
+    })->with([
+        ['amount', 500],
+        ['due_date', '2026-06-01'],
+        ['installment_no', 9],
+    ]);
+
+    it('is completed only when every part is paid or waived', function () {
+        // Arrange
+        [$paidId, $openId] = activeAgreementParts();
+        moveInstallationRow('installation_installments', $paidId, ['invoiced']);
+        DB::table('installation_installments')->where('id', $paidId)->update(['status' => 'paid', 'paid_amount' => 1000]);
+
+        // Act & Assert
+        expect(fn () => moveInstallationRow('installation_agreements', agreementOf($openId), ['completed']))
+            ->toThrow(QueryException::class, 'installation_installments');
+    });
+
+    it('completes once the last part is waived', function () {
+        // Arrange
+        [$paidId, $waivedId] = activeAgreementParts();
+        moveInstallationRow('installation_installments', $paidId, ['invoiced']);
+        DB::table('installation_installments')->where('id', $paidId)->update(['status' => 'paid', 'paid_amount' => 1000]);
+        moveInstallationRow('installation_installments', $waivedId, ['waived']);
+
+        // Act
+        moveInstallationRow('installation_agreements', agreementOf($waivedId), ['completed']);
+
+        // Assert
+        expect(DB::table('installation_agreements')->where('id', agreementOf($waivedId))->value('status'))->toBe('completed');
+    });
+
+    it('may come back from default', function () {
+        // Arrange
+        $agreementId = agreementOf(activeAgreementParts()[0]);
+
+        // Act
+        moveInstallationRow('installation_agreements', $agreementId, ['defaulted', 'active']);
+
+        // Assert
+        expect(DB::table('installation_agreements')->where('id', $agreementId)->value('status'))->toBe('active');
+    });
+});
+
+describe('installment statuses', function () {
+    it('bill a part only on an approved agreement', function () {
+        // Arrange
+        $id = TestRecords::installment();
+
+        // Act & Assert
+        expect(fn () => moveInstallationRow('installation_installments', $id, ['invoiced']))
+            ->toThrow(QueryException::class, 'installation_agreements');
+    });
+
+    it('refuse a move the design does not allow', function (array $before, string $to) {
+        // Arrange
+        $id = activeAgreementParts()[0];
+        moveInstallationRow('installation_installments', $id, $before);
+
+        // Act & Assert
+        expect(fn () => moveInstallationRow('installation_installments', $id, [$to]))->toThrow(QueryException::class, 'is not allowed');
+    })->with([
+        'paid without an invoice' => [[], 'paid'],
+        'back to scheduled' => [['invoiced'], 'scheduled'],
+    ]);
+
+    it('say what was paid', function (string $status, float $paid) {
+        // Arrange
+        $id = activeAgreementParts()[0];
+        moveInstallationRow('installation_installments', $id, ['invoiced']);
+
+        // Act & Assert
+        expect(fn () => DB::table('installation_installments')->where('id', $id)->update(['status' => $status, 'paid_amount' => $paid]))
+            ->toThrow(QueryException::class, 'ck_installation_installments_status_payment');
+    })->with([
+        'invoiced with money' => ['invoiced', 10],
+        'partially paid with nothing' => ['partially_paid', 0],
+        'partially paid in full' => ['partially_paid', 1000],
+        'paid with less' => ['paid', 999],
+        'overdue in full' => ['overdue', 1000],
+    ]);
+
+    it('record a partial payment', function () {
+        // Arrange
+        $id = activeAgreementParts()[0];
+        moveInstallationRow('installation_installments', $id, ['invoiced']);
+
+        // Act
+        DB::table('installation_installments')->where('id', $id)->update(['status' => 'partially_paid', 'paid_amount' => 400]);
+
+        // Assert
+        expect(DB::table('installation_installments')->where('id', $id)->value('status'))->toBe('partially_paid');
     });
 });
