@@ -452,10 +452,12 @@ final class TestRecords
     /**
      * The given month of 2026 as an approved reading period of the building
      * (a new building when none is given), ready to be billed.
+     *
+     * @param  array<string, mixed>  $overrides
      */
-    public static function approvedReadingPeriod(?int $buildingId = null, int $month = 10): int
+    public static function approvedReadingPeriod(?int $buildingId = null, int $month = 10, array $overrides = []): int
     {
-        $id = self::readingPeriod($buildingId, $month);
+        $id = self::readingPeriod($buildingId, $month, $overrides);
         foreach (['collecting', 'review', 'approved'] as $status) {
             DB::table('reading_periods')->where('id', $id)->update(['status' => $status]);
         }

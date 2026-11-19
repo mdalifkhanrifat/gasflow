@@ -71,21 +71,80 @@ describe('reading periods', function () {
 
     it('refuse an end before the start', function () {
         // Arrange
-        $row = ['ends_on' => '2026-09-30'];
+        $row = ['ends_on' => '2026-09-30', 'period_month' => 9];
 
         // Act & Assert
         expect(fn () => TestRecords::readingPeriod(overrides: $row))->toThrow(QueryException::class, 'ck_reading_periods_range');
     });
 
-    it('refuse a second period for the same building and month', function () {
+    it('refuse overlapping days in the same building', function () {
         // Arrange
         $buildingId = TestRecords::building();
         TestRecords::readingPeriod($buildingId);
 
         // Act & Assert
-        expect(fn () => TestRecords::readingPeriod($buildingId))
-            ->toThrow(QueryException::class, 'reading_periods_building_id_period_year_period_month_unique');
+        expect(fn () => TestRecords::readingPeriod($buildingId, overrides: ['starts_on' => '2026-10-31', 'ends_on' => '2026-11-15', 'period_month' => 11]))
+            ->toThrow(QueryException::class, 'ex_reading_periods_no_overlap');
     });
+
+    it('may be two in a month, one for each half', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        TestRecords::readingPeriod($buildingId, overrides: ['ends_on' => '2026-10-15']);
+
+        // Act
+        TestRecords::readingPeriod($buildingId, overrides: ['starts_on' => '2026-10-16']);
+
+        // Assert
+        expect(DB::table('reading_periods')->where('building_id', $buildingId)->count())->toBe(2);
+    });
+
+    it('let the days of a cancelled period be read again', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $cancelledId = TestRecords::readingPeriod($buildingId);
+        DB::table('reading_periods')->where('id', $cancelledId)->update(['status' => 'cancelled']);
+
+        // Act
+        TestRecords::readingPeriod($buildingId);
+
+        // Assert
+        expect(DB::table('reading_periods')->where('building_id', $buildingId)->count())->toBe(2);
+    });
+
+    it('label the month they end in', function () {
+        // Arrange
+        $row = ['ends_on' => '2026-11-09'];
+
+        // Act & Assert
+        expect(fn () => TestRecords::readingPeriod(overrides: $row))->toThrow(QueryException::class, 'ck_reading_periods_period_of_ends_on');
+    });
+
+    it('may change their dates while open', function () {
+        // Arrange
+        $id = TestRecords::readingPeriod();
+
+        // Act
+        DB::table('reading_periods')->where('id', $id)->update(['ends_on' => '2026-10-15']);
+
+        // Assert
+        expect(DB::table('reading_periods')->where('id', $id)->value('ends_on'))->toBe('2026-10-15');
+    });
+
+    it('freeze their dates after open', function (string $column, mixed $value) {
+        // Arrange
+        $id = TestRecords::readingPeriod();
+        DB::table('reading_periods')->where('id', $id)->update(['status' => 'collecting']);
+
+        // Act & Assert
+        expect(fn () => DB::table('reading_periods')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "{$column} can no longer change");
+    })->with([
+        ['building_id', fn () => TestRecords::building()],
+        ['starts_on', '2026-10-02'],
+        ['ends_on', '2026-10-30'],
+        ['period_month', 11],
+    ]);
 
     it('start open', function () {
         // Arrange

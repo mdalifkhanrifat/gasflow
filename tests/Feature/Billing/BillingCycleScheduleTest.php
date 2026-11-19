@@ -10,18 +10,28 @@ use Illuminate\Support\Facades\DB;
 use Tests\Support\TestRecords;
 
 /**
+ * An approved reading period of the building over the given days (the
+ * building's existing one when it has them), labelled with the month it ends in.
+ */
+function periodOver(int $buildingId, string $startsOn, string $endsOn): int
+{
+    return DB::table('reading_periods')->where(['building_id' => $buildingId, 'starts_on' => $startsOn, 'ends_on' => $endsOn])->value('id')
+        ?? TestRecords::approvedReadingPeriod($buildingId, (int) substr($endsOn, 5, 2), [
+            'period_year' => (int) substr($endsOn, 0, 4), 'starts_on' => $startsOn, 'ends_on' => $endsOn,
+        ]);
+}
+
+/**
  * A draft cycle of the setting's building and stream over the given days,
- * labelled with the month it ends in, on the building's approved reading
- * period of its first month.
+ * labelled with the month it ends in, on an approved reading period over the
+ * same days (or the reading period given in the overrides).
  *
  * @param  array<string, mixed>  $overrides
  */
 function scheduledCycle(int $settingId, string $startsOn, string $endsOn, array $overrides = []): int
 {
     $setting = DB::table('building_billing_settings')->where('id', $settingId)->first();
-    $month = (int) substr($startsOn, 5, 2);
-    $periodId = DB::table('reading_periods')->where('building_id', $setting->building_id)->where('period_month', $month)->value('id')
-        ?? TestRecords::approvedReadingPeriod($setting->building_id, $month);
+    $periodId = $overrides['reading_period_id'] ?? periodOver($setting->building_id, $startsOn, $endsOn);
 
     return (int) DB::table('billing_cycles')->insertGetId([
         'building_id' => $setting->building_id,
@@ -173,8 +183,12 @@ describe('billing cycles under a billing setting', function () {
         $settingId = TestRecords::billingSetting($buildingId);
         $id = scheduledCycle($settingId, '2026-10-01', '2026-10-31');
 
+        $septemberId = periodOver($buildingId, '2026-09-01', '2026-09-30');
+
         // Act
-        DB::table('billing_cycles')->where('id', $id)->update(['starts_on' => '2026-09-01', 'ends_on' => '2026-09-30', 'period_month' => 9]);
+        DB::table('billing_cycles')->where('id', $id)->update([
+            'reading_period_id' => $septemberId, 'starts_on' => '2026-09-01', 'ends_on' => '2026-09-30', 'period_month' => 9,
+        ]);
 
         // Assert
         expect(DB::table('billing_cycles')->where('id', $id)->value('starts_on'))->toBe('2026-09-01');
@@ -283,5 +297,59 @@ describe('the billing timeline of a stream', function () {
         // Act & Assert
         expect(fn () => DB::table('building_billing_settings')->where('id', $hiddenId)->update(['is_deleted' => false, 'deleted_at' => null]))
             ->toThrow(QueryException::class, 'is billed until 2026-10-31');
+    });
+});
+
+describe('the reading period of a cycle', function () {
+    it('may be the second half of a month closed by a monthly cycle', function () {
+        // Arrange
+        $settingId = TestRecords::billingSetting();
+        $buildingId = DB::table('building_billing_settings')->where('id', $settingId)->value('building_id');
+        periodOver($buildingId, '2026-10-01', '2026-10-15');
+        $secondHalfId = periodOver($buildingId, '2026-10-16', '2026-10-31');
+
+        // Act
+        $id = scheduledCycle($settingId, '2026-10-01', '2026-10-31', ['reading_period_id' => $secondHalfId]);
+
+        // Assert
+        expect(DB::table('billing_cycles')->where('id', $id)->value('reading_period_id'))->toBe($secondHalfId);
+    });
+
+    it('refuses a period that ends on another day', function () {
+        // Arrange
+        $settingId = TestRecords::billingSetting();
+        $buildingId = DB::table('building_billing_settings')->where('id', $settingId)->value('building_id');
+        $firstHalfId = periodOver($buildingId, '2026-10-01', '2026-10-15');
+
+        // Act & Assert
+        expect(fn () => scheduledCycle($settingId, '2026-10-01', '2026-10-31', ['reading_period_id' => $firstHalfId]))
+            ->toThrow(QueryException::class, 'does not close the cycle 2026-10-01 to 2026-10-31');
+    });
+
+    it('refuses a period that starts before the cycle', function () {
+        // Arrange
+        $settingId = TestRecords::billingSetting(overrides: ['frequency' => 'semi_monthly', 'second_start_day' => 16]);
+        $buildingId = DB::table('building_billing_settings')->where('id', $settingId)->value('building_id');
+        $monthId = periodOver($buildingId, '2026-10-01', '2026-10-31');
+
+        // Act & Assert
+        expect(fn () => scheduledCycle($settingId, '2026-10-16', '2026-10-31', ['reading_period_id' => $monthId]))
+            ->toThrow(QueryException::class, 'does not close the cycle 2026-10-16 to 2026-10-31');
+    });
+
+    it('is checked again when the cycle leaves draft', function () {
+        // Arrange
+        $settingId = TestRecords::billingSetting();
+        $buildingId = DB::table('building_billing_settings')->where('id', $settingId)->value('building_id');
+        $periodId = TestRecords::readingPeriod($buildingId);
+        $id = scheduledCycle($settingId, '2026-10-01', '2026-10-31', ['reading_period_id' => $periodId]);
+        DB::table('reading_periods')->where('id', $periodId)->update(['ends_on' => '2026-10-30']);
+        foreach (['collecting', 'review', 'approved'] as $status) {
+            DB::table('reading_periods')->where('id', $periodId)->update(['status' => $status]);
+        }
+
+        // Act & Assert
+        expect(fn () => DB::table('billing_cycles')->where('id', $id)->update(['status' => 'calculating']))
+            ->toThrow(QueryException::class, 'does not close the cycle');
     });
 });
