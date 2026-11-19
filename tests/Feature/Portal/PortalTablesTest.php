@@ -154,3 +154,88 @@ describe('guest access links', function () {
         expect($values['token_hash'])->toBe('[redacted]');
     });
 });
+
+describe('what a guest link may do', function () {
+    it('is made only for an issued invoice', function () {
+        // Arrange
+        $invoiceId = TestRecords::invoice();
+
+        // Act & Assert
+        expect(fn () => TestRecords::guestLink($invoiceId))->toThrow(QueryException::class, 'invoices');
+    });
+
+    it('refuses a wrong value', function (array $row, string $constraint) {
+        // Arrange: a new issued invoice
+
+        // Act & Assert
+        expect(fn () => TestRecords::guestLink(overrides: $row))->toThrow(QueryException::class, $constraint);
+    })->with([
+        'already expired' => [['expires_at' => '2020-01-01 00:00:00+06'], 'ck_guest_access_links_expiry'],
+        'more than 100 uses' => [['max_uses' => 101], 'ck_guest_access_links_max_uses_bound'],
+        'revoked time on an active link' => [['revoked_at' => '2026-10-01 00:00:00+06'], 'ck_guest_access_links_revoked'],
+    ]);
+
+    it('is revoked together with its revoke time', function () {
+        // Arrange
+        $id = TestRecords::guestLink();
+
+        // Act & Assert
+        expect(fn () => DB::table('guest_access_links')->where('id', $id)->update(['status' => 'revoked']))
+            ->toThrow(QueryException::class, 'ck_guest_access_links_revoked');
+    });
+
+    it('counts a use while active', function () {
+        // Arrange
+        $id = TestRecords::guestLink(overrides: ['max_uses' => 3]);
+
+        // Act
+        DB::table('guest_access_links')->where('id', $id)->update(['use_count' => 1, 'last_used_at' => now()]);
+
+        // Assert
+        expect(DB::table('guest_access_links')->where('id', $id)->value('use_count'))->toBe(1);
+    });
+
+    it('cannot be used once revoked', function () {
+        // Arrange
+        $id = TestRecords::guestLink(overrides: ['max_uses' => 3]);
+        DB::table('guest_access_links')->where('id', $id)->update(['status' => 'revoked', 'revoked_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => DB::table('guest_access_links')->where('id', $id)->update(['use_count' => 1]))
+            ->toThrow(QueryException::class, 'is revoked');
+    });
+
+    it('cannot be used after its expiry', function () {
+        // Arrange
+        $id = TestRecords::guestLink(overrides: ['max_uses' => 3, 'created_at' => now()->subDays(2), 'expires_at' => now()->subDay()]);
+
+        // Act & Assert
+        expect(fn () => DB::table('guest_access_links')->where('id', $id)->update(['use_count' => 1]))
+            ->toThrow(QueryException::class, 'it cannot be used');
+    });
+
+    it('never takes back a use', function () {
+        // Arrange
+        $id = TestRecords::guestLink(overrides: ['max_uses' => 3]);
+        DB::table('guest_access_links')->where('id', $id)->update(['use_count' => 2]);
+
+        // Act & Assert
+        expect(fn () => DB::table('guest_access_links')->where('id', $id)->update(['use_count' => 1]))
+            ->toThrow(QueryException::class, 'cannot go down');
+    });
+
+    it('keeps what it was made for', function (string $column, Closure $value) {
+        // Arrange
+        $id = TestRecords::guestLink();
+
+        // Act & Assert
+        expect(fn () => DB::table('guest_access_links')->where('id', $id)->update([$column => $value()]))
+            ->toThrow(QueryException::class, "{$column} can no longer change");
+    })->with([
+        'invoice' => ['invoice_id', fn () => TestRecords::issuedInvoice()],
+        'token' => ['token_hash', fn () => hash('sha256', 'other')],
+        'purpose' => ['purpose', fn () => 'invoice_view'],
+        'uses' => ['max_uses', fn () => 5],
+        'expiry' => ['expires_at', fn () => now()->addYear()],
+    ]);
+});

@@ -1011,7 +1011,7 @@ final class TestRecords
     }
 
     /**
-     * A guest link to the invoice (a new draft invoice when none is given):
+     * A guest link to the invoice (a new issued invoice when none is given):
      * one use, valid for a week, with a fresh token hash.
      *
      * @param  array<string, mixed>  $overrides
@@ -1019,7 +1019,7 @@ final class TestRecords
     public static function guestLink(?int $invoiceId = null, array $overrides = []): int
     {
         return (int) DB::table('guest_access_links')->insertGetId([
-            'invoice_id' => $invoiceId ?? self::invoice(),
+            'invoice_id' => $invoiceId ?? self::issuedInvoice(),
             'token_hash' => hash('sha256', Str::random(40)),
             'expires_at' => now()->addWeek(),
             ...$overrides,
