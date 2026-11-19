@@ -969,4 +969,41 @@ final class TestRecords
             ...$overrides,
         ]);
     }
+
+    /**
+     * A draft installation agreement of the building (a new building when
+     * none is given): 12 000 BDT in 12 parts from 2026-01-01, with a fresh
+     * agreement number.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function installationAgreement(?int $buildingId = null, array $overrides = []): int
+    {
+        return (int) DB::table('installation_agreements')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'agreement_no' => 'IA-'.Str::random(10),
+            'description' => 'Gas line installation',
+            'principal_amount' => 12000,
+            'installment_count' => 12,
+            'start_date' => '2026-01-01',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * Installment part number $no of the agreement (a new agreement when none
+     * is given): 1 000 BDT due on the first of month $no of 2026.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function installment(?int $agreementId = null, int $no = 1, array $overrides = []): int
+    {
+        return (int) DB::table('installation_installments')->insertGetId([
+            'installation_agreement_id' => $agreementId ?? self::installationAgreement(),
+            'installment_no' => $no,
+            'due_date' => sprintf('2026-%02d-01', min($no, 12)),
+            'amount' => 1000,
+            ...$overrides,
+        ]);
+    }
 }
