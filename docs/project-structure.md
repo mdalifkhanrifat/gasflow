@@ -306,7 +306,12 @@ and it never changes once saved.
   invoice, has their customer, and names the records its type needs,
   `000058` a reversal journal (source `journal_reversal`) reverses one posted
   journal of its organization and mirrors its lines; its transaction names
-  the reversed one.
+  the reversed one. Then the billing schedule (V7.22, D48):
+  `2026_11_19_000059` building billing settings, one timeline per building
+  and stream, with `billing_period_bounds()`, `000060` billing cycles follow
+  their setting exactly and never overlap within a stream, and the timeline
+  never changes under existing cycles, `000061` reading periods never overlap
+  and close their cycle.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
