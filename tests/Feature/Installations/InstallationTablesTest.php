@@ -130,3 +130,15 @@ describe('installation installments', function () {
         expect(DB::table('installation_installments')->where('id', $id)->value('installment_no'))->toBe(1);
     });
 });
+
+describe('statuses', function () {
+    it('come only from the status registry, so a new status needs no schema change', function (string $table) {
+        // Arrange: migration 2026_11_19_000067 has run
+
+        // Act
+        $checks = DB::select("select conname from pg_constraint where conrelid = ?::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%status%'", [$table]);
+
+        // Assert
+        expect($checks)->toBe([]);
+    })->with(['installation_agreements', 'installation_installments']);
+});
