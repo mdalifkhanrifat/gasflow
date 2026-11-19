@@ -162,3 +162,83 @@ describe('receipt statuses', function () {
         'recorded' => [['recorded']],
     ]);
 });
+
+describe('what a receipt bought', function () {
+    it('costs its quantity times its unit cost', function () {
+        // Arrange
+        $row = ['quantity' => 1000, 'unit_cost' => 40, 'total_cost' => 39999];
+
+        // Act & Assert
+        expect(fn () => TestRecords::gasSupplyReceipt(overrides: $row))->toThrow(QueryException::class, 'ck_gas_supply_receipts_value');
+    });
+
+    it('rounds the total to the paisa', function () {
+        // Arrange
+        $row = ['quantity' => 10.555, 'unit_cost' => 3.3333, 'total_cost' => 35.18];
+
+        // Act
+        $id = TestRecords::gasSupplyReceipt(overrides: $row);
+
+        // Assert
+        expect(DB::table('gas_supply_receipts')->where('id', $id)->value('total_cost'))->toBe('35.18');
+    });
+
+    it('is dated inside its vendor assignment', function (string $date) {
+        // Arrange
+        $assignmentId = TestRecords::vendorAssignment(TestRecords::building(), '2026-01-01', ['valid_to' => '2026-06-30']);
+
+        // Act & Assert
+        expect(fn () => TestRecords::gasSupplyReceipt($assignmentId, ['supply_date' => $date]))
+            ->toThrow(QueryException::class, 'is outside its vendor assignment (2026-01-01 to 2026-06-30)');
+    })->with(['before' => '2025-12-31', 'after' => '2026-07-01']);
+
+    it('may be dated on the last day of its vendor assignment', function () {
+        // Arrange
+        $assignmentId = TestRecords::vendorAssignment(TestRecords::building(), '2026-01-01', ['valid_to' => '2026-06-30']);
+
+        // Act
+        $id = TestRecords::gasSupplyReceipt($assignmentId, ['supply_date' => '2026-06-30']);
+
+        // Assert
+        expect(DB::table('gas_supply_receipts')->where('id', $id)->value('supply_date'))->toBe('2026-06-30');
+    });
+
+    it('names a supply change of its own vendor assignment', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $earlierId = TestRecords::vendorAssignment($buildingId, '2026-01-01', ['valid_to' => '2026-05-31']);
+        $laterId = TestRecords::vendorAssignment($buildingId, '2026-06-01');
+        $changeId = TestRecords::supplyChange(TestRecords::approvedTariffVersion($laterId), '2026-06-01');
+
+        // Act & Assert
+        expect(fn () => TestRecords::gasSupplyReceipt($earlierId, ['supply_date' => '2026-05-20', 'supply_change_id' => $changeId]))
+            ->toThrow(QueryException::class, 'fk_gas_supply_receipt_change');
+    });
+
+    it('may change while a draft', function () {
+        // Arrange
+        $id = TestRecords::gasSupplyReceipt();
+
+        // Act
+        DB::table('gas_supply_receipts')->where('id', $id)->update(['quantity' => 500, 'total_cost' => 20000]);
+
+        // Assert
+        expect(DB::table('gas_supply_receipts')->where('id', $id)->value('quantity'))->toBe('500.000');
+    });
+
+    it('is frozen once recorded', function (string $column, mixed $value) {
+        // Arrange
+        $id = TestRecords::gasSupplyReceipt();
+        moveReceipt($id, ['recorded']);
+
+        // Act & Assert
+        expect(fn () => DB::table('gas_supply_receipts')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "{$column} can no longer change");
+    })->with([
+        ['quantity', 1],
+        ['unit_cost', 1],
+        ['total_cost', 1],
+        ['supply_date', '2026-10-06'],
+        ['upstream_supplier_name', 'Other'],
+    ]);
+});
