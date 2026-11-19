@@ -311,7 +311,14 @@ and it never changes once saved.
   and stream, with `billing_period_bounds()`, `000060` billing cycles follow
   their setting exactly and never overlap within a stream, and the timeline
   never changes under existing cycles, `000061` reading periods never overlap
-  and close their cycle.
+  and close their cycle. 13 installations, portal, gateways, setup, gas
+  supply and licensing (`000062` installation agreements and their
+  installments, `000063` portal access policies and guest invoice links,
+  `000064` payment and SMS gateway configurations and the gateway of a
+  payment attempt, `000065` setup areas, pipeline zones and building setup
+  tasks, `000066` gas supply receipts, `000067` installation statuses left to
+  the status registry, `000068` license signing keys, licenses, activations,
+  check-ins and the installation's own license).
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
