@@ -483,20 +483,25 @@ final class TestRecords
     /**
      * The draft billing cycle of the reading period's building and month (a
      * new approved October 2026 period of a new building when none is given),
-     * due 15 days after the month.
+     * due 15 days after the month, under the stream's billing setting of the
+     * period's first day (a new monthly one from 2026-01-01 when none).
      *
      * @param  array<string, mixed>  $overrides
      */
     public static function billingCycle(?int $readingPeriodId = null, array $overrides = []): int
     {
         $period = DB::table('reading_periods')->where('id', $readingPeriodId ?? self::approvedReadingPeriod())->first();
+        $mode = $overrides['billing_mode'] ?? 'authorized_meter_billing';
+        $settingId = $overrides['billing_setting_id'] ?? DB::selectOne('select (building_billing_setting_on(?, ?, ?)).id', [$period->building_id, $mode, $period->starts_on])->id
+            ?? self::billingSetting($period->building_id, '2026-01-01', ['billing_mode' => $mode]);
 
         return (int) DB::table('billing_cycles')->insertGetId([
             'building_id' => $period->building_id,
             'reading_period_id' => $period->id,
+            'billing_setting_id' => $settingId,
             'period_year' => $period->period_year,
             'period_month' => $period->period_month,
-            'billing_mode' => 'authorized_meter_billing',
+            'billing_mode' => $mode,
             'starts_on' => $period->starts_on,
             'ends_on' => $period->ends_on,
             'due_on' => now()->parse($period->ends_on)->addDays(15)->toDateString(),

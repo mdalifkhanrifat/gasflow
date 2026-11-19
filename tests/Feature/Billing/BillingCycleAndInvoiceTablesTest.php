@@ -72,32 +72,32 @@ describe('billing cycles', function () {
             ->toThrow(QueryException::class, 'ck_billing_cycles_period_month');
     });
 
-    it('refuse an unknown billing mode', function () {
+    it('refuse an unknown billing mode, which has no billing setting', function () {
         // Arrange
-        $row = ['billing_mode' => 'flat_rate'];
+        $row = ['billing_mode' => 'flat_rate', 'billing_setting_id' => TestRecords::billingSetting()];
 
         // Act & Assert
         expect(fn () => TestRecords::billingCycle(overrides: $row))
-            ->toThrow(QueryException::class, 'ck_billing_cycles_billing_mode');
+            ->toThrow(QueryException::class, 'has no flat_rate billing setting');
     });
 
-    it('refuse an end before the start', function () {
+    it('refuse an end before the start, which is not its setting\'s cycle', function () {
         // Arrange
         $row = ['starts_on' => '2026-10-31', 'ends_on' => '2026-10-01'];
 
         // Act & Assert
         expect(fn () => TestRecords::billingCycle(overrides: $row))
-            ->toThrow(QueryException::class, 'ck_billing_cycles_range');
+            ->toThrow(QueryException::class, 'runs 2026-10-01 to 2026-10-31, not 2026-10-31 to 2026-10-01');
     });
 
-    it('refuse a second cycle for the same building and month', function () {
+    it('refuse a second cycle of the same stream over the same days', function () {
         // Arrange
         $periodId = TestRecords::readingPeriod();
         TestRecords::billingCycle($periodId);
 
         // Act & Assert
         expect(fn () => TestRecords::billingCycle($periodId))
-            ->toThrow(QueryException::class, 'billing_cycles_building_id_period_year_period_month_unique');
+            ->toThrow(QueryException::class, 'ex_billing_cycles_no_overlap');
     });
 
     it('refuse a reading period of another building', function () {
