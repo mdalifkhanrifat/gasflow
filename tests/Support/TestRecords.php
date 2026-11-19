@@ -1060,4 +1060,36 @@ final class TestRecords
             ...$overrides,
         ]);
     }
+
+    /**
+     * A pipeline zone of the building (a new building when none is given)
+     * with a fresh code.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function pipelineZone(?int $buildingId = null, array $overrides = []): int
+    {
+        return (int) DB::table('pipeline_zones')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'code' => 'Z-'.Str::random(6),
+            'name' => 'Riser zone',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * A pending pipeline setup task of the building (a new building when none
+     * is given).
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function setupTask(?int $buildingId = null, array $overrides = []): int
+    {
+        return (int) DB::table('building_setup_tasks')->insertGetId([
+            'building_id' => $buildingId ?? self::building(),
+            'setup_area_code' => 'pipeline',
+            'title' => 'Lay the riser',
+            ...$overrides,
+        ]);
+    }
 }
