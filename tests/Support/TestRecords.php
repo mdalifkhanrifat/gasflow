@@ -1119,4 +1119,40 @@ final class TestRecords
             ...$overrides,
         ]);
     }
+
+    /**
+     * A draft trial license for one installation, valid through 2026, with a
+     * fresh public id and license number.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function license(array $overrides = []): int
+    {
+        return (int) DB::table('licenses')->insertGetId([
+            'public_id' => (string) Str::ulid(),
+            'license_no' => 'LIC-'.Str::random(8),
+            'licensee_name' => 'Test licensee',
+            'edition' => 'trial',
+            'valid_from' => '2026-01-01',
+            'valid_until' => '2026-12-31',
+            ...$overrides,
+        ]);
+    }
+
+    /**
+     * An activation of the license (a new license when none is given) on a new
+     * installation.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public static function licenseActivation(?int $licenseId = null, array $overrides = []): int
+    {
+        return (int) DB::table('license_activations')->insertGetId([
+            'license_id' => $licenseId ?? self::license(),
+            'installation_id' => (string) Str::uuid(),
+            'domain' => 'gas.example.test',
+            'fingerprint_hash' => hash('sha256', Str::random(20)),
+            ...$overrides,
+        ]);
+    }
 }
