@@ -151,7 +151,85 @@ describe('building setup tasks', function () {
         expect(fn () => TestRecords::setupTask(overrides: $row))
             ->toThrow(QueryException::class, 'ck_building_setup_tasks_completion');
     })->with([
-        'time without person' => [['completed_at' => '2026-10-01 10:00:00+06']],
+        'time without person' => [['status' => 'completed', 'completed_at' => '2026-10-01 10:00:00+06']],
         'person without time' => [fn () => ['completed_by' => User::factory()->create()->id]],
+    ]);
+});
+
+describe('who works on a setup task', function () {
+    it('is completed exactly when its completion is recorded', function (array $row) {
+        // Arrange
+        $values = $row;
+
+        // Act & Assert
+        expect(fn () => TestRecords::setupTask(overrides: $values))->toThrow(QueryException::class, 'ck_building_setup_tasks_completed');
+    })->with([
+        'completed without completion' => [['status' => 'completed']],
+        'completion on a pending task' => [fn () => ['completed_at' => '2026-10-01 10:00:00+06', 'completed_by' => User::factory()->create()->id]],
+    ]);
+
+    it('is completed with its time and person', function () {
+        // Arrange
+        $id = TestRecords::setupTask();
+
+        // Act
+        DB::table('building_setup_tasks')->where('id', $id)
+            ->update(['status' => 'completed', 'completed_at' => now(), 'completed_by' => User::factory()->create()->id]);
+
+        // Assert
+        expect(DB::table('building_setup_tasks')->where('id', $id)->value('status'))->toBe('completed');
+    });
+
+    it('may be assigned to a member of the building\'s organization', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $userId = User::factory()->create()->id;
+        TestRecords::membership(DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id'), $userId);
+
+        // Act
+        $id = TestRecords::setupTask($buildingId, ['assigned_user_id' => $userId]);
+
+        // Assert
+        expect(DB::table('building_setup_tasks')->where('id', $id)->value('assigned_user_id'))->toBe($userId);
+    });
+
+    it('may be assigned to a member of an organization with access', function () {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $partnerId = TestRecords::organization();
+        TestRecords::accessGrant($buildingId, $partnerId);
+        $userId = User::factory()->create()->id;
+        TestRecords::membership($partnerId, $userId);
+
+        // Act
+        $id = TestRecords::setupTask($buildingId, ['assigned_user_id' => $userId]);
+
+        // Assert
+        expect(DB::table('building_setup_tasks')->where('id', $id)->value('assigned_user_id'))->toBe($userId);
+    });
+
+    it('is never assigned to someone outside the building', function (Closure $member) {
+        // Arrange
+        $buildingId = TestRecords::building();
+        $userId = $member($buildingId);
+
+        // Act & Assert
+        expect(fn () => TestRecords::setupTask($buildingId, ['assigned_user_id' => $userId]))
+            ->toThrow(QueryException::class, 'is not a member of an organization with access to building');
+    })->with([
+        'no membership' => [fn () => User::factory()->create()->id],
+        'member of another organization' => [function () {
+            $userId = User::factory()->create()->id;
+            TestRecords::membership(TestRecords::organization(), $userId);
+
+            return $userId;
+        }],
+        'suspended member' => [function (int $buildingId) {
+            $userId = User::factory()->create()->id;
+            $membershipId = TestRecords::membership(DB::table('buildings')->where('id', $buildingId)->value('tenant_organization_id'), $userId);
+            DB::table('organization_memberships')->where('id', $membershipId)->update(['status' => 'suspended']);
+
+            return $userId;
+        }],
     ]);
 });
