@@ -32,14 +32,13 @@ gasflow/
 │   └── seeders/
 ├── docker/                    images and service config (php, nginx, postgres)
 ├── docs/                      developer documentation (this file)
-├── lang/                      bn and en translations (Phase 3)
+├── frontend/                  independently built Vue application
 ├── resources/
-│   ├── css/, js/, views/      frontend (see "Frontend")
 │   └── licensing/             trusted license public keys (part of the build)
 ├── routes/
-│   ├── web.php                web routes; includes routes/web/<domain>.php
+│   ├── web.php                server-only web routes
 │   ├── console.php            scheduled tasks
-│   └── api.php                /api/v1 for the PWA and Flutter (Phase 3)
+│   └── api.php                /api/v1 JSON for Vue, PWA and future Flutter
 ├── storage/                   runtime files (license, GeoIP database, logs); git-ignored
 ├── tests/                     see "Tests"
 ├── compose.yaml, Makefile     Docker stack and shortcuts (README)
@@ -150,8 +149,7 @@ Generators accept the subfolder: `php artisan make:model Billing/Invoice`,
 Route → middleware → Controller → FormRequest → Policy → Action → Model(s) → PostgreSQL
 ```
 
-- Web (Inertia) and API controllers call the same actions, so the rules live in
-  one place. Jobs and commands call actions too.
+- API controllers, jobs and commands use the same domain actions.
 - An action is a plain class with a `handle()` method. It owns the transaction
   and receives validated input (the form request's data, or a data object).
 - PostgreSQL enforces the hard rules as well: lifecycle triggers, constraints,
@@ -163,7 +161,7 @@ Every request first passes `AssignRequestId` (global): one UUID per request in
 the `X-Request-Id` response header, in Laravel's `Context` (so in every log line
 and queued job) and in `data_change_logs.request_id`. The web middleware group
 then runs, in order: Laravel's defaults,
-`HandleInertiaRequests`, `AddLinkHeadersForPreloadedAssets`, `EnsureLicensed`,
+`SetLocale`, `EnsureLicensed`,
 `RequestContext`, `LifecycleContext` (one database transaction per request).
 
 ### Logging
@@ -490,15 +488,19 @@ and it never changes once saved.
 ## Frontend
 
 ```text
-resources/js/
-├── app.ts           Inertia entry
-├── pages/           domain/feature folders for Inertia pages and page-specific files
-├── components/      shared components (ui/ = primitives, app/ = application UI)
-├── composables/     shared logic (useCan, useLocale, ...)
-├── layouts/         app shell, auth layout
-├── config/          shared navigation, table defaults and status tones
-├── lib/             helpers
-└── types/           TypeScript types
+frontend/
+├── index.html, package.json, vite.config.ts
+└── src/
+    ├── main.ts, App.vue
+    ├── router/      Vue Router route definitions
+    ├── api/         shared JSON client for Laravel /api/v1
+    ├── pages/       domain/feature folders for views and page-specific files
+    ├── components/  shared primitives and application UI
+    ├── composables/ theme and locale preferences
+    ├── layouts/     app shell and auth layout when needed
+    ├── locales/     frontend translation dictionaries
+    ├── styles/      semantic tokens and Tailwind mappings
+    └── lib/         shared formatters and helpers
 ```
 
 Group route pages by domain, such as `pages/billing/invoices/Index.vue` and
@@ -511,7 +513,7 @@ Dashboards with distinct workflows have separate pages, starting with
 the shared dashboard components. A workspace with dedicated navigation can
 use a dedicated layout built from those same primitives.
 
-`resources/css/tokens.css` owns semantic colors, density and component design
+`frontend/src/styles/tokens.css` owns semantic colors, density and component design
 values. Keep workspace palette overrides at the document root. The shared
 `useTheme` composable exposes the system, light and dark preference. All
 pages use the same component styles and responsive behavior.

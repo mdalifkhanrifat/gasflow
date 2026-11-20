@@ -80,6 +80,7 @@ services:
             - '${APP_PORT:-8047}:80'
         volumes:
             - ./public:/var/www/html/public:ro
+            - ./frontend:/var/www/html/frontend:ro
             - ./storage/app/public:/var/www/html/storage/app/public:ro
             - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
             - ./docker/nginx/snippets:/etc/nginx/snippets:ro
@@ -142,8 +143,7 @@ services:
             retries: 5
         restart: unless-stopped
 
-    # Vite dev server with HMR (dev profile). Built from the app image plus Node 26,
-    # because the Wayfinder plugin runs "php artisan" while Vite is running.
+    # Vite serves the standalone Vue app with HMR on the dev port.
     # node_modules lives in a volume so Linux/musl binaries never mix with the host's.
     node:
         <<: *php
@@ -156,22 +156,23 @@ services:
                 UID: ${HOST_UID:-1000}
                 GID: ${HOST_GID:-1000}
         profiles: [dev]
+        working_dir: /var/www/html/frontend
         command:
             - sh
             - -c
             - >-
                 cmp -s package-lock.json node_modules/.installed-lock
                 || { npm ci --no-audit --no-fund && cp package-lock.json node_modules/.installed-lock; };
-                exec npm run dev
+                npm run build && exec npm run dev
         environment:
             DOCKER_VITE: '1'
             NPM_CONFIG_UPDATE_NOTIFIER: 'false'
-            DOCKER_VITE_PORT: ${VITE_PORT:-5147}
+            GASFLOW_API_PROXY: http://nginx
         ports:
             - '127.0.0.1:${VITE_PORT:-5147}:5173'
         volumes:
             - ./:/var/www/html
-            - node-modules:/var/www/html/node_modules
+            - node-modules:/var/www/html/frontend/node_modules
 
     # Catches every outgoing mail in development (dev profile).
     mailpit:

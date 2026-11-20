@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
  *
  * The lifecycle triggers raise these with SQLSTATE P0001 (raise_exception).
  * As a validation error it becomes a 422 JSON response for the API and an
- * error in the "lifecycle" field for Inertia forms.
+ * error in the "lifecycle" field for forms and JSON clients.
  */
 final class LifecycleViolation extends ValidationException
 {

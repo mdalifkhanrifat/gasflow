@@ -26,14 +26,14 @@ meter readings → reconciliation → vendor tariffs → invoices → payments
 
 ## Tech stack
 
-| Layer                 | Technology                                   |
-| --------------------- | -------------------------------------------- |
-| Backend               | PHP 8.5, Laravel 13                          |
-| Frontend              | Vue 3, TypeScript, Inertia 3, Tailwind CSS 4 |
-| Database              | PostgreSQL 18                                |
-| Cache, queue, session | Redis 8                                      |
-| Web server            | Nginx 1.30                                   |
-| Tests and quality     | Pest, Larastan, Pint, vue-tsc                |
+| Layer                 | Technology                                    |
+| --------------------- | --------------------------------------------- |
+| Backend               | PHP 8.5, Laravel 13                           |
+| Frontend              | Vue 3, TypeScript, Vue Router, Tailwind CSS 4 |
+| Database              | PostgreSQL 18                                 |
+| Cache, queue, session | Redis 8                                       |
+| Web server            | Nginx 1.30                                    |
+| Tests and quality     | Pest, Larastan, Pint, vue-tsc                 |
 
 ## Project structure
 
@@ -192,7 +192,7 @@ make logs s=queue-default    # follow the logs of one service
 make shell                   # shell in the app container
 make artisan a="route:list"  # run artisan
 make composer a="install"    # run composer
-make npm a="run build"       # run npm in the node container
+make npm a="run build"       # build the standalone Vue frontend
 make migrate                 # run the migrations (as the owner role), then prepare the trail partitions
 make test                    # Pint check, PHPStan and the PHP test suite
 make check                   # frontend lint, format and type checks
@@ -208,6 +208,18 @@ passwords, tokens and API keys are replaced with `[redacted]`.
 
 Queue workers load the code when they start. After you change PHP code that
 jobs use, run `make queue-restart`.
+
+### Standalone frontend
+
+The Vue app lives in `frontend/` and builds independently with
+`npm --prefix frontend ci` and `npm --prefix frontend run build`. Nginx
+serves `frontend/dist` on the app port. Open the Vite port for live
+development. Vite proxies `/api` and `/sanctum` to Laravel.
+
+To host the frontend separately, publish `frontend/dist` as a static Vue
+app. Configure the host to serve `index.html` for client routes and to
+proxy `/api` and `/sanctum` to Laravel on the same origin. The API handles
+session cookies and CSRF for first-party browsers.
 
 ### Production image
 

@@ -3,7 +3,7 @@
 # GasFlow PHP image (php-fpm 8.5).
 #   base   - PHP with every extension the app needs
 #   dev    - base + Composer, runs as the host user (bind-mounted source)
-#   node   - dev + Node.js 26 LTS (Vite needs PHP for Wayfinder route generation)
+#   node   - development tools for the standalone Vue app
 #   assets - builds the production frontend bundle
 #   prod   - optimized image with the code, vendor and built assets baked in
 
@@ -91,9 +91,10 @@ RUN apk add --no-cache libatomic libstdc++ \
     && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && node --version && npm --version \
-    && install -d -o www-data -g www-data /var/www/html/node_modules
+    && install -d -o www-data -g www-data /var/www/html/frontend/node_modules
 
 USER www-data
+WORKDIR /var/www/html/frontend
 CMD ["npm", "run", "dev"]
 
 # ---------------------------------------------------------------------------
@@ -104,22 +105,14 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
 
 # ---------------------------------------------------------------------------
-FROM vendor AS assets
+FROM nodejs AS assets
 
-COPY --from=nodejs /usr/local/bin/node /usr/local/bin/node
-COPY --from=nodejs /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN apk add --no-cache libatomic libstdc++ \
-    && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
-
-COPY package.json package-lock.json .npmrc ./
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci --no-audit --no-fund
 
-COPY . .
-RUN composer dump-autoload --no-dev --no-scripts --classmap-authoritative \
-    && cp .env.example .env \
-    && php artisan key:generate --force \
-    && npm run build \
-    && rm .env
+COPY frontend/ ./
+RUN npm run build
 
 # ---------------------------------------------------------------------------
 FROM base AS prod
@@ -129,7 +122,7 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . .
-COPY --from=assets /var/www/html/public/build ./public/build
+COPY --from=assets /frontend/dist ./frontend/dist
 
 RUN rm -rf docker tests node_modules public/hot .env \
     && composer dump-autoload --no-dev --classmap-authoritative --no-interaction \

@@ -13,11 +13,9 @@
         "php": "^8.5",
         "ext-sodium": "*",
         "geoip2/geoip2": "^3.4",
-        "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.17",
         "laravel/sanctum": "^4.4",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14",
         "matomo/device-detector": "^6.5"
     },
     "require-dev": {
@@ -51,12 +49,8 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
-            "npm install",
-            "npm run build"
-        ],
-        "dev": [
-            "Composer\\Config::disableProcessTimeout",
-            "@php artisan dev"
+            "npm --prefix frontend ci",
+            "npm --prefix frontend run build"
         ],
         "lint": [
             "pint --parallel"
@@ -66,8 +60,8 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "npm run check",
-            "npm run types:check",
+            "npm --prefix frontend run check",
+            "npm --prefix frontend run types:check",
             "@test"
         ],
         "types:check": [

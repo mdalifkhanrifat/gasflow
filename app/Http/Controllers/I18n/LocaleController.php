@@ -4,13 +4,18 @@ namespace App\Http\Controllers\I18n;
 
 use App\Enums\I18n\Locale;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class LocaleController extends Controller
 {
-    public function __invoke(Request $request): RedirectResponse
+    public function show(): JsonResponse
+    {
+        return response()->json(['locale' => app()->getLocale()]);
+    }
+
+    public function update(Request $request): JsonResponse
     {
         $data = $request->validate([
             'locale' => ['required', 'string', Rule::enum(Locale::class)],
@@ -18,6 +23,6 @@ class LocaleController extends Controller
 
         $request->session()->put('locale', $data['locale']);
 
-        return back(303);
+        return response()->json(['locale' => $data['locale']]);
     }
 }

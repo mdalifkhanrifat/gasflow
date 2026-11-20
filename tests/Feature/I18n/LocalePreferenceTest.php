@@ -1,40 +1,38 @@
 <?php
 
-use Inertia\Testing\AssertableInertia;
+use Tests\Support\TestLicense;
 
 describe('locale preference', function () {
     it('renders the platform default for a new session', function () {
         // Arrange: the request has no saved language.
 
         // Act
-        $response = $this->get(route('home'));
+        $response = $this->getJson(route('api.locale.show'));
 
         // Assert
-        $response->assertOk()->assertSee('lang="bn"', false)
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('locale', 'bn'));
+        $response->assertOk()->assertExactJson(['locale' => 'bn']);
     });
 
-    it('uses the saved preference for both HTML and Inertia', function () {
+    it('returns the saved preference to JSON clients', function () {
         // Arrange
         $this->withSession(['locale' => 'en']);
 
         // Act
-        $response = $this->get(route('home'));
+        $response = $this->getJson(route('api.locale.show'));
 
         // Assert
-        $response->assertOk()->assertSee('lang="en"', false)
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('locale', 'en'));
+        $response->assertOk()->assertExactJson(['locale' => 'en']);
     });
 
-    it('saves a supported preference and redirects back', function () {
+    it('saves a supported preference and returns it', function () {
         // Arrange
-        $this->from(route('home'));
+        $this->withSession(['locale' => 'bn']);
 
         // Act
-        $response = $this->post(route('locale.update'), ['locale' => 'en']);
+        $response = $this->putJson(route('api.locale.update'), ['locale' => 'en']);
 
         // Assert
-        $response->assertStatus(303)->assertRedirect(route('home'))
+        $response->assertOk()->assertExactJson(['locale' => 'en'])
             ->assertSessionHas('locale', 'en');
     });
 
@@ -43,10 +41,33 @@ describe('locale preference', function () {
         $this->withSession(['locale' => 'en']);
 
         // Act
-        $response = $this->postJson(route('locale.update'), ['locale' => 'fr']);
+        $response = $this->putJson(route('api.locale.update'), ['locale' => 'fr']);
 
         // Assert
         $response->assertUnprocessable()->assertJsonValidationErrors('locale')
             ->assertSessionHas('locale', 'en');
+    });
+
+    it('lets the preview read the locale while the license is locked', function () {
+        // Arrange
+        TestLicense::remove($this->app);
+
+        // Act
+        $response = $this->getJson(route('api.locale.show'));
+
+        // Assert
+        $response->assertOk()->assertExactJson(['locale' => 'bn']);
+    });
+
+    it('refuses locale writes while the license is locked', function () {
+        // Arrange
+        TestLicense::remove($this->app);
+        $this->withSession(['locale' => 'bn']);
+
+        // Act
+        $response = $this->putJson(route('api.locale.update'), ['locale' => 'en']);
+
+        // Assert
+        $response->assertStatus(423)->assertSessionHas('locale', 'bn');
     });
 });

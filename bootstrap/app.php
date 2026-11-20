@@ -3,7 +3,6 @@
 use App\Exceptions\Lifecycle\LifecycleViolation;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureLicensed;
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LifecycleContext;
 use App\Http\Middleware\RequestContext;
 use App\Http\Middleware\SetLocale;
@@ -11,12 +10,12 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -26,8 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             SetLocale::class,
-            HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
             // Read-only lock without a valid license; refused writes never open a transaction.
             EnsureLicensed::class,
             // Device, IP city and GPS for the activity trail (before LifecycleContext).

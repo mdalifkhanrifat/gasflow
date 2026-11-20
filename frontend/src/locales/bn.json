@@ -1,0 +1,17 @@
+{
+    "dashboard.title": "প্ল্যাটফর্ম ড্যাশবোর্ড",
+    "errors.not_found": "পেজটি পাওয়া যায়নি",
+    "dashboard.description": "প্রতিষ্ঠান, ভবন ও গ্যাস বিলিংয়ের সারসংক্ষেপ।",
+    "dashboard.preview": "প্রিভিউতে নমুনা ডাটা দেখানো হচ্ছে।",
+    "dashboard.organizations": "প্রতিষ্ঠান",
+    "dashboard.buildings": "ভবন",
+    "dashboard.open_invoices": "বকেয়া বিল",
+    "preferences.language": "ভাষা",
+    "preferences.language.bn": "বাংলা",
+    "preferences.language.en": "English",
+    "preferences.language_error": "ভাষা বদলানো যায়নি। আবার চেষ্টা করুন।",
+    "preferences.theme": "থিম",
+    "preferences.theme.system": "ডিভাইস অনুযায়ী",
+    "preferences.theme.light": "হালকা",
+    "preferences.theme.dark": "গাঢ়"
+}

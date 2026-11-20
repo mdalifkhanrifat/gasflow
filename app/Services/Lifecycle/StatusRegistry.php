@@ -12,7 +12,7 @@ use Illuminate\Database\ConnectionInterface;
  *
  * The database stays the authority and enforces every rule. The registry lets
  * the app ask in advance (labels, tones, allowed transitions) and gives the UI
- * one source for status badges: toArray() becomes the Inertia "statuses" prop.
+ * one source for status badges in the API.
  *
  * Tables without their own statuses use the generic "*" set, exactly like
  * lifecycle_status_set() in the database.

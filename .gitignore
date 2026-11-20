@@ -1,6 +1,8 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
+/frontend/node_modules
+/frontend/dist
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot

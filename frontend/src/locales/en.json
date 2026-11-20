@@ -1,0 +1,17 @@
+{
+    "dashboard.title": "Platform dashboard",
+    "errors.not_found": "Page not found",
+    "dashboard.description": "An overview of organizations, buildings and gas billing.",
+    "dashboard.preview": "This preview uses sample data.",
+    "dashboard.organizations": "Organizations",
+    "dashboard.buildings": "Buildings",
+    "dashboard.open_invoices": "Open invoices",
+    "preferences.language": "Language",
+    "preferences.language.bn": "বাংলা",
+    "preferences.language.en": "English",
+    "preferences.language_error": "Could not change the language. Try again.",
+    "preferences.theme": "Theme",
+    "preferences.theme.system": "System",
+    "preferences.theme.light": "Light",
+    "preferences.theme.dark": "Dark"
+}
