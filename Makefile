@@ -4,11 +4,11 @@ DC   := docker compose --profile dev
 # The owner's sealed license signing keys: outside the project, never committed.
 LICENSE_KEYS ?= $(HOME)/.config/gasflow/license-keys
 APP  := $(DC) exec app
-SECRETS := DB_SUPERUSER_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD DB_OPERATOR_PASSWORD REDIS_PASSWORD
+SECRETS := DB_SUPERUSER_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD DB_OPERATOR_PASSWORD DB_TEST_PASSWORD REDIS_PASSWORD
 
 .DEFAULT_GOAL := help
 .PHONY: help env setup build up down restart ps logs shell artisan composer npm \
-        migrate fresh tinker test lint check psql redis-cli queue-restart geoip \
+        migrate fresh db-roles tinker test lint check psql redis-cli queue-restart geoip \
         license-keygen license
 
 help: ## List the available commands
@@ -69,6 +69,10 @@ migrate: ## Run the database migrations (as the owner role) and prepare the trai
 fresh: ## Drop every table and migrate again (development only)
 	$(APP) php artisan migrate:fresh --database=pgsql_migrations
 	$(APP) php artisan audit:change-log-partitions
+
+db-roles: ## Create or update the integrity and test database roles on an existing volume
+	$(DC) up -d --wait postgres
+	$(DC) exec -T postgres sh /docker-entrypoint-initdb.d/02-gasflow-rls-roles.sh
 
 tinker: ## Open tinker
 	$(APP) php artisan tinker

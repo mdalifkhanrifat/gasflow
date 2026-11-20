@@ -101,6 +101,7 @@ services:
             GASFLOW_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?set DB_OWNER_PASSWORD in .env}
             GASFLOW_APP_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
             GASFLOW_OPERATOR_PASSWORD: ${DB_OPERATOR_PASSWORD:-}
+            GASFLOW_TEST_PASSWORD: ${DB_TEST_PASSWORD:-}
         ports:
             - '127.0.0.1:${DB_FORWARD_PORT:-5447}:5432'
         volumes:

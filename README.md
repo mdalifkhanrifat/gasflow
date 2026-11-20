@@ -104,6 +104,8 @@ The database is initialised by `docker/postgres/init` the first time the
 | `gasflow_app`         | yes   | Runtime role: owns nothing, no `BYPASSRLS`, no `TRUNCATE`, so row-level security applies                                      |
 | `gasflow_maintenance` | no    | Group required for the audited backend maintenance override                                                                   |
 | `gasflow_operator`    | yes   | Member of `gasflow_maintenance`; created only when `DB_OPERATOR_PASSWORD` is set (`make env` sets it on development machines) |
+| `gasflow_integrity`   | no    | `BYPASSRLS`, reads only; owns the integrity trigger functions so a check sees every row it compares                           |
+| `gasflow_test`        | yes   | Test suite only: `BYPASSRLS`, member of `gasflow_app`; created only when `DB_TEST_PASSWORD` is set (development and CI)       |
 
 Laravel has two connections. The app, queues and scheduler use `pgsql`
 (`gasflow_app`). Migrations use `pgsql_migrations` (`gasflow_owner`), so always
@@ -114,6 +116,9 @@ change the schema.
 The init script also creates the `gasflow_testing` database and the
 `pgcrypto` and `btree_gist` extensions. It runs only on an empty volume. To
 start over, run `docker compose down -v`. This deletes all local data.
+
+The integrity and test roles come from `02-gasflow-rls-roles.sh`, which can run
+again: on an existing volume, `make db-roles` creates or updates them.
 
 ### Maintenance override
 
