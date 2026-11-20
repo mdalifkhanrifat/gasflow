@@ -110,7 +110,7 @@
     "navigation.workspace_label": "Workspace",
     "module.active": "Active",
     "module.pending": "Pending",
-    "module.gas_vendor": "Gas vendor",
+    "module.gas_vendor": "Gas Vendor",
     "module.management": "Management",
     "module.organizations_description": "SaaS tenant organizations, workspace profiles and memberships.",
     "module.invoices_description": "Customer invoices, billing periods and due amounts.",
@@ -140,5 +140,8 @@
     "topbar.switch_language.en": "Switch to English",
     "profile.title": "Profile",
     "profile.preview": "This profile shows the sample administrator account.",
-    "profile.appearance": "Appearance"
+    "profile.appearance": "Appearance",
+    "module.building_count": "Buildings",
+    "module.action": "Action",
+    "module.record_count": "Showing {visible} of {total} records · Demo dataset"
 }

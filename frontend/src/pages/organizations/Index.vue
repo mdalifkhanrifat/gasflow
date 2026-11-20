@@ -63,7 +63,7 @@ const rows = computed(() =>
             t('module.organization'),
             t('module.type'),
             t('module.contact'),
-            t('dashboard.buildings'),
+            t('module.building_count'),
             t('module.members'),
         ]"
         :rows="rows"

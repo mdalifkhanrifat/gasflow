@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import { useLocale } from '@/composables/useLocale';
 import AppShell from '@/layouts/AppShell.vue';
+import { formatNumber } from '@/lib/format';
 
 interface RecordRow {
     cells: readonly string[];
@@ -22,7 +22,7 @@ const props = defineProps<{
     columns: readonly string[];
     rows: readonly RecordRow[];
 }>();
-const { t } = useLocale();
+const { locale, t } = useLocale();
 const search = ref('');
 const route = useRoute();
 watch(
@@ -41,7 +41,7 @@ const statuses = computed(() => [
 const columns = computed(() => [
     ...props.columns.map((label) => ({ label })),
     { label: t('module.status') },
-    { label: t('module.details') },
+    { label: t('module.action'), action: true },
 ]);
 const visibleRows = computed(() => {
     const query = search.value.trim().toLocaleLowerCase();
@@ -51,6 +51,15 @@ const visibleRows = computed(() => {
             row.cells.some((cell) => cell.toLocaleLowerCase().includes(query)),
     );
 });
+
+const recordCount = computed(() =>
+    t('module.record_count')
+        .replace(
+            '{visible}',
+            formatNumber(visibleRows.value.length, locale.value),
+        )
+        .replace('{total}', formatNumber(props.rows.length, locale.value)),
+);
 
 function openRecord(row: RecordRow): void {
     selected.value = row;
@@ -73,19 +82,25 @@ function openRecord(row: RecordRow): void {
                 <p class="mt-1 text-xs text-ink-muted">{{ description }}</p>
             </header>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <label class="min-w-40">
+            <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                <label class="relative min-w-40">
                     <span class="sr-only">{{ t('module.search') }}</span>
+                    <span
+                        aria-hidden="true"
+                        class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-ink-muted"
+                        >⌕</span
+                    >
                     <input
                         v-model="search"
                         type="search"
                         :placeholder="t('module.search')"
-                        class="min-h-control w-full rounded-control border border-line bg-surface px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        class="module-filter w-full rounded-control border border-line bg-surface pr-2 pl-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                     />
                 </label>
                 <label>
                     <span class="sr-only">{{ t('module.status') }}</span>
                     <NativeSelect
+                        class="module-filter"
                         :value="status"
                         @change="
                             status = ($event.target as HTMLSelectElement).value
@@ -103,10 +118,14 @@ function openRecord(row: RecordRow): void {
                 </label>
             </div>
 
-            <DashboardPanel :title="title">
+            <section
+                :aria-label="title"
+                class="min-w-0 rounded-panel border border-line bg-surface shadow-panel"
+            >
                 <DataTable
                     v-if="visibleRows.length"
                     :label="title"
+                    density="compact"
                     :columns="columns"
                     :rows="visibleRows"
                     :row-key="(row) => row.cells[0] ?? ''"
@@ -114,32 +133,32 @@ function openRecord(row: RecordRow): void {
                     <template #default="{ row }">
                         <th
                             scope="row"
-                            class="px-3 py-3 text-start text-xs font-semibold whitespace-nowrap"
+                            class="text-start font-semibold whitespace-nowrap"
                         >
                             {{ row.cells[0] }}
                         </th>
                         <td
                             v-for="(cell, index) in row.cells.slice(1)"
                             :key="index"
-                            class="px-3 py-3 text-xs whitespace-nowrap"
+                            class="whitespace-nowrap"
                         >
                             {{ cell }}
                         </td>
-                        <td class="px-3 py-3 whitespace-nowrap">
-                            <StatusBadge :tone="row.tone">{{
+                        <td class="whitespace-nowrap">
+                            <StatusBadge :tone="row.tone" compact>{{
                                 row.status
                             }}</StatusBadge>
                         </td>
-                        <td class="px-3 py-3">
+                        <td>
                             <button
                                 type="button"
-                                class="preview-control hover:bg-surface-muted"
+                                class="module-row-action"
                                 :aria-label="
                                     t('module.details') + ': ' + row.cells[0]
                                 "
                                 @click="openRecord(row)"
                             >
-                                ↗
+                                ↗︎
                             </button>
                         </td>
                     </template>
@@ -148,11 +167,12 @@ function openRecord(row: RecordRow): void {
                     {{ t('module.empty') }}
                 </p>
                 <p
-                    class="border-t border-line px-4 py-3 text-xs text-ink-muted"
+                    class="module-table-footer border-t border-line text-ink-muted"
+                    aria-live="polite"
                 >
-                    {{ t('dashboard.preview') }}
+                    {{ recordCount }}
                 </p>
-            </DashboardPanel>
+            </section>
         </div>
 
         <FormDialog

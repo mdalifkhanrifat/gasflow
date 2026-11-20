@@ -3,6 +3,14 @@
     --background: #f4f6fb;
     --surface: #ffffff;
     --surface-muted: #edf1f8;
+    --table-head: #fafbfd;
+    --table-ink: #43516a;
+    --table-line: #eff2f6;
+    --table-padding-inline: 0.8125rem;
+    --table-padding-block: 0.625rem;
+    --table-type-size: 0.6875rem;
+    --table-head-size: 0.625rem;
+    --module-control-size: 2.125rem;
     --ink: #17243b;
     --ink-muted: #53647e;
     --line: #d9e1ee;
@@ -57,6 +65,9 @@
     --background: #0d1422;
     --surface: #151f30;
     --surface-muted: #202d42;
+    --table-head: #1b283b;
+    --table-ink: #c1cde0;
+    --table-line: #26344a;
     --ink: #e6edf8;
     --ink-muted: #aab9cf;
     --line: #38475f;
@@ -87,6 +98,7 @@
 @media (pointer: coarse) {
     :root {
         --topbar-control-size: 2.5rem;
+        --module-control-size: 2.75rem;
         --topbar-avatar-size: 2.5rem;
     }
 
