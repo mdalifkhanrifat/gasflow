@@ -68,6 +68,18 @@ describe('registry', function () {
         // Assert
         expect($missing->all())->toBe([]);
     });
+
+    it('gives a status code the same bangla label on every real table', function () {
+        // Act
+        $codes = DB::table('status_definitions')
+            ->where('entity_name', 'not like', 'lifecycle_test_%')
+            ->groupBy('code')
+            ->havingRaw("count(DISTINCT translations -> 'bn' ->> 'label') > 1")
+            ->pluck('code');
+
+        // Assert
+        expect($codes->all())->toBe([]);
+    });
 });
 
 describe('lifecycle_attach()', function () {
