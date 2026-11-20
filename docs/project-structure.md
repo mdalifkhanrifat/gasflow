@@ -492,16 +492,29 @@ and it never changes once saved.
 ```text
 resources/js/
 ├── app.ts           Inertia entry
-├── pages/           one folder per area of the app
-├── components/      shared components (ui/ = base components)
+├── pages/           domain/feature folders for Inertia pages and page-specific files
+├── components/      shared components (ui/ = primitives, app/ = application UI)
 ├── composables/     shared logic (useCan, useLocale, ...)
 ├── layouts/         app shell, auth layout
+├── config/          shared navigation, table defaults and status tones
 ├── lib/             helpers
 └── types/           TypeScript types
 ```
 
-Colors, spacing and status badges come from central tokens and components; a
-page never hard-codes them. Details arrive with the UI design system (Phase 3).
+Group route pages by domain, such as `pages/billing/invoices/Index.vue` and
+`pages/billing/invoices/Show.vue`. Keep invoice columns and page-specific
+components next to those pages. Put cross-domain tables, forms, dialogs, and
+states in shared components. Create folders when they get their first file.
+
+Dashboards with distinct workflows have separate pages, starting with
+`pages/dashboards/platform/Index.vue`. Each page orders its own panels and uses
+the shared dashboard components. A workspace with dedicated navigation can
+use a dedicated layout built from those same primitives.
+
+`resources/css/tokens.css` owns semantic colors, density and component design
+values. Keep workspace palette overrides at the document root. The shared
+`useTheme` composable exposes the system, light and dark preference. All
+pages use the same component styles and responsive behavior.
 
 ## Tests
 

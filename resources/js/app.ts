@@ -1,6 +1,11 @@
 import { createInertiaApp } from '@inertiajs/vue3';
+import { initializeTheme } from '@/composables/useTheme';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+if (typeof window !== 'undefined') {
+    initializeTheme();
+}
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -14,6 +19,6 @@ void createInertiaApp({
         });
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--primary)',
     },
 });
