@@ -1,0 +1,46 @@
+:root {
+    color-scheme: light;
+    --background: #f4f6fb;
+    --surface: #ffffff;
+    --surface-muted: #edf1f8;
+    --ink: #17243b;
+    --ink-muted: #53647e;
+    --line: #d9e1ee;
+    --nav: #111d31;
+    --primary: #2d58d0;
+    --primary-ink: #ffffff;
+    --focus: #416ff0;
+    --control-radius: 0.5rem;
+    --panel-radius: 0.875rem;
+    --panel-shadow: 0 8px 26px rgb(23 36 59 / 6%);
+    --density-row-height: 3rem;
+    --density-control-height: 2.5rem;
+}
+
+.dark {
+    color-scheme: dark;
+    --background: #0d1422;
+    --surface: #151f30;
+    --surface-muted: #202d42;
+    --ink: #e6edf8;
+    --ink-muted: #aab9cf;
+    --line: #38475f;
+    --nav: #111d31;
+    --primary: #a0b8ff;
+    --primary-ink: #101b33;
+    --focus: #a0b8ff;
+    --panel-shadow: 0 8px 26px rgb(0 0 0 / 22%);
+}
+
+.density-compact {
+    --density-row-height: 2.5rem;
+    --density-control-height: 2.25rem;
+}
+
+@media (pointer: coarse) {
+    :root,
+    .density-compact {
+        --density-row-height: 3rem;
+        --density-control-height: 2.75rem;
+    }
+}

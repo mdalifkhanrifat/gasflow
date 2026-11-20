@@ -1,9 +1,25 @@
 @import 'tailwindcss';
+@import './tokens.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme inline {
+    --color-background: var(--background);
+    --color-surface: var(--surface);
+    --color-surface-muted: var(--surface-muted);
+    --color-ink: var(--ink);
+    --color-ink-muted: var(--ink-muted);
+    --color-line: var(--line);
+    --color-nav: var(--nav);
+    --color-primary: var(--primary);
+    --color-primary-ink: var(--primary-ink);
+    --color-focus: var(--focus);
+    --radius-control: var(--control-radius);
+    --radius-panel: var(--panel-radius);
+    --shadow-panel: var(--panel-shadow);
+    --spacing-table-row: var(--density-row-height);
+    --spacing-control: var(--density-control-height);
     --font-sans:
         Instrument Sans, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',

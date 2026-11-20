@@ -15,7 +15,7 @@
             <title>{{ config('app.name', 'GasFlow') }}</title>
         </x-inertia::head>
     </head>
-    <body class="font-sans antialiased">
+    <body class="bg-background font-sans text-ink antialiased">
         <x-inertia::app />
     </body>
 </html>
