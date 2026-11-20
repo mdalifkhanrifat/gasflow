@@ -4,7 +4,7 @@ namespace Tests\Support;
 
 /**
  * The tables under row-level security and their one policy each: the
- * design's 55 (02 §15, final form in 02b) and the ones decision D52 added.
+ * design's 55 (02 §15, final form in 02b) and the 8 decision D52 added.
  */
 final class RowLevelSecurity
 {
@@ -70,4 +70,33 @@ final class RowLevelSecurity
         'tariff_versions' => 'tenant_scope_tariff_versions',
         'webhook_inbox' => 'webhook_inbox_org_scope',
     ];
+
+    /**
+     * Decision D52 (V7.25): tenant tables the design left without a policy.
+     *
+     * @var array<string, string>
+     */
+    public const array ADDED_POLICIES = [
+        'billing_disputes' => 'tenant_scope_billing_disputes',
+        'building_billing_settings' => 'tenant_scope_building_billing_settings',
+        'building_membership_roles' => 'building_membership_roles_scope',
+        'building_vendor_assignments' => 'tenant_scope_building_vendor_assignments',
+        'membership_roles' => 'membership_roles_scope',
+        'organization_memberships' => 'organization_memberships_scope',
+        'tariff_retro_adjustments' => 'tenant_scope_tariff_retro_adjustments',
+        'user_devices' => 'user_devices_scope',
+    ];
+
+    /**
+     * Every table under row-level security: table => policy.
+     *
+     * @return array<string, string>
+     */
+    public static function policies(): array
+    {
+        $policies = [...self::DESIGN_POLICIES, ...self::ADDED_POLICIES];
+        ksort($policies);
+
+        return $policies;
+    }
 }

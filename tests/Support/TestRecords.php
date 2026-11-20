@@ -971,6 +971,19 @@ final class TestRecords
     }
 
     /**
+     * An installed PWA of the given user (a new user when none is given).
+     */
+    public static function userDevice(?int $userId = null): int
+    {
+        return (int) DB::table('user_devices')->insertGetId([
+            'user_id' => $userId ?? User::factory()->create()->id,
+            'device_uuid' => (string) Str::uuid(),
+            'client_type' => 'pwa',
+            'platform' => 'android',
+        ]);
+    }
+
+    /**
      * A draft installation agreement of the building (a new building when
      * none is given): 12 000 BDT in 12 parts from 2026-01-01, with a fresh
      * agreement number.
