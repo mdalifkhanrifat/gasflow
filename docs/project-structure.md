@@ -138,7 +138,8 @@ Generators accept the subfolder: `php artisan make:model Billing/Invoice`,
 | an artisan command                     | `app/Console/Commands/<Domain>/`                                                          |
 | HTTP middleware                        | `app/Http/Middleware/`, registered in `bootstrap/app.php`                                 |
 | an event listener                      | `app/Listeners/<Domain>/` (found automatically by its `handle()` type hint)               |
-| a status                               | an enum case in `app/Enums/<Domain>/` and a row in `status_definitions` (seeder)          |
+| a status                               | an enum case in `app/Enums/<Domain>/` and a row in `status_definitions` (its migration)   |
+| a permission or system role            | a row in a migration (every environment needs it); demo data in a seeder (Phase 4/6)      |
 | a setting                              | a `config/` file; secrets only through `.env`                                             |
 | a translation                          | `lang/bn` and `lang/en` (Phase 3)                                                         |
 | a test                                 | `tests/Feature/<Domain>/` or `tests/Unit/<Domain>/`                                       |
@@ -338,7 +339,21 @@ and it never changes once saved.
   attempts kept as they happened. 15 row-level security (V7.25, D52):
   `000085` integrity checks run as `gasflow_integrity`, `000086` the
   design's 52 policies, `000087` policies for the building tables the design
-  left open, memberships and their roles, and user devices.
+  left open, memberships and their roles, and user devices. 16 seed data
+  (V7.26, D53): `000088` the permissions the status transitions name and a
+  foreign key to them, `000089` the actor roles, `000090` one Bangla label
+  per status code.
+- Data every environment needs (statuses, catalogues, permissions, system
+  roles) is seeded by a migration. Laravel seeders are for development and
+  demo data only, and they write tenant rows in each organization's context
+  (no bypass). A transition that names a `permission_code` needs that
+  permission in `permissions`; a new status gets the Bangla label its code
+  already has on other tables (a test checks one label per code).
+- On a lifecycle table a DELETE becomes a soft delete, so the `down()` of a
+  migration that seeds such a table switches the guard off
+  (`ALTER TABLE ... DISABLE TRIGGER trg_00_lifecycle_guard`), deletes its
+  rows and switches it on again. Otherwise the codes stay taken and the next
+  migrate fails.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
