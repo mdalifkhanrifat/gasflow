@@ -385,6 +385,21 @@ and it never changes once saved.
 
     All of them let the maintenance override through, like the freeze guards.
 
+- A trigger function that reads another table (directly, or through a helper
+  such as `organization_can_access_building()` or `invoice_balance()`) is an
+  integrity check and runs as `gasflow_integrity`: after creating it, call
+  `SELECT adopt_integrity_check('validate_x()')` in the same migration (owner
+  `gasflow_integrity`, `SECURITY DEFINER`, `search_path = public, pg_temp`).
+  Under row-level security it would otherwise see only the caller's rows and
+  accept another tenant's id. `CREATE OR REPLACE` of an adopted function
+  resets it, so adopt it again. A check only reads and refuses; if it locks
+  rows (`FOR SHARE` / `FOR UPDATE`), grant the lock with
+  `SELECT lifecycle_allow_integrity_lock('table')` (the generic parent and
+  children rules do it themselves). The helpers stay `SECURITY INVOKER`, so
+  the app calling them sees only its own rows.
+  `tests/Feature/Database/IntegrityChecksTest.php` finds every such function
+  in `pg_proc` and fails until it is adopted (V7.25, D52).
+
 - Gas is priced only through the tariff timeline: `tariff_rate_segments()`
   says which vendor and rate applied on which days (several changes a month,
   customer category with the general rate as fallback, gaps shown), and
