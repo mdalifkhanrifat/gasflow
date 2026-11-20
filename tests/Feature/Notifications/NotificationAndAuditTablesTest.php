@@ -340,3 +340,59 @@ describe('idempotency keys', function () {
         expect($id)->toBeGreaterThan(0);
     });
 });
+
+describe('audit log integrity (D51)', function () {
+    it('cannot be changed by the app', function () {
+        // Arrange
+        $id = auditLog();
+
+        // Act & Assert
+        expect(fn () => DB::transaction(fn () => DB::table('audit_logs')->where('id', $id)->update(['action' => 'nothing'])))
+            ->toThrow(QueryException::class, 'permission denied for table audit_logs');
+    });
+
+    it('cannot be changed by a maintenance member either', function () {
+        // Arrange
+        $operator = DB::connection('pgsql_maintenance');
+        $operator->beginTransaction();
+        $id = $operator->table('audit_logs')->insertGetId(['action' => 'x', 'subject_type' => 'x', 'subject_id' => 1]);
+
+        // Act & Assert
+        try {
+            expect(fn () => $operator->table('audit_logs')->where('id', $id)->update(['action' => 'y']))
+                ->toThrow(QueryException::class, 'permission denied for table audit_logs');
+        } finally {
+            $operator->rollBack();
+        }
+    });
+
+    it('names an organization for a building entry', function () {
+        // Arrange
+        $row = ['building_id' => TestRecords::building()];
+
+        // Act & Assert
+        expect(fn () => auditLog($row))->toThrow(QueryException::class, 'ck_audit_logs_building_organization');
+    });
+
+    it('refuses a building entry of an organization without access', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $buildingId = TestRecords::building();
+
+        // Act & Assert
+        expect(fn () => auditLog(['organization_id' => $organizationId, 'building_id' => $buildingId]))
+            ->toThrow(QueryException::class, "Organization {$organizationId} has no access to building {$buildingId}");
+    });
+
+    it('accepts a building entry of the building\'s organization and a platform entry', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $buildingId = TestRecords::building($organizationId);
+
+        // Act
+        $ids = [auditLog(['organization_id' => $organizationId, 'building_id' => $buildingId]), auditLog()];
+
+        // Assert
+        expect(DB::table('audit_logs')->whereIn('id', $ids)->count())->toBe(2);
+    });
+});
