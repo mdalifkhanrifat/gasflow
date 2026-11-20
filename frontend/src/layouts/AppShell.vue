@@ -9,11 +9,14 @@ import { onMounted, onUnmounted, useTemplateRef } from 'vue';
 import AppSidebar from '@/components/app/navigation/AppSidebar.vue';
 import AppTopbar from '@/components/app/navigation/AppTopbar.vue';
 import { useLocale } from '@/composables/useLocale';
+import { usePreviewWorkspace } from '@/composables/usePreviewWorkspace';
 
 const { t } = useLocale();
-defineProps<{ pageLabel: string; workspace: string }>();
+defineProps<{ pageLabel: string }>();
+const { workspace } = usePreviewWorkspace();
 const mobileOpen = ref(false);
 const drawer = useTemplateRef<HTMLDialogElement>('drawer');
+const topbar = useTemplateRef('topbar');
 const desktop = window.matchMedia('(min-width: 48rem)');
 
 function openMobile(): void {
@@ -23,6 +26,11 @@ function openMobile(): void {
 
 function closeMobile(): void {
     drawer.value?.close();
+}
+
+function openProfile(): void {
+    closeMobile();
+    topbar.value?.openProfile();
 }
 
 function closeOnDesktop(event: MediaQueryListEvent): void {
@@ -46,12 +54,16 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                     : 'w-sidebar-rail'
             "
         >
-            <AppSidebar :workspace="workspace" :compact="!desktopOpen" />
+            <AppSidebar
+                :workspace="workspace"
+                :compact="!desktopOpen"
+                @profile="openProfile"
+            />
         </aside>
         <div class="min-w-0 grow">
             <AppTopbar
+                ref="topbar"
                 :page-label="pageLabel"
-                :workspace="workspace"
                 :desktop-open="desktopOpen"
                 :mobile-open="mobileOpen"
                 @toggle-desktop="desktopOpen = !desktopOpen"
@@ -79,7 +91,11 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                 >
                     <span aria-hidden="true">×</span>
                 </button>
-                <AppSidebar :workspace="workspace" @navigate="closeMobile" />
+                <AppSidebar
+                    :workspace="workspace"
+                    @navigate="closeMobile"
+                    @profile="openProfile"
+                />
             </div>
         </dialog>
     </div>

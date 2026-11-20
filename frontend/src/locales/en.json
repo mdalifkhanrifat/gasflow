@@ -127,5 +127,13 @@
     "module.search": "Search records…",
     "module.details": "View details",
     "module.empty": "No matching records.",
-    "module.close": "Close"
+    "module.close": "Close",
+    "topbar.search": "Search pages, invoices…",
+    "topbar.organization": "Organization",
+    "topbar.building": "Building",
+    "topbar.all_buildings": "All buildings",
+    "topbar.use_light": "Switch to light mode",
+    "topbar.use_dark": "Switch to dark mode",
+    "topbar.account": "Account options",
+    "topbar.no_notifications": "No new notifications in this preview."
 }

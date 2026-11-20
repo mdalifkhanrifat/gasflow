@@ -24,7 +24,7 @@ async function changeLocale(event: Event): Promise<void> {
 
 <template>
     <label class="grid gap-1.5 text-sm font-medium text-ink">
-        <span class="sr-only">{{ t('preferences.language') }}</span>
+        {{ t('preferences.language') }}
         <NativeSelect
             :value="locale"
             :disabled="pending"

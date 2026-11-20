@@ -85,10 +85,7 @@ function savePreview(): void {
 </script>
 
 <template>
-    <AppShell
-        :page-label="t('navigation.dashboard')"
-        workspace="Northstar Gas Services"
-    >
+    <AppShell :page-label="t('navigation.dashboard')">
         <div class="grid gap-3.5">
             <header class="flex flex-wrap items-start justify-between gap-3">
                 <div>

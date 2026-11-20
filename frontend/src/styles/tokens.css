@@ -41,6 +41,11 @@
     --panel-shadow: 0 8px 26px rgb(23 36 59 / 6%);
     --density-row-height: 3rem;
     --density-control-height: 2.5rem;
+    --topbar-height: 4.125rem;
+    --topbar-control-size: 2.125rem;
+    --topbar-avatar-size: 1.9375rem;
+    --topbar-field: #fbfcfe;
+    --topbar-shadow: 0 2px 10px rgb(20 35 60 / 2.5%);
     --sidebar-width: 16.5rem;
     --sidebar-tablet-width: 14.375rem;
     --sidebar-drawer-width: 16.875rem;
@@ -52,6 +57,7 @@
     --background: #0d1422;
     --surface: #151f30;
     --surface-muted: #202d42;
+    --topbar-field: #111b2b;
     --ink: #e6edf8;
     --ink-muted: #aab9cf;
     --line: #38475f;
@@ -80,6 +86,11 @@
 }
 
 @media (pointer: coarse) {
+    :root {
+        --topbar-control-size: 2.5rem;
+        --topbar-avatar-size: 2.5rem;
+    }
+
     :root,
     .density-compact {
         --density-row-height: 3rem;

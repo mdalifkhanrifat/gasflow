@@ -27,6 +27,7 @@
     --color-nav-avatar-ink: var(--nav-avatar-ink);
     --color-nav-focus: var(--nav-focus);
     --color-overlay: var(--overlay);
+    --color-topbar-field: var(--topbar-field);
     --color-primary: var(--primary);
     --color-primary-ink: var(--primary-ink);
     --color-primary-soft: var(--primary-soft);
@@ -58,6 +59,55 @@
 }
 
 @layer components {
+    .topbar {
+        box-shadow: var(--topbar-shadow);
+    }
+
+    .topbar-row {
+        @apply px-3 sm:px-[1.6875rem];
+        min-height: var(--topbar-height);
+        --density-control-height: var(--topbar-control-size);
+    }
+
+    .topbar-select {
+        font-size: 0.6875rem;
+    }
+
+    .topbar-organization {
+        width: 10.875rem;
+    }
+
+    .topbar-building {
+        width: 8rem;
+    }
+
+    .topbar-control {
+        min-height: var(--topbar-control-size);
+    }
+
+    .topbar-icon {
+        @apply inline-grid shrink-0 place-items-center rounded-control border border-line bg-surface text-ink-muted transition-colors hover:border-focus hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus motion-reduce:transition-none;
+        width: var(--topbar-control-size);
+        height: var(--topbar-control-size);
+    }
+
+    .topbar-avatar {
+        width: var(--topbar-avatar-size);
+        height: var(--topbar-avatar-size);
+    }
+
+    .topbar-search {
+        width: clamp(8rem, 15vw, 13.125rem);
+    }
+
+    .topbar-popover {
+        position: fixed;
+        inset: calc(var(--topbar-height) + 0.5rem) 0.75rem auto auto;
+        margin: 0;
+        max-width: calc(100vw - 1.5rem);
+        min-width: 13rem;
+    }
+
     .sidebar-scroll {
         scrollbar-color: var(--nav-scroll) transparent;
         overscroll-behavior: contain;
@@ -79,6 +129,10 @@
 
     .sidebar-footer {
         padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+
+    .sidebar-profile-more {
+        @apply hover:bg-nav-hover hover:text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus;
     }
 
     .sidebar-group {

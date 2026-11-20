@@ -4,6 +4,7 @@ type ThemePreference = 'system' | 'light' | 'dark';
 
 const storageKey = 'gasflow-theme';
 const preference = ref<ThemePreference>('system');
+const isDark = ref(false);
 
 function readPreference(value: string | null | undefined): ThemePreference {
     return value === 'light' || value === 'dark' ? value : 'system';
@@ -26,6 +27,7 @@ function applyTheme(): void {
         (preference.value === 'system' &&
             window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+    isDark.value = dark;
     root.dataset.themePreference = preference.value;
     root.classList.toggle('dark', dark);
 }
@@ -42,5 +44,9 @@ function setPreference(value: ThemePreference): void {
 }
 
 export function useTheme() {
-    return { preference: readonly(preference), setPreference };
+    return {
+        preference: readonly(preference),
+        isDark: readonly(isDark),
+        setPreference,
+    };
 }

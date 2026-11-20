@@ -1,3 +1,9 @@
+export const dashboardNavigationItem = {
+    label: 'navigation.dashboard',
+    icon: '▦',
+    route: 'platform-dashboard',
+} as const;
+
 export const navigation = [
     {
         label: 'navigation.platform',
@@ -60,3 +66,10 @@ export const navigation = [
         ],
     },
 ] as const;
+
+export const searchableNavigation = [
+    dashboardNavigationItem,
+    ...navigation
+        .flatMap((group) => [...group.items])
+        .filter((item) => 'route' in item),
+];

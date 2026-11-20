@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
@@ -23,6 +24,14 @@ const props = defineProps<{
 }>();
 const { t } = useLocale();
 const search = ref('');
+const route = useRoute();
+watch(
+    () => route.query.q,
+    (value) => {
+        search.value = typeof value === 'string' ? value : '';
+    },
+    { immediate: true },
+);
 const status = ref('');
 const selected = ref<RecordRow>();
 const dialog = useTemplateRef('recordDialog');
@@ -50,7 +59,7 @@ function openRecord(row: RecordRow): void {
 </script>
 
 <template>
-    <AppShell :page-label="title" workspace="Northstar Gas Services">
+    <AppShell :page-label="title">
         <div class="grid min-w-0 gap-3.5">
             <header>
                 <p

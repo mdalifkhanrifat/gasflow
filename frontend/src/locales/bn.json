@@ -127,5 +127,13 @@
     "module.search": "রেকর্ড খুঁজুন…",
     "module.details": "বিস্তারিত দেখুন",
     "module.empty": "মিল আছে এমন কোনো রেকর্ড নেই।",
-    "module.close": "বন্ধ করুন"
+    "module.close": "বন্ধ করুন",
+    "topbar.search": "পেজ বা বিল খুঁজুন…",
+    "topbar.organization": "প্রতিষ্ঠান",
+    "topbar.building": "ভবন",
+    "topbar.all_buildings": "সব ভবন",
+    "topbar.use_light": "লাইট মোডে যান",
+    "topbar.use_dark": "ডার্ক মোডে যান",
+    "topbar.account": "অ্যাকাউন্টের বিকল্প",
+    "topbar.no_notifications": "এই প্রিভিউতে নতুন কোনো বিজ্ঞপ্তি নেই।"
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useLocale } from '@/composables/useLocale';
-import { navigation } from '@/config/navigation';
+import { dashboardNavigationItem, navigation } from '@/config/navigation';
 
 defineProps<{ workspace: string; compact?: boolean }>();
 const { t } = useLocale();
-const emit = defineEmits<{ navigate: [] }>();
+const emit = defineEmits<{ navigate: []; profile: [] }>();
 </script>
 
 <template>
@@ -38,15 +38,17 @@ const emit = defineEmits<{ navigate: [] }>();
             class="sidebar-scroll min-h-0 grow overflow-x-hidden overflow-y-auto px-3 pb-3"
         >
             <RouterLink
-                :to="{ name: 'platform-dashboard' }"
+                :to="{ name: dashboardNavigationItem.route }"
                 class="sidebar-item"
                 exact-active-class="sidebar-item-active"
-                :title="compact ? t('navigation.dashboard') : undefined"
+                :title="compact ? t(dashboardNavigationItem.label) : undefined"
                 @click="emit('navigate')"
             >
-                <span class="sidebar-icon" aria-hidden="true">▦</span>
+                <span class="sidebar-icon" aria-hidden="true">{{
+                    dashboardNavigationItem.icon
+                }}</span>
                 <span :class="{ 'sr-only': compact }">{{
-                    t('navigation.dashboard')
+                    t(dashboardNavigationItem.label)
                 }}</span>
             </RouterLink>
             <section
@@ -101,10 +103,19 @@ const emit = defineEmits<{ navigate: [] }>();
             <div v-if="!compact">
                 <p class="text-xs font-semibold">{{ t('navigation.admin') }}</p>
                 <p class="text-xs text-nav-muted">
-                    {{ t('navigation.platform_admin') }} ·
-                    {{ t('navigation.preview') }}
+                    {{ t('navigation.platform_admin') }}
                 </p>
             </div>
+            <button
+                v-if="!compact"
+                type="button"
+                class="sidebar-profile-more ml-auto grid size-7 shrink-0 place-items-center rounded-control text-lg text-nav-muted"
+                :aria-label="t('topbar.account')"
+                :title="t('topbar.account')"
+                @click="emit('profile')"
+            >
+                <span aria-hidden="true">⋯</span>
+            </button>
         </div>
     </div>
 </template>
