@@ -8,14 +8,15 @@
 use Tests\Support\TestLicense;
 
 describe('home page', function () {
-    it('answers with the welcome page', function () {
+    it('answers with the platform dashboard preview', function () {
         // Arrange: TestCase installs an active license
 
         // Act
         $response = $this->get(route('home'));
 
         // Assert
-        $response->assertOk();
+        $response->assertOk()
+            ->assertInertia(fn ($page) => $page->component('dashboards/platform/Index'));
     });
 
     it('stays readable while the license is locked', function () {

@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureLicensed;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LifecycleContext;
 use App\Http\Middleware\RequestContext;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(AssignRequestId::class);
 
         $middleware->web(append: [
+            SetLocale::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             // Read-only lock without a valid license; refused writes never open a transaction.
