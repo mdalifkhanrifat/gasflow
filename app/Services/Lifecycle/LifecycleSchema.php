@@ -224,4 +224,29 @@ final class LifecycleSchema
             [$table, $name, $parent, $foreignKey, json_encode($columns, JSON_THROW_ON_ERROR), json_encode($closedStatuses, JSON_THROW_ON_ERROR)],
         );
     }
+
+    /**
+     * Lets columns be written once: each may go from NULL to a value, and
+     * from then on an UPDATE that changes it is refused (only the
+     * maintenance override may still correct it).
+     *
+     *     LifecycleSchema::writeOnce('notifications', ['sent_at']);
+     *
+     * Calls the PostgreSQL function lifecycle_write_once(), which checks the
+     * table and columns and creates the trigger trg_<table>_write_once_<name>.
+     * Calling it again with the same name replaces the rule.
+     *
+     * @param  list<string>  $columns
+     */
+    public static function writeOnce(
+        string $table,
+        array $columns,
+        string $name = 'fields',
+        ?string $connection = null,
+    ): void {
+        DB::connection($connection)->statement(
+            'select lifecycle_write_once(?::text, ?::text, array(select jsonb_array_elements_text(?::jsonb)))',
+            [$table, $name, json_encode($columns, JSON_THROW_ON_ERROR)],
+        );
+    }
 }
