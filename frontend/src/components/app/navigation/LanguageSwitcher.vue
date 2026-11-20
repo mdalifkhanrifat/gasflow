@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import NativeSelect from '@/components/ui/NativeSelect.vue';
-import { locales, useLocale } from '@/composables/useLocale';
+import { computed, ref } from 'vue';
+import { useLocale } from '@/composables/useLocale';
 
 const { locale, setLocale, t } = useLocale();
+const nextLocale = computed(() => (locale.value === 'bn' ? 'en' : 'bn'));
 const pending = ref(false);
 const failed = ref(false);
-async function changeLocale(event: Event): Promise<void> {
-    const select = event.target as HTMLSelectElement;
-    failed.value = false;
+
+async function changeLocale(): Promise<void> {
     pending.value = true;
+    failed.value = false;
 
     try {
-        await setLocale(select.value);
+        await setLocale(nextLocale.value);
     } catch {
         failed.value = true;
-        select.value = locale.value;
     } finally {
         pending.value = false;
     }
@@ -23,24 +22,25 @@ async function changeLocale(event: Event): Promise<void> {
 </script>
 
 <template>
-    <label class="grid gap-1.5 text-sm font-medium text-ink">
-        {{ t('preferences.language') }}
-        <NativeSelect
-            :value="locale"
+    <div class="relative">
+        <button
+            type="button"
+            class="topbar-icon text-xs font-bold disabled:opacity-60"
             :disabled="pending"
-            @change="changeLocale"
+            :aria-label="t(`topbar.switch_language.${nextLocale}`)"
+            :title="t(`topbar.switch_language.${nextLocale}`)"
+            @click="changeLocale"
         >
-            <option
-                v-for="locale in locales"
-                :key="locale"
-                :value="locale"
-                :lang="locale"
-            >
-                {{ t(`preferences.language.${locale}`) }}
-            </option>
-        </NativeSelect>
-        <span v-if="failed" role="alert">{{
-            t('preferences.language_error')
-        }}</span>
-    </label>
+            <span :lang="nextLocale">{{
+                nextLocale === 'en' ? 'EN' : 'বাংলা'
+            }}</span>
+        </button>
+        <p
+            v-if="failed"
+            role="alert"
+            class="absolute top-full right-0 mt-2 w-36 rounded-control border border-line bg-surface p-2 text-xs text-danger shadow-panel"
+        >
+            {{ t('preferences.language_error') }}
+        </p>
+    </div>
 </template>

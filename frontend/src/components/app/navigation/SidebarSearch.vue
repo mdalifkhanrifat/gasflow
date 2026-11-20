@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLocale } from '@/composables/useLocale';
 import { searchableNavigation } from '@/config/navigation';
+
+const emit = defineEmits<{ navigate: [] }>();
+const input = useTemplateRef<HTMLInputElement>('input');
+defineExpose({ focus: () => input.value?.focus() });
 
 const { t } = useLocale();
 const router = useRouter();
@@ -34,6 +38,11 @@ function clearSearch(): void {
     query.value = '';
 }
 
+function followLink(): void {
+    clearSearch();
+    emit('navigate');
+}
+
 function onBlur(event: FocusEvent): void {
     const container = event.currentTarget as HTMLElement;
     if (
@@ -48,14 +57,14 @@ function submit(): void {
     const match = matches.value[0];
     if (match) {
         void router.push(destination(match.route));
-        clearSearch();
+        followLink();
     }
 }
 </script>
 
 <template>
     <form
-        class="topbar-search relative hidden min-[30rem]:block"
+        class="mt-2"
         role="search"
         @focusin="focused = true"
         @focusout="onBlur"
@@ -65,34 +74,35 @@ function submit(): void {
         <label class="relative block">
             <span class="sr-only">{{ t('topbar.search') }}</span>
             <span
-                class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-base text-ink-muted"
+                class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-base text-nav-muted"
                 aria-hidden="true"
                 >⌕</span
             >
             <input
+                ref="input"
                 v-model="query"
                 type="search"
                 autocomplete="off"
                 :placeholder="t('topbar.search')"
-                class="topbar-control w-full rounded-control border border-line bg-topbar-field pr-2 pl-7 text-xs text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                class="min-h-control w-full rounded-control border border-nav-line bg-nav-workspace pr-2 pl-7 text-xs text-nav-ink placeholder:text-nav-muted focus-visible:outline-2 focus-visible:outline-nav-focus"
                 @input="focused = true"
             />
         </label>
         <div
             v-if="visible"
-            class="absolute top-full right-0 z-20 mt-2 w-52 max-w-[80vw] rounded-control border border-line bg-surface p-1.5 text-xs text-ink shadow-panel"
+            class="mt-1 rounded-control border border-nav-line bg-nav-workspace p-1 text-xs text-nav-ink"
         >
             <RouterLink
                 v-for="entry in matches"
                 :key="entry.route"
                 :to="destination(entry.route)"
-                class="block rounded-control px-2.5 py-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus"
-                @click="clearSearch"
+                class="block rounded-control px-2.5 py-2 hover:bg-nav-hover focus-visible:outline-2 focus-visible:outline-nav-focus"
+                @click="followLink"
             >
                 {{ t(entry.label)
                 }}<template v-if="invoiceQuery"> · {{ query }}</template>
             </RouterLink>
-            <p v-if="!matches.length" class="p-2 text-ink-muted">
+            <p v-if="!matches.length" class="p-2 text-nav-muted">
                 {{ t('module.empty') }}
             </p>
         </div>

@@ -135,5 +135,10 @@
     "topbar.use_light": "লাইট মোডে যান",
     "topbar.use_dark": "ডার্ক মোডে যান",
     "topbar.account": "অ্যাকাউন্টের বিকল্প",
-    "topbar.no_notifications": "এই প্রিভিউতে নতুন কোনো বিজ্ঞপ্তি নেই।"
+    "topbar.no_notifications": "এই প্রিভিউতে নতুন কোনো বিজ্ঞপ্তি নেই।",
+    "topbar.switch_language.bn": "বাংলায় দেখুন",
+    "topbar.switch_language.en": "ইংরেজিতে দেখুন",
+    "profile.title": "প্রোফাইল",
+    "profile.preview": "এখানে নমুনা অ্যাডমিন অ্যাকাউন্ট দেখানো হচ্ছে।",
+    "profile.appearance": "দেখার ধরন"
 }

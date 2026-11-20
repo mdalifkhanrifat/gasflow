@@ -19,6 +19,11 @@ export default createRouter({
             component: () => import('@/pages/billing/invoices/Index.vue'),
         },
         {
+            path: '/profile',
+            name: 'account-profile',
+            component: () => import('@/pages/profile/Index.vue'),
+        },
+        {
             path: '/:pathMatch(.*)*',
             component: () => import('@/pages/errors/NotFound.vue'),
         },

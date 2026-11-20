@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useId, useTemplateRef } from 'vue';
 import LanguageSwitcher from '@/components/app/navigation/LanguageSwitcher.vue';
-import ThemeSwitcher from '@/components/app/navigation/ThemeSwitcher.vue';
-import TopbarSearch from '@/components/app/navigation/TopbarSearch.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePreviewWorkspace } from '@/composables/usePreviewWorkspace';
@@ -20,6 +18,7 @@ const { workspace, workspaces, building, buildings, selectWorkspace } =
 const { isDark, setPreference } = useTheme();
 const notificationsId = useId();
 const profileId = useId();
+const profile = useTemplateRef<HTMLElement>('profile');
 const profileButton = useTemplateRef<HTMLButtonElement>('profileButton');
 
 function openProfile(): void {
@@ -32,9 +31,7 @@ defineExpose({ openProfile });
 
 <template>
     <header class="topbar sticky top-0 z-20 border-b border-line bg-surface">
-        <div
-            class="topbar-row mx-auto flex max-w-screen-2xl items-center justify-between gap-3"
-        >
+        <div class="topbar-row flex items-center justify-between gap-3">
             <div class="flex min-w-0 items-center gap-2.5">
                 <button
                     type="button"
@@ -102,7 +99,6 @@ defineExpose({ openProfile });
                         </option>
                     </NativeSelect>
                 </label>
-                <TopbarSearch />
                 <button
                     type="button"
                     class="topbar-icon text-base"
@@ -114,6 +110,7 @@ defineExpose({ openProfile });
                 >
                     <span aria-hidden="true">{{ isDark ? '☀' : '☾' }}</span>
                 </button>
+                <LanguageSwitcher />
                 <button
                     type="button"
                     class="topbar-icon text-base"
@@ -150,6 +147,7 @@ defineExpose({ openProfile });
         </div>
         <div
             :id="profileId"
+            ref="profile"
             popover
             class="topbar-popover rounded-panel border border-line bg-surface p-4 text-ink shadow-panel"
         >
@@ -158,10 +156,13 @@ defineExpose({ openProfile });
                 {{ t('navigation.platform_admin') }} ·
                 {{ t('navigation.preview') }}
             </p>
-            <div class="grid grid-cols-2 gap-2">
-                <LanguageSwitcher />
-                <ThemeSwitcher />
-            </div>
+            <RouterLink
+                :to="{ name: 'account-profile' }"
+                class="block rounded-control px-2.5 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus"
+                @click="profile?.hidePopover()"
+            >
+                {{ t('profile.title') }}
+            </RouterLink>
         </div>
     </header>
 </template>

@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue';
+import SidebarSearch from '@/components/app/navigation/SidebarSearch.vue';
 import { useLocale } from '@/composables/useLocale';
 import { dashboardNavigationItem, navigation } from '@/config/navigation';
 
 defineProps<{ workspace: string; compact?: boolean }>();
 const { t } = useLocale();
-const emit = defineEmits<{ navigate: []; profile: [] }>();
+const emit = defineEmits<{ navigate: []; profile: []; expandSearch: [] }>();
+const search = useTemplateRef('sidebarSearch');
+defineExpose({ focusSearch: () => search.value?.focus() });
 </script>
 
 <template>
@@ -51,6 +55,21 @@ const emit = defineEmits<{ navigate: []; profile: [] }>();
                     t(dashboardNavigationItem.label)
                 }}</span>
             </RouterLink>
+            <button
+                v-if="compact"
+                type="button"
+                class="sidebar-item mt-2"
+                :aria-label="t('topbar.search')"
+                :title="t('topbar.search')"
+                @click="emit('expandSearch')"
+            >
+                <span class="sidebar-icon" aria-hidden="true">⌕</span>
+            </button>
+            <SidebarSearch
+                v-else
+                ref="sidebarSearch"
+                @navigate="emit('navigate')"
+            />
             <section
                 v-for="group in navigation"
                 :key="group.label"

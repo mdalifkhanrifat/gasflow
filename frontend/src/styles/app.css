@@ -27,7 +27,6 @@
     --color-nav-avatar-ink: var(--nav-avatar-ink);
     --color-nav-focus: var(--nav-focus);
     --color-overlay: var(--overlay);
-    --color-topbar-field: var(--topbar-field);
     --color-primary: var(--primary);
     --color-primary-ink: var(--primary-ink);
     --color-primary-soft: var(--primary-soft);
@@ -63,8 +62,12 @@
         box-shadow: var(--topbar-shadow);
     }
 
+    .shell-content {
+        padding-inline: var(--shell-gutter);
+    }
+
     .topbar-row {
-        @apply px-3 sm:px-[1.6875rem];
+        padding-inline: var(--shell-gutter);
         min-height: var(--topbar-height);
         --density-control-height: var(--topbar-control-size);
     }
@@ -81,10 +84,6 @@
         width: 8rem;
     }
 
-    .topbar-control {
-        min-height: var(--topbar-control-size);
-    }
-
     .topbar-icon {
         @apply inline-grid shrink-0 place-items-center rounded-control border border-line bg-surface text-ink-muted transition-colors hover:border-focus hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus motion-reduce:transition-none;
         width: var(--topbar-control-size);
@@ -94,10 +93,6 @@
     .topbar-avatar {
         width: var(--topbar-avatar-size);
         height: var(--topbar-avatar-size);
-    }
-
-    .topbar-search {
-        width: clamp(8rem, 15vw, 13.125rem);
     }
 
     .topbar-popover {

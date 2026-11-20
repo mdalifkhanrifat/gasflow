@@ -5,7 +5,7 @@ const desktopOpen = ref(true);
 </script>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, useTemplateRef } from 'vue';
+import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import AppSidebar from '@/components/app/navigation/AppSidebar.vue';
 import AppTopbar from '@/components/app/navigation/AppTopbar.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -17,6 +17,13 @@ const { workspace } = usePreviewWorkspace();
 const mobileOpen = ref(false);
 const drawer = useTemplateRef<HTMLDialogElement>('drawer');
 const topbar = useTemplateRef('topbar');
+const sidebar = useTemplateRef('sidebar');
+
+async function expandSearch(): Promise<void> {
+    desktopOpen.value = true;
+    await nextTick();
+    sidebar.value?.focusSearch();
+}
 const desktop = window.matchMedia('(min-width: 48rem)');
 
 function openMobile(): void {
@@ -55,6 +62,8 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
             "
         >
             <AppSidebar
+                ref="sidebar"
+                @expand-search="expandSearch"
                 :workspace="workspace"
                 :compact="!desktopOpen"
                 @profile="openProfile"
@@ -69,7 +78,7 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                 @toggle-desktop="desktopOpen = !desktopOpen"
                 @open-mobile="openMobile"
             />
-            <main class="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:py-6">
+            <main class="shell-content py-5 lg:py-6">
                 <slot />
             </main>
         </div>
