@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Migration group 16: the permission catalogue every environment has (owner
- * decision D53, design V7.26; design SQL tests 193 and 194).
+ * Migration group 16: the permission catalogue and the actor roles every
+ * environment has (owner decision D53, design V7.26; design SQL tests 193
+ * to 195).
  */
 
 use Illuminate\Database\QueryException;
@@ -48,5 +49,33 @@ describe('permission catalogue', function () {
 
         // Assert
         expect(DB::table('status_transitions')->where('id', $transition)->value('permission_code'))->toBeNull();
+    });
+});
+
+describe('system roles', function () {
+    it('holds one role per actor and the scope it works in', function () {
+        // Arrange: the roles are seeded
+
+        // Act
+        $roles = DB::table('roles')->orderBy('code')->pluck('scope', 'code')->all();
+
+        // Assert
+        expect($roles)->toBe([
+            'building.caretaker' => 'building',
+            'building.manager' => 'building',
+            'organization.admin' => 'organization',
+            'organization.vendor_staff' => 'organization',
+            'platform.super_admin' => 'platform',
+        ]);
+    });
+
+    it('names every role', function () {
+        // Arrange: the roles are seeded
+
+        // Act
+        $unnamed = DB::table('roles')->where('name', '')->count();
+
+        // Assert
+        expect($unnamed)->toBe(0);
     });
 });
