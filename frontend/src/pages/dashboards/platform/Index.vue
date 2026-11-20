@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue';
 import StatCard from '@/components/app/dashboard/StatCard.vue';
-import LanguageSwitcher from '@/components/app/navigation/LanguageSwitcher.vue';
-import ThemeSwitcher from '@/components/app/navigation/ThemeSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
+import AppShell from '@/layouts/AppShell.vue';
 import { formatNumber } from '@/lib/format';
 
 const { locale, t } = useLocale();
@@ -19,7 +18,7 @@ const metrics = [
 </script>
 
 <template>
-    <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+    <AppShell :page-label="t('navigation.dashboard')">
         <header
             class="flex flex-col gap-5 border-b border-line pb-6 md:flex-row md:items-end md:justify-between"
         >
@@ -32,10 +31,6 @@ const metrics = [
                     {{ t('dashboard.description') }}
                 </p>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <LanguageSwitcher />
-                <ThemeSwitcher />
-            </div>
         </header>
         <dl class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard
@@ -46,5 +41,5 @@ const metrics = [
             />
         </dl>
         <p class="mt-4 text-sm text-ink-muted">{{ t('dashboard.preview') }}</p>
-    </main>
+    </AppShell>
 </template>

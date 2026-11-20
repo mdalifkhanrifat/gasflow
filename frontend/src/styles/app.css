@@ -3,6 +3,12 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer base {
+    html:has(dialog:modal) {
+        overflow: hidden;
+    }
+}
+
 @theme inline {
     --color-background: var(--background);
     --color-surface: var(--surface);
@@ -11,6 +17,12 @@
     --color-ink-muted: var(--ink-muted);
     --color-line: var(--line);
     --color-nav: var(--nav);
+    --color-nav-ink: var(--nav-ink);
+    --color-nav-muted: var(--nav-muted);
+    --color-nav-line: var(--nav-line);
+    --color-nav-active: var(--nav-active);
+    --color-nav-focus: var(--nav-focus);
+    --color-overlay: var(--overlay);
     --color-primary: var(--primary);
     --color-primary-ink: var(--primary-ink);
     --color-focus: var(--focus);
@@ -19,6 +31,7 @@
     --shadow-panel: var(--panel-shadow);
     --spacing-table-row: var(--density-row-height);
     --spacing-control: var(--density-control-height);
+    --spacing-sidebar: var(--sidebar-width);
     --font-sans:
         'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
