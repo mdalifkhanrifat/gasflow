@@ -628,3 +628,46 @@ describe('notification statuses (D51)', function () {
         expect(DB::table('notifications')->where('id', $id)->value('message'))->toBe('changed');
     });
 });
+
+describe('idempotency key integrity (D51)', function () {
+    it('are unique for platform keys too', function () {
+        // Arrange
+        $key = (string) Str::uuid();
+        idempotencyKey(['organization_id' => null, 'key' => $key]);
+
+        // Act & Assert
+        expect(fn () => idempotencyKey(['organization_id' => null, 'key' => $key]))
+            ->toThrow(QueryException::class, 'idempotency_keys_organization_id_key_operation_unique');
+    });
+
+    it('keep the request they were made for', function () {
+        // Arrange
+        $id = idempotencyKey();
+
+        // Act & Assert
+        expect(fn () => DB::table('idempotency_keys')->where('id', $id)->update(['request_hash' => str_repeat('c', 64)]))
+            ->toThrow(QueryException::class, "idempotency_keys {$id} is active: request_hash can no longer change");
+    });
+
+    it('store the response once', function () {
+        // Arrange
+        $id = idempotencyKey();
+        DB::table('idempotency_keys')->where('id', $id)->update(['response_code' => 201, 'response_body' => '{"id":7}']);
+
+        // Act & Assert
+        expect(fn () => DB::table('idempotency_keys')->where('id', $id)->update(['response_code' => 500, 'response_body' => '{}']))
+            ->toThrow(QueryException::class, "idempotency_keys {$id}: response_code, response_body is written once");
+    });
+
+    it('refuse a wrong hash, half a response or an expiry in the past', function (array $row, string $error) {
+        // Arrange: the row of the dataset
+
+        // Act & Assert
+        expect(fn () => idempotencyKey($row))->toThrow(QueryException::class, $error);
+    })->with([
+        'hash' => [['request_hash' => str_repeat('z', 64)], 'ck_idempotency_keys_request_hash'],
+        'body without code' => [['response_body' => '{}'], 'ck_idempotency_keys_response'],
+        'code without body' => [['response_code' => 204], 'ck_idempotency_keys_response'],
+        'expiry' => [['expires_at' => '2020-01-01 00:00:00+00'], 'ck_idempotency_keys_expires_at'],
+    ]);
+});
