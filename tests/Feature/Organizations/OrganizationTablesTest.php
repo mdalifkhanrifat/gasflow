@@ -162,7 +162,7 @@ describe('roles', function () {
     it('lose a permission for good when it is taken away', function () {
         // Arrange
         $roleId = TestRecords::role('organization');
-        $permissionId = (int) DB::table('permissions')->insertGetId(['code' => 'invoice.issue']);
+        $permissionId = (int) DB::table('permissions')->insertGetId(['code' => 'test.permission']);
         DB::table('role_permissions')->insert(['role_id' => $roleId, 'permission_id' => $permissionId]);
 
         // Act
