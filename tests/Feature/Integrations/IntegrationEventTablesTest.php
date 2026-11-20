@@ -11,14 +11,20 @@ use Illuminate\Support\Str;
 use Tests\Support\TestRecords;
 
 /**
- * A bKash event for a new organization unless the row says otherwise.
+ * A bKash event for a new organization with a bKash gateway unless the row
+ * says otherwise.
  *
  * @param  array<string, mixed>  $overrides
  */
 function webhookEvent(array $overrides = []): int
 {
+    $organizationId = array_key_exists('organization_id', $overrides) ? $overrides['organization_id'] : TestRecords::organization();
+    if ($organizationId !== null) {
+        TestRecords::paymentGateway(['organization_id' => $organizationId, 'provider' => $overrides['provider_code'] ?? 'bkash']);
+    }
+
     return (int) DB::table('webhook_inbox')->insertGetId($overrides + [
-        'organization_id' => TestRecords::organization(), 'provider_code' => 'bkash',
+        'organization_id' => $organizationId, 'provider_code' => 'bkash',
         'provider_event_id' => (string) Str::uuid(), 'event_type' => 'payment.completed', 'payload' => '{"amount":"500.00"}',
     ]);
 }
@@ -45,7 +51,7 @@ function deliveryAttempt(?int $outboxId = null, array $overrides = []): int
 }
 
 describe('lifecycle registration', function () {
-    it('registers each table as a protected log of the design', function (string $table, string $defaultStatus) {
+    it('registers each table as a protected log of the design', function (string $table, string $defaultStatus, bool $enforced) {
         // Arrange: migration 2026_11_20_000078 has run
 
         // Act
@@ -53,11 +59,11 @@ describe('lifecycle registration', function () {
 
         // Assert
         expect([$entity->module, $entity->record_class, $entity->soft_delete_policy, $entity->hard_delete_policy, $entity->enforce_transitions, $entity->default_status, $entity->log_data_changes])
-            ->toBe(['integrations', 'log', 'protected', 'forbidden', false, $defaultStatus, false]);
+            ->toBe(['integrations', 'log', 'protected', 'forbidden', $enforced, $defaultStatus, false]);
     })->with([
-        ['webhook_inbox', 'received'],
-        ['integration_outbox', 'pending'],
-        ['integration_delivery_attempts', 'failed'],
+        ['webhook_inbox', 'received', true],
+        ['integration_outbox', 'pending', false],
+        ['integration_delivery_attempts', 'failed', false],
     ]);
 
     it('never lets a row be deleted', function (Closure $insert, string $table) {
@@ -152,9 +158,16 @@ describe('webhook inbox', function () {
         expect(fn () => webhookEvent($row))->toThrow(QueryException::class, $error);
     })->with([
         'organization' => [['organization_id' => null], 'null value in column "organization_id"'],
-        'provider' => [['provider_code' => 'paypal'], 'webhook_inbox_provider_code_foreign'],
         'attempts' => [['attempts' => -1], 'webhook_inbox_attempts_check'],
     ]);
+
+    it('refuses an unknown provider', function () {
+        // Arrange
+        $row = ['organization_id' => TestRecords::organization(), 'provider_code' => 'paypal', 'provider_event_id' => 'E1', 'event_type' => 'x', 'payload' => '{}'];
+
+        // Act & Assert
+        expect(fn () => DB::table('webhook_inbox')->insert($row))->toThrow(QueryException::class, 'webhook_inbox_provider_code_foreign');
+    });
 
     it('takes only the statuses of the catalogue', function () {
         // Arrange
@@ -225,5 +238,150 @@ describe('integration delivery attempts', function () {
 
         // Assert
         expect(DB::table('integration_delivery_attempts')->where('id', $id)->value('status'))->toBe('retrying');
+    });
+});
+
+/**
+ * Moves a webhook event through the given updates.
+ *
+ * @param  list<array<string, mixed>|string>  $steps
+ */
+function moveWebhook(int $id, array $steps): void
+{
+    foreach ($steps as $step) {
+        DB::table('webhook_inbox')->where('id', $id)->update(is_string($step) ? ['status' => $step] : $step);
+    }
+}
+
+describe('webhook inbox integrity (D51)', function () {
+    it('keeps the event as it was received', function (string $column, mixed $value) {
+        // Arrange
+        $id = webhookEvent();
+
+        // Act & Assert
+        expect(fn () => DB::table('webhook_inbox')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "webhook_inbox {$id} is received: {$column} can no longer change");
+    })->with([
+        ['payload', '{"amount":"9999.00"}'],
+        ['provider_event_id', 'other'],
+        ['event_type', 'payment.refunded'],
+    ]);
+
+    it('writes the signature time once', function () {
+        // Arrange
+        $id = webhookEvent(['signature_verified_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => DB::table('webhook_inbox')->where('id', $id)->update(['signature_verified_at' => now()->addMinute()]))
+            ->toThrow(QueryException::class, 'signature_verified_at is written once');
+    });
+
+    it('processes only a verified event', function () {
+        // Arrange
+        $id = webhookEvent();
+
+        // Act & Assert
+        expect(fn () => moveWebhook($id, ['processing']))->toThrow(QueryException::class, 'ck_webhook_inbox_verified');
+    });
+
+    it('follows received, processing, processed with the processed time', function () {
+        // Arrange
+        $id = webhookEvent(['signature_verified_at' => now()]);
+
+        // Act
+        moveWebhook($id, ['processing', ['status' => 'processed', 'processed_at' => now()]]);
+
+        // Assert
+        expect(DB::table('webhook_inbox')->where('id', $id)->value('status'))->toBe('processed');
+    });
+
+    it('ties the processed time to processed and ignored', function (Closure $write) {
+        // Arrange
+        $id = webhookEvent(['signature_verified_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => $write($id))->toThrow(QueryException::class, 'ck_webhook_inbox_processed_at');
+    })->with([
+        'processed without time' => [fn (int $id) => moveWebhook($id, ['processing', 'processed'])],
+        'received with time' => [fn (int $id) => moveWebhook($id, [['processed_at' => now()]])],
+    ]);
+
+    it('retries a failed event that says why it failed', function () {
+        // Arrange
+        $id = webhookEvent(['signature_verified_at' => now()]);
+        moveWebhook($id, ['processing', ['status' => 'failed', 'last_error' => 'Payment not found', 'attempts' => 1]]);
+
+        // Act
+        moveWebhook($id, ['processing']);
+
+        // Assert
+        expect(DB::table('webhook_inbox')->where('id', $id)->value('status'))->toBe('processing');
+    });
+
+    it('needs an error to fail', function () {
+        // Arrange
+        $id = webhookEvent(['signature_verified_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => moveWebhook($id, ['processing', 'failed']))->toThrow(QueryException::class, 'ck_webhook_inbox_failed_error');
+    });
+
+    it('never goes back from processed', function () {
+        // Arrange
+        $id = webhookEvent(['signature_verified_at' => now()]);
+        moveWebhook($id, ['processing', ['status' => 'processed', 'processed_at' => now()]]);
+
+        // Act & Assert
+        expect(fn () => moveWebhook($id, [['status' => 'received', 'processed_at' => null]]))
+            ->toThrow(QueryException::class, 'Status transition processed -> received is not allowed for webhook_inbox');
+    });
+
+    it('never counts attempts down', function () {
+        // Arrange
+        $id = webhookEvent(['attempts' => 3]);
+
+        // Act & Assert
+        expect(fn () => moveWebhook($id, [['attempts' => 0]]))->toThrow(QueryException::class, "webhook_inbox {$id}: attempts cannot go down (3 -> 0)");
+    });
+});
+
+describe('webhook provider (D51)', function () {
+    it('must be a gateway of the organization', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+
+        // Act & Assert
+        expect(fn () => DB::table('webhook_inbox')->insert([
+            'organization_id' => $organizationId, 'provider_code' => 'nagad', 'provider_event_id' => 'E1', 'event_type' => 'x', 'payload' => '{}',
+        ]))->toThrow(QueryException::class, "Organization {$organizationId} has no nagad gateway for this webhook");
+    });
+
+    it('may be an SMS gateway or a gateway of a building the organization owns', function (Closure $gateway) {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $provider = $gateway($organizationId);
+
+        // Act
+        $inserted = DB::table('webhook_inbox')->insert([
+            'organization_id' => $organizationId, 'provider_code' => $provider, 'provider_event_id' => 'E1', 'event_type' => 'x', 'payload' => '{}',
+        ]);
+
+        // Assert
+        expect($inserted)->toBeTrue();
+    })->with([
+        'sms' => [fn (int $org) => tap('sms_generic', fn () => TestRecords::smsGateway(['organization_id' => $org]))],
+        'building' => [fn (int $org) => tap('nagad', fn () => TestRecords::paymentGateway(['building_id' => TestRecords::building($org), 'provider' => 'nagad']))],
+    ]);
+
+    it('does not count a hidden gateway', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $gatewayId = TestRecords::paymentGateway(['organization_id' => $organizationId, 'provider' => 'nagad']);
+        DB::table('organization_payment_gateways')->where('id', $gatewayId)->delete();
+
+        // Act & Assert
+        expect(fn () => DB::table('webhook_inbox')->insert([
+            'organization_id' => $organizationId, 'provider_code' => 'nagad', 'provider_event_id' => 'E1', 'event_type' => 'x', 'payload' => '{}',
+        ]))->toThrow(QueryException::class, 'has no nagad gateway');
     });
 });
