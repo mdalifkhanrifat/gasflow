@@ -27,17 +27,32 @@ function notificationTemplate(array $overrides = []): int
 }
 
 /**
- * A notification of a building unless the row says otherwise.
+ * An SMS to a customer of a building unless the row says otherwise.
  *
  * @param  array<string, mixed>  $overrides
  */
 function notification(array $overrides = []): int
 {
-    $scope = array_key_exists('organization_id', $overrides) ? [] : ['building_id' => TestRecords::building()];
+    $organizationId = $overrides['organization_id'] ?? TestRecords::organization();
+    $scope = array_key_exists('organization_id', $overrides) ? [] : ['building_id' => TestRecords::building($organizationId)];
+    $recipient = array_key_exists('user_id', $overrides) || array_key_exists('customer_id', $overrides)
+        ? [] : ['customer_id' => TestRecords::customer($organizationId)];
 
-    return (int) DB::table('notifications')->insertGetId($overrides + $scope + [
+    return (int) DB::table('notifications')->insertGetId($overrides + $scope + $recipient + [
         'channel' => 'sms', 'event_code' => 'invoice.issued', 'message' => 'Your bill is ready',
     ]);
+}
+
+/**
+ * Moves a notification through the given statuses.
+ *
+ * @param  list<array<string, mixed>|string>  $steps
+ */
+function moveNotification(int $id, array $steps): void
+{
+    foreach ($steps as $step) {
+        DB::table('notifications')->where('id', $id)->update(is_string($step) ? ['status' => $step] : $step);
+    }
 }
 
 /**
@@ -73,7 +88,7 @@ describe('lifecycle registration', function () {
             ->toBe($expected);
     })->with([
         ['notification_templates', ['notifications', 'configuration', 'allowed', 'forbidden', false, 'active']],
-        ['notifications', ['notifications', 'log', 'protected', 'forbidden', false, 'queued']],
+        ['notifications', ['notifications', 'log', 'protected', 'forbidden', true, 'queued']],
         ['audit_logs', ['audit', 'log', 'protected', 'forbidden', false, 'recorded']],
         ['idempotency_keys', ['shared', 'log', 'protected', 'allowed', false, 'active']],
     ]);
@@ -232,7 +247,7 @@ describe('notifications', function () {
 
     it('belong to an organization or a building, never both or neither', function (Closure $scope) {
         // Arrange
-        $row = ['channel' => 'sms', 'event_code' => 'invoice.issued', 'message' => 'x'] + $scope();
+        $row = ['channel' => 'sms', 'event_code' => 'invoice.issued', 'message' => 'x', 'customer_id' => TestRecords::customer()] + $scope();
 
         // Act & Assert
         expect(fn () => DB::table('notifications')->insert($row))->toThrow(QueryException::class, 'ck_notifications_scope_xor');
@@ -249,7 +264,7 @@ describe('notifications', function () {
         expect(fn () => notification($row))->toThrow(QueryException::class, 'notifications_channel_check');
     });
 
-    it('take only the statuses of the design, as initial, terminal and neutral to is_active', function () {
+    it('take only the statuses of the design (failed retried since D51), as initial, terminal and neutral to is_active', function () {
         // Arrange: migration 2026_11_20_000077 has run
 
         // Act
@@ -264,7 +279,7 @@ describe('notifications', function () {
             ['notifications', 'sending', null, false, false],
             ['notifications', 'sent', null, false, false],
             ['notifications', 'delivered', null, false, true],
-            ['notifications', 'failed', null, false, true],
+            ['notifications', 'failed', null, false, false],
             ['notifications', 'cancelled', null, false, true],
             ['audit_logs', 'recorded', null, true, true],
         ]);
@@ -275,7 +290,7 @@ describe('notifications', function () {
         $id = notification();
 
         // Act
-        DB::table('notifications')->where('id', $id)->update(['status' => 'sent', 'sent_at' => now()]);
+        moveNotification($id, ['sending', ['status' => 'sent', 'sent_at' => now()]]);
 
         // Assert
         expect(DB::table('notifications')->where('id', $id)->value('is_active'))->toBeTrue();
@@ -394,5 +409,222 @@ describe('audit log integrity (D51)', function () {
 
         // Assert
         expect(DB::table('audit_logs')->whereIn('id', $ids)->count())->toBe(2);
+    });
+});
+
+describe('notification templates keep what was sent (D51)', function () {
+    it('refuse a change of the text once written', function () {
+        // Arrange
+        $id = notificationTemplate();
+
+        // Act & Assert
+        expect(fn () => DB::table('notification_templates')->where('id', $id)->update(['body' => 'rewritten']))
+            ->toThrow(QueryException::class, "notification_templates {$id} is active: body can no longer change");
+    });
+
+    it('need a subject for email', function () {
+        // Arrange
+        $row = ['channel' => 'email'];
+
+        // Act & Assert
+        expect(fn () => notificationTemplate($row))->toThrow(QueryException::class, 'ck_notification_templates_email_subject');
+    });
+});
+
+describe('notification recipients (D51)', function () {
+    it('are exactly one user or customer', function (Closure $recipient) {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $row = $recipient($organizationId);
+
+        // Act & Assert
+        expect(fn () => notification(['organization_id' => $organizationId] + $row))->toThrow(QueryException::class, 'ck_notifications_one_recipient');
+    })->with([
+        'none' => [fn () => ['user_id' => null, 'customer_id' => null]],
+        'both' => [fn (int $org) => ['user_id' => tap(TestRecords::user(), fn (int $user) => TestRecords::membership($org, $user)), 'customer_id' => TestRecords::customer($org)]],
+    ]);
+
+    it('need a user for in-app and push', function () {
+        // Arrange
+        $row = ['channel' => 'push'];
+
+        // Act & Assert
+        expect(fn () => notification($row))->toThrow(QueryException::class, 'ck_notifications_user_channel');
+    });
+
+    it('refuse a customer of an organization without access to the building', function () {
+        // Arrange
+        $customerId = TestRecords::customer(TestRecords::organization());
+
+        // Act & Assert
+        expect(fn () => notification(['customer_id' => $customerId]))
+            ->toThrow(QueryException::class, "Customer {$customerId} is not a customer of this notification's organization or building");
+    });
+
+    it('refuse a customer of another organization', function () {
+        // Arrange
+        $customerId = TestRecords::customer(TestRecords::organization());
+
+        // Act & Assert
+        expect(fn () => notification(['organization_id' => TestRecords::organization(), 'customer_id' => $customerId]))
+            ->toThrow(QueryException::class, "Customer {$customerId} is not a customer");
+    });
+
+    it('refuse a user who is not a member', function (bool $building) {
+        // Arrange
+        $userId = TestRecords::user();
+        $scope = $building ? [] : ['organization_id' => TestRecords::organization()];
+
+        // Act & Assert
+        expect(fn () => notification($scope + ['user_id' => $userId, 'channel' => 'in_app']))
+            ->toThrow(QueryException::class, "User {$userId} is not a member of this notification's organization or building");
+    })->with(['building' => [true], 'organization' => [false]]);
+
+    it('refuse a suspended member', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $userId = TestRecords::user();
+        $membershipId = TestRecords::membership($organizationId, $userId);
+        DB::table('organization_memberships')->where('id', $membershipId)->update(['status' => 'suspended']);
+
+        // Act & Assert
+        expect(fn () => notification(['organization_id' => $organizationId, 'user_id' => $userId, 'channel' => 'in_app']))
+            ->toThrow(QueryException::class, "User {$userId} is not a member");
+    });
+
+    it('accept a member of the organization and a user of the building', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $userId = TestRecords::user();
+        TestRecords::membership($organizationId, $userId);
+
+        // Act
+        $ids = [
+            notification(['organization_id' => $organizationId, 'user_id' => $userId, 'channel' => 'in_app']),
+            notification(['building_id' => TestRecords::building($organizationId), 'user_id' => $userId, 'channel' => 'push']),
+        ];
+
+        // Assert
+        expect(DB::table('notifications')->whereIn('id', $ids)->count())->toBe(2);
+    });
+});
+
+describe('notification templates in use (D51)', function () {
+    it('must match the notification\'s event, channel and locale', function () {
+        // Arrange
+        $templateId = notificationTemplate();
+
+        // Act & Assert
+        expect(fn () => notification(['notification_template_id' => $templateId, 'channel' => 'email', 'locale' => 'bn']))
+            ->toThrow(QueryException::class, 'fk_notifications_template_content');
+    });
+
+    it('need the locale on the notification', function () {
+        // Arrange
+        $templateId = notificationTemplate();
+
+        // Act & Assert
+        expect(fn () => notification(['notification_template_id' => $templateId]))
+            ->toThrow(QueryException::class, 'ck_notifications_template_locale');
+    });
+
+    it('may not be another organization\'s', function () {
+        // Arrange
+        $templateId = notificationTemplate(['organization_id' => TestRecords::organization()]);
+
+        // Act & Assert
+        expect(fn () => notification(['notification_template_id' => $templateId, 'locale' => 'bn']))
+            ->toThrow(QueryException::class, "Template {$templateId} belongs to organization");
+    });
+
+    it('may be a platform template or the organization\'s own', function () {
+        // Arrange
+        $organizationId = TestRecords::organization();
+        $own = notificationTemplate(['organization_id' => $organizationId]);
+        $platform = notificationTemplate();
+
+        // Act
+        $ids = [
+            notification(['organization_id' => $organizationId, 'notification_template_id' => $own, 'locale' => 'bn']),
+            notification(['notification_template_id' => $platform, 'locale' => 'bn']),
+        ];
+
+        // Assert
+        expect(DB::table('notifications')->whereIn('id', $ids)->count())->toBe(2);
+    });
+});
+
+describe('notification statuses (D51)', function () {
+    it('follow queued, sending, sent, delivered', function () {
+        // Arrange
+        $id = notification();
+
+        // Act
+        moveNotification($id, ['sending', ['status' => 'sent', 'sent_at' => now()], 'delivered']);
+
+        // Assert
+        expect(DB::table('notifications')->where('id', $id)->value('status'))->toBe('delivered');
+    });
+
+    it('refuse a jump back from delivered', function () {
+        // Arrange
+        $id = notification();
+        moveNotification($id, ['sending', ['status' => 'sent', 'sent_at' => now()], 'delivered']);
+
+        // Act & Assert
+        expect(fn () => DB::table('notifications')->where('id', $id)->update(['status' => 'queued', 'sent_at' => null]))
+            ->toThrow(QueryException::class, 'Status transition delivered -> queued is not allowed for notifications');
+    });
+
+    it('retry a failed notification', function () {
+        // Arrange
+        $id = notification();
+        moveNotification($id, [['status' => 'failed', 'error_message' => 'Gateway timeout']]);
+
+        // Act
+        moveNotification($id, ['queued']);
+
+        // Assert
+        expect(DB::table('notifications')->where('id', $id)->value('status'))->toBe('queued');
+    });
+
+    it('tie the sent time to sent and delivered', function (Closure $write) {
+        // Arrange
+        $id = notification();
+
+        // Act & Assert
+        expect(fn () => $write($id))->toThrow(QueryException::class, 'ck_notifications_sent_at');
+    })->with([
+        'sent without time' => [fn (int $id) => moveNotification($id, ['sending', 'sent'])],
+        'queued with time' => [fn (int $id) => DB::table('notifications')->where('id', $id)->update(['sent_at' => now()])],
+    ]);
+
+    it('need an error message to fail', function () {
+        // Arrange
+        $id = notification();
+
+        // Act & Assert
+        expect(fn () => moveNotification($id, ['failed']))->toThrow(QueryException::class, 'ck_notifications_failed_error');
+    });
+
+    it('freeze the message once it leaves the queue', function () {
+        // Arrange
+        $id = notification();
+        moveNotification($id, ['sending']);
+
+        // Act & Assert
+        expect(fn () => DB::table('notifications')->where('id', $id)->update(['message' => 'changed']))
+            ->toThrow(QueryException::class, "notifications {$id} is sending: message can no longer change");
+    });
+
+    it('let the message change while queued', function () {
+        // Arrange
+        $id = notification();
+
+        // Act
+        DB::table('notifications')->where('id', $id)->update(['message' => 'changed']);
+
+        // Assert
+        expect(DB::table('notifications')->where('id', $id)->value('message'))->toBe('changed');
     });
 });
