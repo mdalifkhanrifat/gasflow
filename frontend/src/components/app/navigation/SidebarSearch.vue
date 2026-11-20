@@ -84,7 +84,7 @@ function submit(): void {
                 type="search"
                 autocomplete="off"
                 :placeholder="t('topbar.search')"
-                class="min-h-control w-full rounded-control border border-nav-line bg-nav-workspace pr-2 pl-7 text-xs text-nav-ink placeholder:text-nav-muted focus-visible:outline-2 focus-visible:outline-nav-focus"
+                class="min-h-8 w-full rounded-control border border-nav-line bg-nav-workspace pr-2 pl-7 text-xs text-nav-ink placeholder:text-nav-muted focus-visible:outline-2 focus-visible:outline-nav-focus [@media(pointer:coarse)]:min-h-control"
                 @input="focused = true"
             />
         </label>
