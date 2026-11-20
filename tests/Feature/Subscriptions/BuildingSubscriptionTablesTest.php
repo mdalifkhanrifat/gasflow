@@ -246,6 +246,7 @@ describe('saas invoice amounts', function () {
         $organizationId = $operator->table('organizations')->insertGetId(
             ['public_id' => strtolower((string) Str::ulid()), 'code' => 'ORG-OVR-INV', 'name' => 'Override org', 'organization_type' => 'management'],
         );
+        setDatabaseContext(['organization_id' => $organizationId], $operator);
         $buildingId = $operator->table('buildings')->insertGetId(
             ['public_id' => strtolower((string) Str::ulid()), 'tenant_organization_id' => $organizationId, 'code' => 'B-OVR', 'name' => 'Override building'],
         );

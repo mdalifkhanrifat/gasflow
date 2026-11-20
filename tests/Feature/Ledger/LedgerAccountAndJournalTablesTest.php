@@ -303,6 +303,7 @@ describe('maintenance override', function () {
         $organizationId = $this->operator->table('organizations')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()), 'code' => 'L-OVR', 'name' => 'Ledger', 'organization_type' => 'management',
         ]);
+        setDatabaseContext(['organization_id' => $organizationId], $this->operator);
         $id = $this->operator->table('financial_journals')->insertGetId([
             'organization_id' => $organizationId, 'journal_no' => 'J-OVR', 'journal_date' => '2026-01-30', 'source_type' => 'invoice', 'source_id' => 1,
             'status' => 'draft',

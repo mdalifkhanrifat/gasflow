@@ -253,6 +253,7 @@ describe('reading periods under the maintenance override', function () {
             'name' => 'Override test vendor',
             'organization_type' => 'gas_vendor',
         ]);
+        setDatabaseContext(['organization_id' => $organizationId], $this->operator);
         $buildingId = $this->operator->table('buildings')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()),
             'tenant_organization_id' => $organizationId,

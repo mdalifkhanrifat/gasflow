@@ -130,6 +130,7 @@ describe('the maintenance override (design 46–48, 50)', function () {
         $organizationId = $op->table('organizations')->insertGetId([
             'public_id' => strtolower((string) Str::ulid()), 'code' => 'L-OVR', 'name' => 'Ledger', 'organization_type' => 'management',
         ]);
+        setDatabaseContext(['organization_id' => $organizationId], $op);
         $accounts = collect(['1100' => 'asset', '4100' => 'revenue'])->map(fn ($type, $code) => $op->table('financial_accounts')->insertGetId([
             'organization_id' => $organizationId, 'code' => (string) $code, 'name' => $type, 'account_type' => $type,
         ]));

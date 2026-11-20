@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\Concerns\RefreshPostgresDatabase;
 use Tests\TestCase;
 
@@ -47,14 +49,15 @@ expect()->extend('toBeOne', function () {
 
 /**
  * Set request context values for the current test transaction, the same
- * values Laravel sets per request (app.user_id, app.lifecycle_reason, ...).
+ * values Laravel sets per request (app.user_id, app.organization_id, ...).
+ * Another connection (the operator's) gets them for its own transaction.
  *
  * @param  array<string, scalar>  $values  keys without the "app." prefix
  */
-function setDatabaseContext(array $values): void
+function setDatabaseContext(array $values, ?ConnectionInterface $connection = null): void
 {
     foreach ($values as $key => $value) {
-        DB::select('select set_config(?, ?, true)', ["app.{$key}", (string) $value]);
+        ($connection ?? DB::connection())->select('select set_config(?, ?, true)', ["app.{$key}", (string) $value]);
     }
 }
 
@@ -67,4 +70,22 @@ function setDatabaseContext(array $values): void
 function useAppRole(): void
 {
     DB::statement('SET LOCAL ROLE gasflow_app');
+}
+
+/**
+ * An organization written on another connection (the operator's), and that
+ * connection's transaction switched to its context: under row-level security
+ * the operator, too, writes tenant rows only inside an organization.
+ */
+function operatorOrganization(ConnectionInterface $connection): int
+{
+    $organizationId = (int) $connection->table('organizations')->insertGetId([
+        'public_id' => strtolower((string) Str::ulid()),
+        'code' => 'OPS-'.strtoupper(Str::random(6)),
+        'name' => 'Operator test organization',
+        'organization_type' => 'management',
+    ]);
+    setDatabaseContext(['organization_id' => $organizationId], $connection);
+
+    return $organizationId;
 }

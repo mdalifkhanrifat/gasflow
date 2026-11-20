@@ -158,7 +158,10 @@ describe('audit logs under the maintenance override', function () {
     beforeEach(function () {
         $this->operator = DB::connection('pgsql_maintenance');
         $this->operator->beginTransaction();
-        $this->auditId = $this->operator->table('audit_logs')->insertGetId(['action' => 'test', 'subject_type' => 'x', 'subject_id' => 1]);
+        $organizationId = operatorOrganization($this->operator);
+        $this->auditId = $this->operator->table('audit_logs')->insertGetId(
+            ['organization_id' => $organizationId, 'action' => 'test', 'subject_type' => 'x', 'subject_id' => 1],
+        );
         $this->operator->select(
             "select set_config('app.maintenance_override', 'on', true), set_config('app.lifecycle_reason', ?, true)",
             ['try to hide audit'],
@@ -370,7 +373,8 @@ describe('audit log integrity (D51)', function () {
         // Arrange
         $operator = DB::connection('pgsql_maintenance');
         $operator->beginTransaction();
-        $id = $operator->table('audit_logs')->insertGetId(['action' => 'x', 'subject_type' => 'x', 'subject_id' => 1]);
+        $organizationId = operatorOrganization($operator);
+        $id = $operator->table('audit_logs')->insertGetId(['organization_id' => $organizationId, 'action' => 'x', 'subject_type' => 'x', 'subject_id' => 1]);
 
         // Act & Assert
         try {

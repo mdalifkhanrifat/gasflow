@@ -472,8 +472,17 @@ tests/
 
 - Every test uses Arrange / Act / Assert comments, one behaviour per test,
   grouped with `describe()`.
-- Feature tests run as `gasflow_app` inside a rolled-back transaction, with an
-  active license signed by a throw-away key (`Tests\TestCase`).
+- Feature tests run inside a rolled-back transaction, with an active license
+  signed by a throw-away key (`Tests\TestCase`). They log in as `gasflow_test`:
+  the privileges of `gasflow_app` without row-level security, so a test can
+  arrange rows of several organizations without a context. A test of a policy
+  or of the runtime role calls `useAppRole()` (`SET LOCAL ROLE gasflow_app`) and
+  sets the context with `setDatabaseContext()`; the operator connection
+  (`pgsql_maintenance`) works inside an organization too
+  (`operatorOrganization()`).
+- `tests/Feature/Security` holds the row-level security suite: which tables
+  have which policy (`Tests\Support\RowLevelSecurity`), and what each role sees
+  and may write with and without an organization context.
 - Database behaviour is tested on the test-only tables in
   `tests/Fixtures/migrations`, so a test does not depend on a business table.
 - Architecture tests (`tests/Architecture`) fail the suite when code breaks a
