@@ -357,13 +357,20 @@ describe('protected records', function () {
     });
 
     it('cannot be unlocked with the maintenance override by the runtime role', function () {
-        // Arrange
-        $id = DB::table('lifecycle_test_ledgers')->insertGetId(['amount' => 100]);
-        setDatabaseContext(['maintenance_override' => 'on', 'lifecycle_reason' => 'Audit request']);
+        // Arrange: the override checks the login role, so this runs on the real
+        // runtime login, in its own transaction that is rolled back.
+        $app = DB::connection('pgsql_app');
+        $app->beginTransaction();
+        $id = $app->table('lifecycle_test_ledgers')->insertGetId(['amount' => 100]);
+        $app->select("select set_config('app.maintenance_override', 'on', true), set_config('app.lifecycle_reason', 'Audit request', true)");
 
         // Act & Assert
-        expect(fn () => DB::table('lifecycle_test_ledgers')->where('id', $id)->delete())
-            ->toThrow(QueryException::class, 'Maintenance override refused: role gasflow_app is not a member of gasflow_maintenance');
+        try {
+            expect(fn () => $app->table('lifecycle_test_ledgers')->where('id', $id)->delete())
+                ->toThrow(QueryException::class, 'Maintenance override refused: role gasflow_app is not a member of gasflow_maintenance');
+        } finally {
+            $app->rollBack();
+        }
     });
 });
 

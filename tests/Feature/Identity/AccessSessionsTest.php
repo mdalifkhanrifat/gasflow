@@ -77,7 +77,9 @@ describe('row-level security', function () {
     it('shows a user their own sessions', function () {
         // Arrange
         $userId = User::factory()->create()->id;
-        TestRecords::accessSession($userId);
+        TestRecords::accessSession($userId, ['organization_id' => TestRecords::organization()]);
+        setDatabaseContext(['user_id' => $userId]);
+        useAppRole();
 
         // Act
         $visible = DB::table('access_sessions')->where('user_id', $userId)->count();
@@ -91,6 +93,7 @@ describe('row-level security', function () {
         $other = User::factory()->create()->id;
         TestRecords::accessSession($other, ['organization_id' => TestRecords::organization()]);
         setDatabaseContext(['user_id' => User::factory()->create()->id, 'organization_id' => TestRecords::organization()]);
+        useAppRole();
 
         // Act
         $visible = DB::table('access_sessions')->where('user_id', $other)->count();

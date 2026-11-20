@@ -120,6 +120,11 @@ start over, run `docker compose down -v`. This deletes all local data.
 The integrity and test roles come from `02-gasflow-rls-roles.sh`, which can run
 again: on an existing volume, `make db-roles` creates or updates them.
 
+The test suite logs in as `gasflow_test` (`DB_TEST_PASSWORD`): it arranges rows
+of several organizations without an organization context, while having exactly
+the privileges of `gasflow_app`. Tests of row-level security and of the runtime
+role switch to `gasflow_app` with `useAppRole()`.
+
 ### Maintenance override
 
 Deliberate manual corrections, including hiding protected money rows, go

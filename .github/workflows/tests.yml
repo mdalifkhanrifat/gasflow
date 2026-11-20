@@ -10,7 +10,8 @@ permissions:
   contents: read
 
 # CI runs on the same Docker stack as development (PHP 8.5, PostgreSQL 18.7 with
-# the owner/app roles, Redis 8, Node 26), so tests see the real database rules.
+# the owner/app/integrity roles, Redis 8, Node 26), so tests see the real database
+# rules. "make env" sets DB_TEST_PASSWORD, so the test login gasflow_test exists.
 jobs:
   ci:
     runs-on: ubuntu-latest

@@ -67,7 +67,7 @@ describe('connection', function () {
         // Arrange
         config([
             'database.connections.pgsql_maintenance.username' => 'gasflow_app',
-            'database.connections.pgsql_maintenance.password' => config('database.connections.pgsql.password'),
+            'database.connections.pgsql_maintenance.password' => config('database.connections.pgsql_app.password'),
         ]);
         DB::purge(MaintenanceOverrideCommand::CONNECTION);
 

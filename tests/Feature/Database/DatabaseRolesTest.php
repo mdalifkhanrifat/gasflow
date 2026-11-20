@@ -26,7 +26,29 @@ describe('refresh guard', function () {
     });
 });
 
+describe('test role connection', function () {
+    it('runs the suite as gasflow_test', function () {
+        // Act
+        $role = DB::selectOne('select current_user as name')->name;
+
+        // Assert
+        expect($role)->toBe('gasflow_test');
+    });
+
+    it('keeps the real runtime login as pgsql_app', function () {
+        // Act
+        $role = DB::connection('pgsql_app')->selectOne('select current_user as name')->name;
+
+        // Assert
+        expect($role)->toBe('gasflow_app');
+    });
+});
+
 describe('runtime role', function () {
+    beforeEach(function () {
+        useAppRole();
+    });
+
     it('connects as the restricted gasflow_app role', function () {
         // Act
         $role = DB::selectOne('select current_user as name')->name;

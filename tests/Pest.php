@@ -57,3 +57,14 @@ function setDatabaseContext(array $values): void
         DB::select('select set_config(?, ?, true)', ["app.{$key}", (string) $value]);
     }
 }
+
+/**
+ * Switch the current test transaction to the real runtime role, gasflow_app:
+ * no BYPASSRLS, so row-level security and its organization context apply.
+ * The suite itself connects as gasflow_test, which bypasses the policies to
+ * arrange rows of several organizations. Ends with the test's transaction.
+ */
+function useAppRole(): void
+{
+    DB::statement('SET LOCAL ROLE gasflow_app');
+}

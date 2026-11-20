@@ -141,6 +141,26 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        /*
+         * Test suite login (development and CI only, never on servers):
+         * gasflow_test, BYPASSRLS and a member of gasflow_app. The tests run
+         * the "pgsql" connection with it, so they can arrange rows of several
+         * organizations; tests of the policies switch to gasflow_app.
+         */
+        'pgsql_test' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_TEST_USERNAME', 'gasflow_test'),
+            'password' => env('DB_TEST_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

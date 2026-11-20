@@ -8,7 +8,8 @@ use RuntimeException;
 /**
  * Refreshes the PostgreSQL test database the same way production runs:
  * migrations use the owner role (pgsql_migrations), and every test runs
- * inside a rolled-back transaction on the restricted runtime role (pgsql).
+ * inside a rolled-back transaction on "pgsql", logged in as gasflow_test
+ * (the runtime role's privileges, row-level security bypassed; see TestCase).
  */
 trait RefreshPostgresDatabase
 {
