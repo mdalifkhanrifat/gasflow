@@ -335,14 +335,17 @@ and it never changes once saved.
   their recipients, templates and statuses, `000082` idempotency keys true to
   their first request and response, `000083` webhook events kept as received
   and processed only when verified, `000084` outbox events and delivery
-  attempts kept as they happened.
+  attempts kept as they happened. 15 row-level security (V7.25, D52):
+  `000085` integrity checks run as `gasflow_integrity`, `000086` the
+  design's 52 policies, `000087` policies for the building tables the design
+  left open, memberships and their roles, and user devices.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
 - Whether an organization may work in a building is answered by one SQL
   function, `organization_can_access_building(organization, building)`: it owns
-  the building or holds an active grant in force today. Triggers (and later
-  the row-level security policies) call it instead of repeating the rule.
+  the building or holds an active grant in force today. Triggers call it
+  instead of repeating the rule.
 - A row that must stay inside one building carries `building_id` and composite
   foreign keys to its parents' `(id, building_id)` unique keys, so a parent of
   another building is refused by the database (and row-level security can
