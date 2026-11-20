@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
+import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
 import { searchableNavigation } from '@/config/navigation';
 
 const emit = defineEmits<{ navigate: [] }>();
-const input = useTemplateRef<HTMLInputElement>('input');
+const input = useTemplateRef('input');
 defineExpose({ focus: () => input.value?.focus() });
 
 const { t } = useLocale();
@@ -78,13 +79,13 @@ function submit(): void {
                 aria-hidden="true"
                 >⌕</span
             >
-            <input
+            <UiInput
                 ref="input"
                 v-model="query"
                 type="search"
                 autocomplete="off"
                 :placeholder="t('topbar.search')"
-                class="min-h-8 w-full rounded-control border border-nav-line bg-nav-workspace pr-2 pl-7 text-xs text-nav-ink placeholder:text-nav-muted focus-visible:outline-2 focus-visible:outline-nav-focus [@media(pointer:coarse)]:min-h-control"
+                class="ui-control-sidebar w-full pl-7"
                 @input="focused = true"
             />
         </label>

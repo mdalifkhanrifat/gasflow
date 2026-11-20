@@ -1,7 +1,9 @@
+<script setup lang="ts" generic="Value extends string | string[]">
+const model = defineModel<Value>({ required: true });
+</script>
+
 <template>
-    <select
-        class="min-h-control rounded-control border border-line bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60"
-    >
+    <select v-model="model" class="ui-control ui-select">
         <slot />
     </select>
 </template>

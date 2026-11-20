@@ -4,6 +4,7 @@ import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import StatCard from '@/components/app/dashboard/StatCard.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
+import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
 import AppShell from '@/layouts/AppShell.vue';
 import { formatMoney, formatNumber } from '@/lib/format';
@@ -102,12 +103,12 @@ function savePreview(): void {
                     </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="preview-control">{{
+                    <span class="ui-button">{{
                         t('dashboard.current_period')
                     }}</span>
                     <button
                         type="button"
-                        class="preview-control preview-control-primary"
+                        class="ui-button ui-button-primary"
                         @click="cycleDialog?.open()"
                     >
                         <span aria-hidden="true">+</span
@@ -149,7 +150,7 @@ function savePreview(): void {
                     :subtitle="t('dashboard.collections_subtitle')"
                 >
                     <template #action
-                        ><span class="preview-control">{{
+                        ><span class="ui-button">{{
                             (2026).toLocaleString(locale, {
                                 useGrouping: false,
                             })
@@ -165,7 +166,7 @@ function savePreview(): void {
                     <template #action
                         ><a
                             :to="{ name: 'customer-invoices' }"
-                            class="preview-control"
+                            class="ui-button"
                             >{{ t('dashboard.view_invoices') }}
                             <span aria-hidden="true">→</span></a
                         ></template
@@ -262,26 +263,23 @@ function savePreview(): void {
             <form class="grid gap-4" @submit.prevent="savePreview">
                 <label class="grid gap-1 text-sm">
                     {{ t('dashboard.billing_month') }}
-                    <input
+                    <UiInput
                         v-model="cycleMonth"
                         autofocus
                         required
                         type="month"
-                        class="min-h-control rounded-control border border-line bg-surface px-3"
+                        class="w-full"
                     />
                 </label>
                 <div class="flex flex-wrap justify-end gap-2">
                     <button
                         type="button"
-                        class="preview-control"
+                        class="ui-button"
                         @click="cycleDialog?.close()"
                     >
                         {{ t('dashboard.cancel') }}
                     </button>
-                    <button
-                        type="submit"
-                        class="preview-control preview-control-primary"
-                    >
+                    <button type="submit" class="ui-button ui-button-primary">
                         {{ t('dashboard.save_preview') }}
                     </button>
                 </div>

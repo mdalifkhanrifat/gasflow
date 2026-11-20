@@ -143,5 +143,6 @@
     "profile.appearance": "Appearance",
     "module.building_count": "Buildings",
     "module.action": "Action",
-    "module.record_count": "Showing {visible} of {total} records · Demo dataset"
+    "module.record_count": "Showing {visible} of {total} records · Demo dataset",
+    "module.export": "Export CSV"
 }

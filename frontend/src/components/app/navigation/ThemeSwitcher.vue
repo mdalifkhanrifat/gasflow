@@ -7,8 +7,7 @@ const { t } = useLocale();
 const { preference, setPreference } = useTheme();
 const themes = ['system', 'light', 'dark'] as const;
 
-function changeTheme(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+function changeTheme(value: string): void {
     const theme = themes.find((option) => option === value);
     if (theme) {
         setPreference(theme);
@@ -19,7 +18,10 @@ function changeTheme(event: Event): void {
 <template>
     <label class="grid gap-1.5 text-sm font-medium text-ink">
         {{ t('preferences.theme') }}
-        <NativeSelect :value="preference" @change="changeTheme">
+        <NativeSelect
+            :model-value="preference"
+            @update:model-value="changeTheme"
+        >
             <option v-for="theme in themes" :key="theme" :value="theme">
                 {{ t(`preferences.theme.${theme}`) }}
             </option>

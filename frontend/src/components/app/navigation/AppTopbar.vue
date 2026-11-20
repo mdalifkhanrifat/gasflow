@@ -65,12 +65,8 @@ defineExpose({ openProfile });
                     <span class="sr-only">{{ t('topbar.organization') }}</span>
                     <NativeSelect
                         class="topbar-select topbar-organization"
-                        :value="workspace"
-                        @change="
-                            selectWorkspace(
-                                ($event.target as HTMLSelectElement).value,
-                            )
-                        "
+                        :model-value="workspace"
+                        @update:model-value="selectWorkspace"
                     >
                         <option
                             v-for="option in workspaces"
@@ -85,11 +81,7 @@ defineExpose({ openProfile });
                     <span class="sr-only">{{ t('topbar.building') }}</span>
                     <NativeSelect
                         class="topbar-select topbar-building"
-                        :value="building"
-                        @change="
-                            building = ($event.target as HTMLSelectElement)
-                                .value
-                        "
+                        v-model="building"
                     >
                         <option value="">
                             {{ t('topbar.all_buildings') }}

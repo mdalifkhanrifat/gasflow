@@ -5,8 +5,10 @@ import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
+import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
 import AppShell from '@/layouts/AppShell.vue';
+import { downloadCsv } from '@/lib/downloadCsv';
 import { formatNumber } from '@/lib/format';
 
 interface RecordRow {
@@ -19,6 +21,7 @@ interface RecordRow {
 const props = defineProps<{
     title: string;
     description: string;
+    exportFilename: string;
     columns: readonly string[];
     rows: readonly RecordRow[];
 }>();
@@ -61,6 +64,13 @@ const recordCount = computed(() =>
         .replace('{total}', formatNumber(props.rows.length, locale.value)),
 );
 
+function exportRecords(): void {
+    downloadCsv(props.exportFilename, [
+        [...props.columns, t('module.status')],
+        ...visibleRows.value.map((row) => [...row.cells, row.status]),
+    ]);
+}
+
 function openRecord(row: RecordRow): void {
     selected.value = row;
     dialog.value?.open();
@@ -90,22 +100,16 @@ function openRecord(row: RecordRow): void {
                         class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-ink-muted"
                         >⌕</span
                     >
-                    <input
+                    <UiInput
                         v-model="search"
                         type="search"
                         :placeholder="t('module.search')"
-                        class="module-filter w-full rounded-control border border-line bg-surface pr-2 pl-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        class="ui-control-compact w-full pl-7"
                     />
                 </label>
                 <label>
                     <span class="sr-only">{{ t('module.status') }}</span>
-                    <NativeSelect
-                        class="module-filter"
-                        :value="status"
-                        @change="
-                            status = ($event.target as HTMLSelectElement).value
-                        "
-                    >
+                    <NativeSelect class="ui-control-compact" v-model="status">
                         <option value="">{{ t('module.all_statuses') }}</option>
                         <option
                             v-for="[code, label] in statuses"
@@ -116,6 +120,15 @@ function openRecord(row: RecordRow): void {
                         </option>
                     </NativeSelect>
                 </label>
+                <button
+                    type="button"
+                    class="ui-button ml-auto"
+                    :disabled="!visibleRows.length"
+                    @click="exportRecords"
+                >
+                    <span aria-hidden="true">↓</span>
+                    {{ t('module.export') }}
+                </button>
             </div>
 
             <section
@@ -152,7 +165,7 @@ function openRecord(row: RecordRow): void {
                         <td>
                             <button
                                 type="button"
-                                class="module-row-action"
+                                class="ui-button-icon"
                                 :aria-label="
                                     t('module.details') + ': ' + row.cells[0]
                                 "
@@ -202,7 +215,7 @@ function openRecord(row: RecordRow): void {
                 <button
                     type="button"
                     autofocus
-                    class="preview-control"
+                    class="ui-button"
                     @click="dialog?.close()"
                 >
                     {{ t('module.close') }}

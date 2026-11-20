@@ -143,5 +143,6 @@
     "profile.appearance": "দেখার ধরন",
     "module.building_count": "ভবন",
     "module.action": "অ্যাকশন",
-    "module.record_count": "{total}টির মধ্যে {visible}টি রেকর্ড দেখানো হচ্ছে · নমুনা ডাটা"
+    "module.record_count": "{total}টির মধ্যে {visible}টি রেকর্ড দেখানো হচ্ছে · নমুনা ডাটা",
+    "module.export": "CSV ডাউনলোড"
 }

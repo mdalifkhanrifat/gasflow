@@ -67,6 +67,7 @@ const rows = computed(() =>
 
 <template>
     <ModuleListing
+        export-filename="customer-invoices.csv"
         :title="t('navigation.invoices')"
         :description="t('module.invoices_description')"
         :columns="[

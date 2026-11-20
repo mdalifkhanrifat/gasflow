@@ -518,6 +518,13 @@ values. Keep workspace palette overrides at the document root. The shared
 `useTheme` composable exposes the system, light and dark preference. All
 pages use the same component styles and responsive behavior.
 
+Use `components/ui/UiInput.vue` for text, number, search and date inputs,
+and `NativeSelect.vue` for both single and multiple selection. Use
+`ui-button`, `ui-button-primary` and `ui-button-icon` for actions, links
+and downloads. The shared styles in `styles/app.css` own the control borders,
+spacing, focus, disabled state and touch sizing. Module pages select an
+existing variant and own their data, validation, labels and layout.
+
 ## Tests
 
 ```text
