@@ -400,6 +400,33 @@ and it never changes once saved.
   `tests/Feature/Database/IntegrityChecksTest.php` finds every such function
   in `pg_proc` and fails until it is adopted (V7.25, D52).
 
+- Row-level security (group 15, V7.25, D52). Every tenant table has one
+  policy for all commands, with ENABLE and FORCE (the owner is filtered too):
+  organization scope (`organization_id = app_current_organization_id()`),
+  building scope (`tenant_scope_<table>`: the row's building is visible) or
+  parent scope (the row's parent is visible). A new tenant table gets its
+  policy in its own migration, joins `Tests\Support\RowLevelSecurity` and
+  gets a row in `Tests\Support\TenantWorld`; the suite fails until it does.
+  Catalogues, plans and licensing are platform tables without a policy;
+  `users`, `organizations` and `platform_user_roles` get theirs in Phase 4.
+  Without an organization context the app sees nothing (fail-closed).
+- Work without a request context never bypasses row-level security (D52-4).
+  `gasflow_app` has no `BYPASSRLS`, and no code path switches roles:
+    - A scheduled or queued job that touches tenant data runs once per
+      organization, in that organization's context (the job carries the
+      organization id and sets `app.organization_id` / `app.user_id` before
+      its first query, like the web middleware). A job for "all
+      organizations" dispatches one job per organization.
+    - A webhook names its gateway in the URL (the gateway's public id). A
+      `SECURITY DEFINER` lookup owned by `gasflow_integrity` returns only that
+      gateway's organization (and building), and the request then runs in
+      that context; the signature is checked with that gateway's credentials
+      (Phase 10).
+    - Platform staff do not read across tenants: they switch into one
+      organization (validated on the server, audited) and work in its context
+      (Phase 4).
+    - The operator's maintenance override works inside an organization too.
+
 - Gas is priced only through the tariff timeline: `tariff_rate_segments()`
   says which vendor and rate applied on which days (several changes a month,
   customer category with the general rate as fallback, gaps shown), and
