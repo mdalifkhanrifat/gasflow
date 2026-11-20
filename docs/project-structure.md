@@ -326,7 +326,16 @@ and it never changes once saved.
   active, `000073` attempts only through the collector's active gateway of
   the right provider kind, `000074` setup tasks for the building's own people
   (`user_can_access_building()`), `000075` gas supply receipts true to what
-  was bought, `000076` licenses used only as they were signed.
+  was bought, `000076` licenses used only as they were signed. 14
+  notifications, audit and provider events (`000077` notification templates,
+  notifications, audit logs and idempotency keys, `000078` webhook inbox,
+  integration outbox and delivery attempts), then the owner's group 14
+  decisions (V7.24, D51): `000079` the generic write-once rule, `000080` the
+  audit log append-only and inside its tenant, `000081` notifications to
+  their recipients, templates and statuses, `000082` idempotency keys true to
+  their first request and response, `000083` webhook events kept as received
+  and processed only when verified, `000084` outbox events and delivery
+  attempts kept as they happened.
 - A migration that enforces status transitions inserts its
   `status_transitions` rows next to its statuses, and its `down()` deletes the
   transitions before the statuses.
@@ -352,6 +361,11 @@ and it never changes once saved.
   It creates `trg_<table>_freeze_<name>`; a correction is a new record, or the
   maintenance override. With `editableStatuses: []` the columns are frozen
   from the first write (a payment allocation is reversed, never changed).
+- Columns that start empty and, once filled, never change (a stored response,
+  a signature time) get
+  `LifecycleSchema::writeOnce('idempotency_keys', ['response_code', 'response_body'])`.
+  It creates `trg_<table>_write_once_<name>`; only the maintenance override
+  may still correct them (V7.24).
 - Status rules between a parent and its children are declared, not
   hand-written, with one call each (calling it again with the same name
   replaces the rule, so a later migration can change the statuses):
