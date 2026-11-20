@@ -62,8 +62,8 @@ describe('lifecycle registration', function () {
             ->toBe(['integrations', 'log', 'protected', 'forbidden', $enforced, $defaultStatus, false]);
     })->with([
         ['webhook_inbox', 'received', true],
-        ['integration_outbox', 'pending', false],
-        ['integration_delivery_attempts', 'failed', false],
+        ['integration_outbox', 'pending', true],
+        ['integration_delivery_attempts', 'failed', true],
     ]);
 
     it('never lets a row be deleted', function (Closure $insert, string $table) {
@@ -383,5 +383,174 @@ describe('webhook provider (D51)', function () {
         expect(fn () => DB::table('webhook_inbox')->insert([
             'organization_id' => $organizationId, 'provider_code' => 'nagad', 'provider_event_id' => 'E1', 'event_type' => 'x', 'payload' => '{}',
         ]))->toThrow(QueryException::class, 'has no nagad gateway');
+    });
+});
+
+/**
+ * Runs the outbox checks that otherwise wait for COMMIT, then defers them again.
+ */
+function outboxCheckAtCommit(): void
+{
+    DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+    DB::statement('SET CONSTRAINTS ALL DEFERRED');
+}
+
+/**
+ * Delivers an outbox event the way the worker does: one counted attempt
+ * with the given status, then the event's new status.
+ *
+ * @param  array<string, mixed>  $eventUpdate
+ */
+function deliverOutboxEvent(int $outboxId, string $attemptStatus, array $eventUpdate): void
+{
+    deliveryAttempt($outboxId, ['status' => $attemptStatus]);
+    DB::table('integration_outbox')->where('id', $outboxId)->increment('attempts', 1, $eventUpdate);
+}
+
+describe('outbox event integrity (D51)', function () {
+    it('keeps the event as it was written', function (string $column, mixed $value) {
+        // Arrange
+        $id = outboxEvent();
+
+        // Act & Assert
+        expect(fn () => DB::table('integration_outbox')->where('id', $id)->update([$column => $value]))
+            ->toThrow(QueryException::class, "integration_outbox {$id} is pending: {$column} can no longer change");
+    })->with([
+        ['payload', '{"x":1}'],
+        ['event_type', 'payment.refunded'],
+        ['aggregate_id', 2],
+    ]);
+
+    it('is published once delivered, with its time and one succeeded attempt', function () {
+        // Arrange
+        $id = outboxEvent();
+
+        // Act
+        deliverOutboxEvent($id, 'succeeded', ['status' => 'published', 'published_at' => now()]);
+        outboxCheckAtCommit();
+
+        // Assert
+        expect(DB::table('integration_outbox')->where('id', $id)->value('status'))->toBe('published');
+    });
+
+    it('ties the published time to published', function (Closure $write) {
+        // Arrange
+        $id = outboxEvent();
+
+        // Act & Assert
+        expect(fn () => $write($id))->toThrow(QueryException::class, 'ck_integration_outbox_published_at');
+    })->with([
+        'published without time' => [fn (int $id) => DB::table('integration_outbox')->where('id', $id)->update(['status' => 'published'])],
+        'pending with time' => [fn (int $id) => DB::table('integration_outbox')->where('id', $id)->update(['published_at' => now()])],
+    ]);
+
+    it('is not available before it occurred', function () {
+        // Arrange
+        $row = ['occurred_at' => now(), 'available_at' => now()->subDay()];
+
+        // Act & Assert
+        expect(fn () => outboxEvent($row))->toThrow(QueryException::class, 'ck_integration_outbox_available_at');
+    });
+
+    it('never leaves dead letter', function () {
+        // Arrange
+        $id = outboxEvent();
+        DB::table('integration_outbox')->where('id', $id)->update(['status' => 'dead_letter']);
+
+        // Act & Assert
+        expect(fn () => DB::table('integration_outbox')->where('id', $id)->update(['status' => 'pending']))
+            ->toThrow(QueryException::class, 'Status transition dead_letter -> pending is not allowed for integration_outbox');
+    });
+
+    it('goes back to pending after a failure', function () {
+        // Arrange
+        $id = outboxEvent();
+        deliverOutboxEvent($id, 'failed', ['status' => 'failed', 'last_error' => '503']);
+
+        // Act
+        DB::table('integration_outbox')->where('id', $id)->update(['status' => 'pending']);
+        outboxCheckAtCommit();
+
+        // Assert
+        expect(DB::table('integration_outbox')->where('id', $id)->value('status'))->toBe('pending');
+    });
+
+    it('never counts attempts down', function () {
+        // Arrange
+        $id = outboxEvent();
+        deliverOutboxEvent($id, 'failed', []);
+
+        // Act & Assert
+        expect(fn () => DB::table('integration_outbox')->where('id', $id)->update(['attempts' => 0]))
+            ->toThrow(QueryException::class, "integration_outbox {$id}: attempts cannot go down (1 -> 0)");
+    });
+});
+
+describe('delivery attempt integrity (D51)', function () {
+    it('keeps an attempt as it was written', function (array $change, string $error) {
+        // Arrange
+        $id = deliveryAttempt();
+
+        // Act & Assert
+        expect(fn () => DB::table('integration_delivery_attempts')->where('id', $id)->update($change))
+            ->toThrow(QueryException::class, $error);
+    })->with([
+        'response' => [['response_code' => '200'], 'response_code can no longer change'],
+        'outbox event' => [['outbox_id' => 999999999], 'outbox_id can no longer change'],
+        'status' => [['status' => 'succeeded'], 'Status transition failed -> succeeded is not allowed'],
+    ]);
+
+    it('takes no new attempt once its event is published or dead letter', function (array $close) {
+        // Arrange
+        $id = outboxEvent();
+        DB::table('integration_outbox')->where('id', $id)->update($close);
+
+        // Act & Assert
+        expect(fn () => deliveryAttempt($id))->toThrow(QueryException::class, 'integration_outbox');
+    })->with([
+        'published' => [['status' => 'published', 'published_at' => now()]],
+        'dead letter' => [['status' => 'dead_letter']],
+    ]);
+
+    it('is not made before its event occurred', function () {
+        // Arrange
+        $id = outboxEvent();
+
+        // Act & Assert
+        expect(fn () => deliveryAttempt($id, ['attempted_at' => now()->subYear()]))
+            ->toThrow(QueryException::class, "is before outbox event {$id} occurred");
+    });
+});
+
+describe('outbox delivery at COMMIT (D51)', function () {
+    it('refuses a counter that disagrees with the attempt rows', function (Closure $write) {
+        // Arrange
+        $id = outboxEvent();
+        $write($id);
+
+        // Act & Assert
+        expect(fn () => outboxCheckAtCommit())->toThrow(QueryException::class, "Outbox event {$id} counts");
+    })->with([
+        'counted, no row' => [fn (int $id) => DB::table('integration_outbox')->where('id', $id)->update(['attempts' => 7])],
+        // The event's own check runs first, so only the attempt's check can catch it.
+        'row, not counted' => [fn (int $id) => tap($id, fn () => outboxCheckAtCommit()) && deliveryAttempt($id)],
+    ]);
+
+    it('refuses a published event without a succeeded attempt', function () {
+        // Arrange
+        $id = outboxEvent();
+        deliverOutboxEvent($id, 'failed', ['status' => 'published', 'published_at' => now()]);
+
+        // Act & Assert
+        expect(fn () => outboxCheckAtCommit())->toThrow(QueryException::class, "Outbox event {$id} is published with 0 succeeded attempts");
+    });
+
+    it('refuses a succeeded attempt on an event that stays pending', function () {
+        // Arrange
+        $id = outboxEvent();
+        deliverOutboxEvent($id, 'succeeded', []);
+
+        // Act & Assert
+        expect(fn () => outboxCheckAtCommit())->toThrow(QueryException::class, "Outbox event {$id} is pending with 1 succeeded attempts");
     });
 });
