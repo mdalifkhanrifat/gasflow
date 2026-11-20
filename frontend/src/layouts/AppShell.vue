@@ -1,15 +1,20 @@
+<script lang="ts">
+import { ref } from 'vue';
+
+const desktopOpen = ref(true);
+</script>
+
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
+import { onMounted, onUnmounted, useTemplateRef } from 'vue';
 import AppSidebar from '@/components/app/navigation/AppSidebar.vue';
 import AppTopbar from '@/components/app/navigation/AppTopbar.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
 defineProps<{ pageLabel: string; workspace: string }>();
-const desktopOpen = ref(true);
 const mobileOpen = ref(false);
 const drawer = useTemplateRef<HTMLDialogElement>('drawer');
-const desktop = window.matchMedia('(min-width: 64rem)');
+const desktop = window.matchMedia('(min-width: 48rem)');
 
 function openMobile(): void {
     drawer.value?.showModal();
@@ -31,13 +36,17 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
 </script>
 
 <template>
-    <div class="min-h-dvh lg:flex">
+    <div class="min-h-dvh md:flex">
         <aside
-            v-show="desktopOpen"
             id="desktop-navigation"
-            class="sticky top-0 hidden h-dvh w-sidebar shrink-0 lg:block"
+            class="sticky top-0 hidden h-dvh shrink-0 motion-safe:transition-[width] motion-safe:duration-200 md:block"
+            :class="
+                desktopOpen
+                    ? 'w-sidebar-tablet min-[68.8125rem]:w-sidebar'
+                    : 'w-sidebar-rail'
+            "
         >
-            <AppSidebar :workspace="workspace" />
+            <AppSidebar :workspace="workspace" :compact="!desktopOpen" />
         </aside>
         <div class="min-w-0 grow">
             <AppTopbar
@@ -56,7 +65,7 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
             id="mobile-navigation"
             ref="drawer"
             :aria-label="t('navigation.main')"
-            class="fixed inset-y-0 left-0 m-0 h-dvh max-h-dvh w-sidebar max-w-[calc(100%-2rem)] overflow-hidden bg-nav p-0 text-nav-ink backdrop:bg-overlay"
+            class="fixed inset-y-0 left-0 m-0 h-dvh max-h-dvh w-sidebar-drawer max-w-[calc(100%-2rem)] overflow-hidden bg-nav p-0 text-nav-ink backdrop:bg-overlay"
             @click.self="closeMobile"
             @close="mobileOpen = false"
         >
@@ -65,7 +74,7 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                     type="button"
                     autofocus
                     :aria-label="t('navigation.close')"
-                    class="absolute top-4 right-3 grid size-control place-items-center rounded-control text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus"
+                    class="absolute top-[max(1rem,env(safe-area-inset-top))] right-3 grid size-control place-items-center rounded-control text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus"
                     @click="closeMobile"
                 >
                     <span aria-hidden="true">×</span>

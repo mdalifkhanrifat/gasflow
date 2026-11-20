@@ -24,7 +24,7 @@ const { t } = useLocale();
                     aria-controls="mobile-navigation"
                     :aria-expanded="mobileOpen"
                     :aria-label="t('navigation.open')"
-                    class="inline-grid size-control shrink-0 place-items-center rounded-control border border-line text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus lg:hidden"
+                    class="inline-grid size-control shrink-0 place-items-center rounded-control border border-line text-ink hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:hidden"
                     @click="emit('openMobile')"
                 >
                     <span aria-hidden="true">☰</span>
@@ -34,7 +34,7 @@ const { t } = useLocale();
                     aria-controls="desktop-navigation"
                     :aria-expanded="desktopOpen"
                     :aria-label="t('navigation.toggle')"
-                    class="hidden size-control shrink-0 place-items-center rounded-control border border-line text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus lg:inline-grid"
+                    class="hidden size-control shrink-0 place-items-center rounded-control border border-line text-ink hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:inline-grid"
                     @click="emit('toggleDesktop')"
                 >
                     <span aria-hidden="true">☰</span>

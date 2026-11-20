@@ -2,7 +2,11 @@ export const navigation = [
     {
         label: 'navigation.platform',
         items: [
-            { label: 'navigation.organizations', icon: '▣' },
+            {
+                label: 'navigation.organizations',
+                icon: '▣',
+                route: 'organizations',
+            },
             { label: 'navigation.access', icon: '⌘' },
             { label: 'navigation.plans', icon: '◇' },
             { label: 'navigation.saas_invoices', icon: '৳' },
@@ -28,7 +32,11 @@ export const navigation = [
             { label: 'navigation.supply', icon: '♨' },
             { label: 'navigation.tariffs', icon: '৳' },
             { label: 'navigation.cycles', icon: '▤' },
-            { label: 'navigation.invoices', icon: '▧' },
+            {
+                label: 'navigation.invoices',
+                icon: '▧',
+                route: 'customer-invoices',
+            },
             { label: 'navigation.payments', icon: '⇆' },
             { label: 'navigation.ledger', icon: '≋' },
             { label: 'navigation.disputes', icon: '⚑' },

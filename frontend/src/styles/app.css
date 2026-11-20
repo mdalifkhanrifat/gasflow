@@ -21,6 +21,10 @@
     --color-nav-muted: var(--nav-muted);
     --color-nav-line: var(--nav-line);
     --color-nav-active: var(--nav-active);
+    --color-nav-hover: var(--nav-hover);
+    --color-nav-workspace: var(--nav-workspace);
+    --color-nav-avatar: var(--nav-avatar);
+    --color-nav-avatar-ink: var(--nav-avatar-ink);
     --color-nav-focus: var(--nav-focus);
     --color-overlay: var(--overlay);
     --color-primary: var(--primary);
@@ -44,6 +48,9 @@
     --spacing-table-row: var(--density-row-height);
     --spacing-control: var(--density-control-height);
     --spacing-sidebar: var(--sidebar-width);
+    --spacing-sidebar-tablet: var(--sidebar-tablet-width);
+    --spacing-sidebar-drawer: var(--sidebar-drawer-width);
+    --spacing-sidebar-rail: var(--sidebar-rail-width);
     --font-sans:
         'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
@@ -52,8 +59,63 @@
 
 @layer components {
     .sidebar-scroll {
-        scrollbar-color: var(--nav-active) transparent;
+        scrollbar-color: var(--nav-scroll) transparent;
+        overscroll-behavior: contain;
         scrollbar-width: thin;
+    }
+
+    .sidebar-brand {
+        padding-top: max(1.25rem, env(safe-area-inset-top));
+    }
+
+    .sidebar-brand-mark {
+        border-radius: 0.6875rem;
+        background: linear-gradient(
+            145deg,
+            var(--nav-brand-start),
+            var(--nav-brand-end)
+        );
+    }
+
+    .sidebar-footer {
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+
+    .sidebar-group {
+        margin-top: 0.75rem;
+    }
+
+    .sidebar-group-label {
+        @apply px-2.5 pb-1 text-[0.625rem] font-bold tracking-widest text-nav-muted uppercase;
+    }
+
+    .sidebar-item {
+        @apply flex min-h-9 w-full items-center gap-3 rounded-control px-2.5 py-1.5 text-xs text-nav-muted transition-colors motion-reduce:transition-none;
+    }
+
+    .sidebar-item:hover {
+        @apply bg-nav-hover text-nav-ink;
+    }
+
+    .sidebar-item:focus-visible {
+        @apply bg-nav-hover text-nav-ink outline-2 -outline-offset-2 outline-nav-focus;
+    }
+
+    .sidebar-item.sidebar-item-active {
+        @apply bg-nav-active font-semibold text-nav-ink;
+        box-shadow: inset 3px 0 var(--nav-accent);
+    }
+
+    .sidebar-icon {
+        @apply w-4 shrink-0 text-center text-sm;
+    }
+
+    .sidebar[data-compact] :is(.sidebar-brand, .sidebar-footer, .sidebar-item) {
+        @apply justify-center px-0;
+    }
+
+    .sidebar[data-compact] .sidebar-group {
+        @apply mt-2 border-t border-nav-line pt-2;
     }
 
     .preview-control {

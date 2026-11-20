@@ -10,7 +10,15 @@
     --nav-ink: #f2f6fd;
     --nav-muted: #aab9cf;
     --nav-line: #2b3850;
-    --nav-active: #243a60;
+    --nav-active: #294b87;
+    --nav-hover: #1b2a43;
+    --nav-accent: #8eb0ff;
+    --nav-workspace: #1a2942;
+    --nav-scroll: #40516d;
+    --nav-avatar: #dce8ff;
+    --nav-avatar-ink: #3159a9;
+    --nav-brand-start: #6b9aff;
+    --nav-brand-end: #2e5de4;
     --nav-focus: #a0b8ff;
     --overlay: rgb(10 16 29 / 65%);
     --primary: #2d58d0;
@@ -34,6 +42,9 @@
     --density-row-height: 3rem;
     --density-control-height: 2.5rem;
     --sidebar-width: 16.5rem;
+    --sidebar-tablet-width: 14.375rem;
+    --sidebar-drawer-width: 16.875rem;
+    --sidebar-rail-width: 4.75rem;
 }
 
 .dark {
@@ -44,7 +55,7 @@
     --ink: #e6edf8;
     --ink-muted: #aab9cf;
     --line: #38475f;
-    --nav: #111d31;
+    --nav: #0a1220;
     --primary: #a0b8ff;
     --primary-ink: #101b33;
     --primary-soft: #233353;

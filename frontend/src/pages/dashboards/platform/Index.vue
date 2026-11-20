@@ -166,7 +166,9 @@ function savePreview(): void {
                     :subtitle="t('dashboard.invoice_status_subtitle')"
                 >
                     <template #action
-                        ><a href="#recent-invoices" class="preview-control"
+                        ><a
+                            :to="{ name: 'customer-invoices' }"
+                            class="preview-control"
                             >{{ t('dashboard.view_invoices') }}
                             <span aria-hidden="true">→</span></a
                         ></template

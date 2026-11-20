@@ -9,6 +9,16 @@ export default createRouter({
             component: () => import('@/pages/dashboards/platform/Index.vue'),
         },
         {
+            path: '/organizations',
+            name: 'organizations',
+            component: () => import('@/pages/organizations/Index.vue'),
+        },
+        {
+            path: '/billing/invoices',
+            name: 'customer-invoices',
+            component: () => import('@/pages/billing/invoices/Index.vue'),
+        },
+        {
             path: '/:pathMatch(.*)*',
             component: () => import('@/pages/errors/NotFound.vue'),
         },
