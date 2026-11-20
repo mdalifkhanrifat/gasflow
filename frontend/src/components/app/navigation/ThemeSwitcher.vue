@@ -18,7 +18,7 @@ function changeTheme(event: Event): void {
 
 <template>
     <label class="grid gap-1.5 text-sm font-medium text-ink">
-        {{ t('preferences.theme') }}
+        <span class="sr-only">{{ t('preferences.theme') }}</span>
         <NativeSelect :value="preference" @change="changeTheme">
             <option v-for="theme in themes" :key="theme" :value="theme">
                 {{ t(`preferences.theme.${theme}`) }}

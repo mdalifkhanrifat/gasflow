@@ -5,7 +5,7 @@ import AppTopbar from '@/components/app/navigation/AppTopbar.vue';
 import { useLocale } from '@/composables/useLocale';
 
 const { t } = useLocale();
-defineProps<{ pageLabel: string }>();
+defineProps<{ pageLabel: string; workspace: string }>();
 const desktopOpen = ref(true);
 const mobileOpen = ref(false);
 const drawer = useTemplateRef<HTMLDialogElement>('drawer');
@@ -37,17 +37,18 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
             id="desktop-navigation"
             class="sticky top-0 hidden h-dvh w-sidebar shrink-0 lg:block"
         >
-            <AppSidebar />
+            <AppSidebar :workspace="workspace" />
         </aside>
         <div class="min-w-0 grow">
             <AppTopbar
                 :page-label="pageLabel"
+                :workspace="workspace"
                 :desktop-open="desktopOpen"
                 :mobile-open="mobileOpen"
                 @toggle-desktop="desktopOpen = !desktopOpen"
                 @open-mobile="openMobile"
             />
-            <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+            <main class="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:py-6">
                 <slot />
             </main>
         </div>
@@ -69,7 +70,7 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                 >
                     <span aria-hidden="true">×</span>
                 </button>
-                <AppSidebar @navigate="closeMobile" />
+                <AppSidebar :workspace="workspace" @navigate="closeMobile" />
             </div>
         </dialog>
     </div>
