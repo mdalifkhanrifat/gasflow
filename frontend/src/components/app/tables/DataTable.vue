@@ -1,10 +1,16 @@
 <script setup lang="ts" generic="Row">
 defineProps<{
     label: string;
-    columns: readonly { label: string; align?: 'end'; action?: boolean }[];
+    columns: readonly {
+        label: string;
+        align?: 'end';
+        action?: boolean;
+        ariaSort?: 'ascending' | 'descending';
+    }[];
     edge?: 'top' | 'bottom';
     rows: readonly Row[];
     rowKey: (row: Row) => string;
+    isRowSelected?: (row: Row) => boolean;
 }>();
 </script>
 
@@ -20,21 +26,33 @@ defineProps<{
             <thead class="text-ink-muted">
                 <tr>
                     <th
-                        v-for="column in columns"
+                        v-for="(column, index) in columns"
                         :key="column.label"
                         scope="col"
+                        :aria-sort="column.ariaSort"
                         :class="[
-                            column.align === 'end' ? 'text-end' : 'text-start',
+                            column.action
+                                ? 'text-center'
+                                : column.align === 'end'
+                                  ? 'text-end'
+                                  : 'text-start',
                             { 'data-table-action-column': column.action },
                         ]"
                         class="font-semibold whitespace-nowrap"
                     >
-                        {{ column.label }}
+                        <slot name="heading" :column="column" :index="index">
+                            {{ column.label }}
+                        </slot>
                     </th>
                 </tr>
             </thead>
             <tbody class="divide-y">
-                <tr v-for="row in rows" :key="rowKey(row)" class="text-ink">
+                <tr
+                    v-for="row in rows"
+                    :key="rowKey(row)"
+                    :data-selected="isRowSelected?.(row) || undefined"
+                    class="text-ink"
+                >
                     <slot :row="row" />
                 </tr>
             </tbody>

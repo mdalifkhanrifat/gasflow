@@ -16,6 +16,12 @@
     --text-large: 1.125rem;
     --text-extra-large: 1.25rem;
     --page-title-size: 1.5rem;
+    --marketing-title-size: clamp(1.875rem, 4.25vw, 3rem);
+    --marketing-title-leading: 1.12;
+    --brand-wordmark-width: clamp(6rem, 30vw, 7.5rem);
+    --service-code-size: clamp(4.75rem, min(14vw, 17dvh), 9.5rem);
+    --service-heading-size: clamp(1.125rem, 2vw, 1.375rem);
+    --service-maintenance-title-size: clamp(1.75rem, 5vw, 3rem);
     --page-title-leading: 1.2;
     --page-eyebrow-size: 0.625rem;
     --page-subtitle-size: 0.6875rem;
@@ -27,6 +33,7 @@
     --table-type-size: 0.625rem;
     --table-head-size: 0.5625rem;
     --footer-text-size: 0.5625rem;
+    --table-footer-text-size: calc(var(--footer-text-size) + 0.125rem);
     --control-text-size: 0.875rem;
     --topbar-control-text-size: 0.6875rem;
     --field-label-size: 0.75rem;
@@ -40,11 +47,20 @@
     /* Control and table dimensions */
     --table-padding-inline: 0.8125rem;
     --table-padding-block: 0.625rem;
-    --table-action-width: 6.75rem;
+    --table-action-size: 1.875rem;
+    --table-action-icon-size: 1rem;
+    --table-action-width: calc(
+        3 * var(--table-action-size) + 0.25rem + 2 * var(--table-padding-inline)
+    );
+    --table-checkbox-size: 0.8125rem;
+    --table-checkbox-target: 1.5rem;
     --control-padding-inline: 0.75rem;
     --control-focus-width: 2px;
     --control-focus-offset: 2px;
     --module-control-size: 2.125rem;
+    --pagination-button-size: max(2.25rem, var(--module-control-size));
+    --pagination-select-height: 1.75rem;
+    --pagination-select-width: 3.625rem;
 
     /* Palette and surfaces */
     --ink: #17243b;
@@ -80,6 +96,33 @@
     --chart-warning: #e9aa45;
     --chart-neutral: #e8edf4;
     --focus: #416ff0;
+    --public-background: #f7faff;
+    --public-glow-blue: #d0e2ff;
+    --public-glow-teal: #d2f1ec;
+    --public-dot: rgb(51 91 159 / 23%);
+    --brand-gradient-light: linear-gradient(
+        90deg,
+        #163972,
+        #2c63b8 66%,
+        #3474c0 87%,
+        #b7734b
+    );
+    --brand-gradient-dark: linear-gradient(
+        90deg,
+        #bed7ff,
+        #f5f8ff 46%,
+        #b2ceff 87%,
+        #f1c3a3
+    );
+    --brand-wordmark-fill: var(--brand-gradient-light);
+    --service-background: #090c19;
+    --service-halo: #121a35;
+    --service-ink: #f5f7ff;
+    --service-muted: #b9c3db;
+    --service-accent: #8fa7ff;
+    --service-action-start: #b51e5a;
+    --service-action-end: #3854cb;
+    --service-button-line: #4a5673;
     --control-radius: 0.5rem;
     --panel-radius: 0.875rem;
     --panel-shadow: 0 8px 26px rgb(23 36 59 / 6%);
@@ -127,6 +170,11 @@
     --chart-warning: #e5aa58;
     --chart-neutral: #44536c;
     --focus: #a0b8ff;
+    --public-background: #0b1323;
+    --public-glow-blue: #233d72;
+    --public-glow-teal: #153f4e;
+    --public-dot: rgb(135 178 255 / 34%);
+    --brand-wordmark-fill: var(--brand-gradient-dark);
     --panel-shadow: 0 8px 26px rgb(0 0 0 / 22%);
 }
 
@@ -139,6 +187,9 @@
     :root {
         --topbar-control-size: 2.5rem;
         --module-control-size: 2.75rem;
+        --table-action-size: 2.75rem;
+        --table-checkbox-target: 2.75rem;
+        --pagination-select-height: var(--module-control-size);
         --topbar-avatar-size: 2.5rem;
     }
 
@@ -152,5 +203,30 @@
 @media (min-width: 48rem) {
     :root {
         --shell-gutter: 1.25rem;
+    }
+}
+
+@media print {
+    :root:has(.invoice-sheet) {
+        color-scheme: light;
+        --background: white;
+        --surface: white;
+        --surface-muted: whitesmoke;
+        --ink: black;
+        --ink-muted: #444;
+        --line: #ccc;
+        --table-head: whitesmoke;
+        --table-ink: black;
+        --table-line: #ddd;
+        --primary: #17243b;
+        --primary-soft: whitesmoke;
+        --success: #17243b;
+        --warning: #17243b;
+        --danger: #17243b;
+        --success-soft: whitesmoke;
+        --warning-soft: whitesmoke;
+        --danger-soft: whitesmoke;
+        --table-type-size: var(--field-label-size);
+        --table-head-size: var(--field-label-size);
     }
 }

@@ -7,6 +7,7 @@ const expanded = ref(new Set<string>(['navigation.platform']));
 <script setup lang="ts">
 import { computed, nextTick, useId, useTemplateRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import BrandLogo from '@/components/app/BrandLogo.vue';
 import SidebarSearch from '@/components/app/navigation/SidebarSearch.vue';
 import { useLocale } from '@/composables/useLocale';
 import {
@@ -24,11 +25,12 @@ defineExpose({ focusSearch: () => search.value?.focus() });
 
 const route = useRoute();
 const sidebarId = useId();
+const activeRoute = computed(() => route.meta.navigationRoute ?? route.name);
 const activeGroup = computed(
     () =>
         navigation.find((group) =>
             group.items.some(
-                (item) => 'route' in item && item.route === route.name,
+                (item) => 'route' in item && item.route === activeRoute.value,
             ),
         )?.label,
 );
@@ -71,15 +73,8 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
         class="sidebar flex h-full min-h-0 flex-col bg-nav text-nav-ink"
         :data-compact="compact || undefined"
     >
-        <div
-            class="sidebar-brand flex shrink-0 items-center gap-3 px-5 pt-5 pb-4"
-        >
-            <span
-                class="sidebar-brand-mark grid size-9 shrink-0 place-items-center font-bold text-nav-ink"
-                aria-hidden="true"
-                >G</span
-            >
-            <span v-if="!compact" class="text-base font-semibold">GasFlow</span>
+        <div class="sidebar-brand flex shrink-0 px-5 pt-5 pb-4">
+            <BrandLogo :compact="compact" />
         </div>
         <div
             v-if="!compact"
@@ -173,7 +168,10 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                             v-if="'route' in item"
                             :to="{ name: item.route }"
                             class="sidebar-item"
-                            exact-active-class="sidebar-item-active"
+                            :class="{
+                                'sidebar-item-active':
+                                    item.route === activeRoute,
+                            }"
                             :title="compact ? t(item.label) : undefined"
                             @click="emit('navigate')"
                         >

@@ -12,6 +12,7 @@ import { useLocale } from '@/composables/useLocale';
 import { usePreviewWorkspace } from '@/composables/usePreviewWorkspace';
 
 const { t } = useLocale();
+const copyrightYear = String(new Date().getFullYear());
 defineProps<{ pageLabel: string }>();
 const { workspace } = usePreviewWorkspace();
 const mobileOpen = ref(false);
@@ -51,10 +52,14 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
 </script>
 
 <template>
-    <div class="min-h-dvh md:flex">
+    <div class="relative isolate min-h-dvh md:flex print:block print:min-h-0">
+        <div
+            aria-hidden="true"
+            class="public-stage shell-backdrop pointer-events-none absolute inset-0 -z-10 print:hidden"
+        ></div>
         <aside
             id="desktop-navigation"
-            class="sticky top-0 hidden h-dvh shrink-0 motion-safe:transition-[width] motion-safe:duration-200 md:block"
+            class="sticky top-0 hidden h-dvh shrink-0 motion-safe:transition-[width] motion-safe:duration-200 md:block print:hidden"
             :class="
                 desktopOpen
                     ? 'w-sidebar-tablet min-[68.8125rem]:w-sidebar'
@@ -69,24 +74,34 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                 @profile="openProfile"
             />
         </aside>
-        <div class="min-w-0 grow">
+        <div
+            class="flex min-h-dvh min-w-0 grow flex-col print:block print:min-h-0"
+        >
             <AppTopbar
                 ref="topbar"
+                class="print:hidden"
                 :page-label="pageLabel"
                 :desktop-open="desktopOpen"
                 :mobile-open="mobileOpen"
                 @toggle-desktop="desktopOpen = !desktopOpen"
                 @open-mobile="openMobile"
             />
-            <main class="shell-content py-5 lg:py-6">
+            <main
+                class="shell-content py-5 lg:py-6 print:m-0 print:max-w-none print:p-0"
+            >
                 <slot />
             </main>
+            <footer
+                class="shell-content mt-auto py-4 text-footer text-ink-muted print:hidden"
+            >
+                {{ t('footer.copyright').replace('{year}', copyrightYear) }}
+            </footer>
         </div>
         <dialog
             id="mobile-navigation"
             ref="drawer"
             :aria-label="t('navigation.main')"
-            class="fixed inset-y-0 left-0 m-0 h-dvh max-h-dvh w-sidebar-drawer max-w-[calc(100%-2rem)] overflow-hidden bg-nav p-0 text-nav-ink backdrop:bg-overlay"
+            class="fixed inset-y-0 left-0 m-0 h-dvh max-h-dvh w-sidebar-drawer max-w-[calc(100%-2rem)] overflow-hidden bg-nav p-0 text-nav-ink backdrop:bg-overlay print:hidden"
             @click.self="closeMobile"
             @close="mobileOpen = false"
         >

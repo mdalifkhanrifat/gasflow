@@ -57,6 +57,8 @@
     --text-base: var(--text-standard);
     --text-lg: var(--text-large);
     --text-xl: var(--text-extra-large);
+    --text-marketing-title: var(--marketing-title-size);
+    --text-marketing-title--line-height: var(--marketing-title-leading);
     --text-page-title: var(--page-title-size);
     --text-page-title--line-height: var(--page-title-leading);
     --text-page-eyebrow: var(--page-eyebrow-size);
@@ -74,6 +76,191 @@
 }
 
 @layer components {
+    .public-stage {
+        position: relative;
+        isolation: isolate;
+        overflow: clip;
+        background: var(--public-background);
+    }
+
+    .public-stage::before,
+    .public-stage::after {
+        position: absolute;
+        pointer-events: none;
+        content: '';
+    }
+
+    .public-stage::before {
+        z-index: -2;
+        inset: -8%;
+        background:
+            radial-gradient(
+                ellipse at 13% 30%,
+                var(--public-glow-blue),
+                transparent 42%
+            ),
+            radial-gradient(
+                ellipse at 88% 70%,
+                var(--public-glow-teal),
+                transparent 41%
+            );
+    }
+
+    .public-stage::after {
+        z-index: -1;
+        inset: -1.5rem;
+        background: radial-gradient(
+                circle,
+                var(--public-dot) 1px,
+                transparent 1.6px
+            )
+            0 0 / 1rem 1rem;
+        mask-image:
+            radial-gradient(
+                ellipse 42% 58% at 10% 34%,
+                #000 15%,
+                transparent 96%
+            ),
+            radial-gradient(
+                ellipse 40% 54% at 90% 65%,
+                #000 12%,
+                transparent 96%
+            );
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .public-stage::before {
+            animation: public-glow-drift 18s ease-in-out infinite alternate;
+        }
+
+        .public-stage::after {
+            animation: public-dot-drift 26s ease-in-out infinite alternate;
+        }
+    }
+
+    @keyframes public-glow-drift {
+        from {
+            transform: translate(-1rem, -0.5rem);
+        }
+
+        to {
+            transform: translate(1.5rem, 0.85rem) scale(1.08);
+        }
+    }
+
+    @keyframes public-dot-drift {
+        from {
+            transform: translate(-0.5rem, 0.25rem);
+        }
+
+        to {
+            transform: translate(0.75rem, -0.5rem);
+        }
+    }
+
+    .service-screen {
+        position: relative;
+        isolation: isolate;
+        overflow: clip;
+        padding-block: clamp(2rem, 7dvh, 6rem);
+        background: var(--service-background);
+        color: var(--service-ink);
+        color-scheme: dark;
+    }
+
+    .service-screen::before {
+        position: absolute;
+        z-index: -1;
+        inset-block-start: 23.25%;
+        inset-inline-start: 50%;
+        inline-size: clamp(36rem, 80vw, 96rem);
+        aspect-ratio: 1;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        background: linear-gradient(
+            color-mix(
+                in srgb,
+                var(--service-halo) 70%,
+                var(--service-background)
+            ),
+            var(--service-background) clamp(50%, 70dvh, 80%)
+        );
+        content: '';
+    }
+
+    .service-visual {
+        display: grid;
+        justify-items: center;
+        width: min(100%, 28rem);
+        margin-block-end: clamp(1.5rem, 4dvh, 3rem);
+    }
+
+    .service-code {
+        z-index: 1;
+        margin-block-end: -0.14em;
+        font-size: var(--service-code-size);
+        font-weight: 800;
+        line-height: 0.9;
+        letter-spacing: -0.065em;
+    }
+
+    .service-illustration {
+        width: 100%;
+        height: clamp(9.5rem, 30dvh, 19rem);
+        object-fit: contain;
+    }
+
+    .service-visual-maintenance .service-illustration {
+        height: clamp(11rem, 39dvh, 22rem);
+    }
+
+    .service-heading {
+        font-size: var(--service-heading-size);
+        text-wrap: balance;
+    }
+
+    .service-heading-accent {
+        font-size: var(--service-maintenance-title-size);
+        line-height: 1.12;
+        color: var(--service-accent);
+    }
+
+    .service-description {
+        color: var(--service-muted);
+        font-size: var(--text-body);
+        text-wrap: pretty;
+    }
+
+    .service-screen .ui-button {
+        min-height: 2.75rem;
+        justify-content: center;
+    }
+
+    .service-screen .service-back-button {
+        border-color: transparent;
+        background: linear-gradient(
+            112deg,
+            var(--service-action-start),
+            var(--service-action-end)
+        );
+        color: var(--service-ink);
+        text-transform: uppercase;
+    }
+
+    .service-screen .service-back-button:hover {
+        filter: brightness(1.15);
+    }
+
+    .service-screen .service-retry-button {
+        border-color: var(--service-button-line);
+        background: transparent;
+        color: var(--service-ink);
+    }
+
+    .service-screen .ui-button.service-retry-button:hover {
+        background: var(--service-halo);
+    }
+
     .topbar {
         box-shadow: var(--topbar-shadow);
     }
@@ -126,16 +313,21 @@
     }
 
     .sidebar-brand {
+        --brand-wordmark-fill: var(--brand-gradient-dark);
         padding-top: max(1.25rem, env(safe-area-inset-top));
     }
 
-    .sidebar-brand-mark {
-        border-radius: 0.6875rem;
-        background: linear-gradient(
-            145deg,
-            var(--nav-brand-start),
-            var(--nav-brand-end)
-        );
+    .brand-wordmark {
+        inline-size: var(--brand-wordmark-width);
+        aspect-ratio: 20 / 7;
+        background-color: currentColor;
+        background-image: var(--brand-wordmark-fill);
+        mask: url('../components/app/gasflow-wordmark.svg') center / contain
+            no-repeat;
+    }
+
+    .brand-logo-small {
+        --brand-wordmark-width: 5rem;
     }
 
     .sidebar-footer {
@@ -210,7 +402,14 @@
         font-size: var(--control-text-size);
     }
 
-    :is(.ui-control, .ui-button, .ui-button-icon):focus-visible {
+    :is(
+        .ui-control,
+        .ui-button,
+        .ui-button-icon,
+        .table-action,
+        .pagination-button,
+        .data-table-sort
+    ):focus-visible {
         outline: var(--control-focus-width) solid var(--focus);
         outline-offset: var(--control-focus-offset);
     }
@@ -252,7 +451,32 @@
     }
 
     .module-table-footer {
-        font-size: var(--footer-text-size);
+        @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-2;
+        font-size: var(--table-footer-text-size);
+    }
+
+    .pagination-size {
+        inline-size: var(--pagination-select-width);
+        min-block-size: var(--pagination-select-height);
+        padding-inline: 0.5rem;
+        font-size: inherit;
+    }
+
+    .pagination-button {
+        @apply inline-grid shrink-0 place-items-center rounded-full font-semibold tabular-nums disabled:opacity-50;
+        inline-size: var(--pagination-button-size);
+        block-size: var(--pagination-button-size);
+        background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+    }
+
+    .pagination-button:enabled:not([aria-current='page']):hover {
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    .pagination-button[aria-current='page'] {
+        background: var(--nav-brand-end);
+        color: var(--nav-ink);
     }
 
     .data-table thead {
@@ -277,10 +501,92 @@
         width: var(--table-action-width);
     }
 
+    .module-listing-table :is(th, td):first-child {
+        width: 1%;
+    }
+
+    .module-listing-table tbody tr:hover {
+        background: var(--surface-muted);
+    }
+
+    .module-listing-table tbody tr[data-selected] {
+        background: var(--primary-soft);
+    }
+
+    .module-listing-table thead th:first-child {
+        padding-block: 0;
+    }
+
+    .table-checkbox {
+        @apply relative inline-grid place-items-center align-middle;
+        inline-size: var(--table-checkbox-target);
+        block-size: var(--table-checkbox-target);
+    }
+
+    .table-checkbox-input {
+        @apply absolute inset-0 z-10 size-full cursor-pointer opacity-0;
+    }
+
+    .table-checkbox-mark {
+        @apply grid place-items-center rounded-sm border;
+        inline-size: var(--table-checkbox-size);
+        block-size: var(--table-checkbox-size);
+        border-color: color-mix(in srgb, var(--ink-muted) 65%, var(--line));
+    }
+
+    .table-checkbox-input:is(:checked, :indeterminate) + .table-checkbox-mark {
+        @apply border-primary bg-primary text-primary-ink;
+    }
+
+    .table-checkbox-input:checked + .table-checkbox-mark::after {
+        border: solid currentColor;
+        border-width: 0 0 1.5px 1.5px;
+        inline-size: 0.4375rem;
+        block-size: 0.25rem;
+        transform: translateY(-0.5px) rotate(-45deg);
+        content: '';
+    }
+
+    .table-checkbox-input:indeterminate + .table-checkbox-mark::after {
+        inline-size: 0.4375rem;
+        block-size: 1.5px;
+        background: currentColor;
+        content: '';
+    }
+
+    .table-checkbox-input:focus-visible + .table-checkbox-mark {
+        outline: var(--control-focus-width) solid var(--focus);
+        outline-offset: var(--control-focus-offset);
+    }
+
+    .table-action {
+        @apply inline-grid shrink-0 place-items-center rounded-control text-ink-muted hover:bg-surface-muted hover:text-ink;
+        inline-size: var(--table-action-size);
+        block-size: var(--table-action-size);
+    }
+
+    .table-action svg {
+        inline-size: var(--table-action-icon-size);
+        block-size: var(--table-action-icon-size);
+    }
+
+    .data-table-sort {
+        @apply inline-flex cursor-pointer items-center gap-1.5 rounded-sm hover:text-primary;
+        text-transform: inherit;
+    }
+
+    .data-table th[aria-sort] .data-table-sort {
+        color: var(--primary);
+    }
+
     .ui-button-icon {
-        @apply inline-grid place-items-center rounded-control border border-line bg-surface hover:bg-surface-muted;
+        @apply inline-grid place-items-center rounded-control border border-line bg-surface enabled:hover:bg-surface-muted disabled:opacity-50;
         width: var(--module-control-size);
         height: var(--module-control-size);
+    }
+
+    .ui-record-link {
+        @apply rounded-control text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
     }
 
     .ui-button {

@@ -4,6 +4,10 @@ import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import { useLocale } from '@/composables/useLocale';
 import { formatDate, formatMoney } from '@/lib/format';
+import {
+    invoiceTotal,
+    previewInvoices,
+} from '@/pages/billing/invoices/previewInvoices';
 
 const { locale, t } = useLocale();
 const columns = computed(() => [
@@ -13,35 +17,7 @@ const columns = computed(() => [
     { label: t('dashboard.due') },
     { label: t('dashboard.status') },
 ]);
-const rows = [
-    {
-        number: 'INV-2026-1042',
-        customer: 'Nusrat Jahan',
-        flat: 'Lake View · A-4B',
-        amount: 2450,
-        due: '2026-11-20',
-        status: 'dashboard.issued',
-        tone: 'info',
-    },
-    {
-        number: 'INV-2026-1041',
-        customer: 'Rahim Ahmed',
-        flat: 'Green Residency · B-3A',
-        amount: 3180,
-        due: '2026-11-20',
-        status: 'dashboard.part_paid',
-        tone: 'warning',
-    },
-    {
-        number: 'INV-2026-1040',
-        customer: 'Imran Kabir',
-        flat: 'Lake View · A-4C',
-        amount: 2120,
-        due: '2026-11-15',
-        status: 'dashboard.overdue',
-        tone: 'danger',
-    },
-] as const;
+const rows = computed(() => previewInvoices.value.slice(0, 3));
 </script>
 
 <template>
@@ -53,16 +29,23 @@ const rows = [
     >
         <template #default="{ row }">
             <th scope="row" class="text-start font-semibold whitespace-nowrap">
-                {{ row.number }}
+                <RouterLink
+                    :to="{
+                        name: 'customer-invoice',
+                        params: { number: row.number },
+                    }"
+                    class="ui-record-link"
+                    >{{ row.number }}</RouterLink
+                >
             </th>
             <td class="whitespace-nowrap">
                 {{ row.customer
                 }}<span class="mt-0.5 block text-ink-muted">{{
-                    row.flat
+                    row.building + ' · ' + row.flat
                 }}</span>
             </td>
             <td class="text-end whitespace-nowrap tabular-nums">
-                {{ formatMoney(row.amount, locale) }}
+                {{ formatMoney(invoiceTotal(row), locale) }}
             </td>
             <td class="whitespace-nowrap">
                 {{ formatDate(row.due, locale) }}
