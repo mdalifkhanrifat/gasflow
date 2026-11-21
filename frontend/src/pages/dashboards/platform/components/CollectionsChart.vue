@@ -44,7 +44,7 @@ const months = computed(() => {
                 </div>
             </div>
             <div
-                class="grid min-w-72 grid-cols-12 gap-2 px-1 pt-2 text-center text-[0.625rem] text-ink-muted"
+                class="grid min-w-72 grid-cols-12 gap-2 px-1 pt-2 text-center text-chart-label text-ink-muted"
             >
                 <span v-for="month in months" :key="month.label">{{
                     month.label

@@ -52,28 +52,25 @@ const rows = [
         :row-key="(row) => row.number"
     >
         <template #default="{ row }">
-            <th
-                scope="row"
-                class="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap"
-            >
+            <th scope="row" class="text-start font-semibold whitespace-nowrap">
                 {{ row.number }}
             </th>
-            <td class="px-3 py-3 text-xs whitespace-nowrap">
+            <td class="whitespace-nowrap">
                 {{ row.customer
                 }}<span class="mt-0.5 block text-ink-muted">{{
                     row.flat
                 }}</span>
             </td>
-            <td
-                class="px-3 py-3 text-right text-xs whitespace-nowrap tabular-nums"
-            >
+            <td class="text-end whitespace-nowrap tabular-nums">
                 {{ formatMoney(row.amount, locale) }}
             </td>
-            <td class="px-3 py-3 text-xs whitespace-nowrap">
+            <td class="whitespace-nowrap">
                 {{ formatDate(row.due, locale) }}
             </td>
-            <td class="px-3 py-3 whitespace-nowrap">
-                <StatusBadge :tone="row.tone">{{ t(row.status) }}</StatusBadge>
+            <td class="whitespace-nowrap">
+                <StatusBadge :tone="row.tone" compact>{{
+                    t(row.status)
+                }}</StatusBadge>
             </td>
         </template>
     </DataTable>

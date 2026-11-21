@@ -144,5 +144,18 @@
     "module.building_count": "ভবন",
     "module.action": "অ্যাকশন",
     "module.record_count": "{total}টির মধ্যে {visible}টি রেকর্ড দেখানো হচ্ছে · নমুনা ডাটা",
-    "module.export": "CSV ডাউনলোড"
+    "module.export": "CSV ডাউনলোড",
+    "cycle.description": "অনুমোদিত রিডিং ও হিসাব মেলানো থেকে বিল ইস্যু পর্যন্ত মাসিক কাজের ধাপ।",
+    "cycle.number": "চক্র",
+    "cycle.reading_period": "রিডিংয়ের সময়কাল",
+    "cycle.mode": "বিলিং পদ্ধতি",
+    "cycle.readings": "রিডিং",
+    "cycle.internal": "অভ্যন্তরীণ বণ্টন",
+    "cycle.authorized": "অনুমোদিত বিলিং",
+    "cycle.pending_review": "পর্যালোচনার অপেক্ষায়",
+    "cycle.accepted": "গৃহীত",
+    "cycle.exception": "গরমিল",
+    "cycle.review": "পর্যালোচনা",
+    "cycle.blocked": "আটকে আছে",
+    "navigation.menu_preview": "সাইডবারে দেখুন"
 }

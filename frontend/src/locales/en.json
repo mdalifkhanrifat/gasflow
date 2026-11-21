@@ -144,5 +144,18 @@
     "module.building_count": "Buildings",
     "module.action": "Action",
     "module.record_count": "Showing {visible} of {total} records · Demo dataset",
-    "module.export": "Export CSV"
+    "module.export": "Export CSV",
+    "cycle.description": "Run the monthly workflow from approved readings and reconciliation through invoice issue.",
+    "cycle.number": "Cycle",
+    "cycle.reading_period": "Reading period",
+    "cycle.mode": "Billing mode",
+    "cycle.readings": "Readings",
+    "cycle.internal": "Internal allocation",
+    "cycle.authorized": "Authorized billing",
+    "cycle.pending_review": "Pending review",
+    "cycle.accepted": "Accepted",
+    "cycle.exception": "Exception",
+    "cycle.review": "Review",
+    "cycle.blocked": "Blocked",
+    "navigation.menu_preview": "Show in sidebar"
 }

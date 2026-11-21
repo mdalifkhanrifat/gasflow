@@ -7,6 +7,7 @@ export const dashboardNavigationItem = {
 export const navigation = [
     {
         label: 'navigation.platform',
+        icon: '▦',
         items: [
             {
                 label: 'navigation.organizations',
@@ -22,6 +23,7 @@ export const navigation = [
     },
     {
         label: 'navigation.operations',
+        icon: '⌂',
         items: [
             { label: 'navigation.setup', icon: '⚙' },
             { label: 'navigation.buildings', icon: '⌂' },
@@ -34,10 +36,11 @@ export const navigation = [
     },
     {
         label: 'navigation.billing',
+        icon: '৳',
         items: [
             { label: 'navigation.supply', icon: '♨' },
             { label: 'navigation.tariffs', icon: '৳' },
-            { label: 'navigation.cycles', icon: '▤' },
+            { label: 'navigation.cycles', icon: '▤', route: 'billing-cycles' },
             {
                 label: 'navigation.invoices',
                 icon: '▧',
@@ -51,6 +54,7 @@ export const navigation = [
     },
     {
         label: 'navigation.customer_experience',
+        icon: '♧',
         items: [
             { label: 'navigation.portal', icon: '♧' },
             { label: 'navigation.notifications', icon: '✉' },
@@ -58,6 +62,7 @@ export const navigation = [
     },
     {
         label: 'navigation.insights',
+        icon: '▥',
         items: [
             { label: 'navigation.reports', icon: '▥' },
             { label: 'navigation.integrations', icon: '⌘' },
@@ -67,9 +72,19 @@ export const navigation = [
     },
 ] as const;
 
-export const searchableNavigation = [
+export interface SearchEntry {
+    label:
+        | (typeof navigation)[number]['items'][number]['label']
+        | typeof dashboardNavigationItem.label
+        | 'profile.title';
+    route?: string;
+    group?: (typeof navigation)[number]['label'];
+}
+
+export const searchableNavigation: readonly SearchEntry[] = [
     dashboardNavigationItem,
-    ...navigation
-        .flatMap((group) => [...group.items])
-        .filter((item) => 'route' in item),
+    ...navigation.flatMap((group) =>
+        group.items.map((item) => ({ ...item, group: group.label })),
+    ),
+    { label: 'profile.title', route: 'account-profile' },
 ];

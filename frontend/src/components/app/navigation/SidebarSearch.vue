@@ -2,10 +2,10 @@
 import { computed, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import UiInput from '@/components/ui/UiInput.vue';
-import { useLocale } from '@/composables/useLocale';
-import { searchableNavigation } from '@/config/navigation';
+import { locales, useLocale } from '@/composables/useLocale';
+import { searchableNavigation, type SearchEntry } from '@/config/navigation';
 
-const emit = defineEmits<{ navigate: [] }>();
+const emit = defineEmits<{ navigate: []; reveal: [entry: SearchEntry] }>();
 const input = useTemplateRef('input');
 defineExpose({ focus: () => input.value?.focus() });
 
@@ -13,24 +13,47 @@ const { t } = useLocale();
 const router = useRouter();
 const query = ref('');
 const focused = ref(false);
-const invoiceQuery = computed(() => /^inv-/i.test(query.value.trim()));
-const matches = computed(() => {
-    const value = query.value.trim().toLocaleLowerCase();
-    return searchableNavigation.filter((entry) =>
-        invoiceQuery.value
-            ? entry.route === 'customer-invoices'
-            : t(entry.label).toLocaleLowerCase().includes(value),
-    );
+const term = computed(() => query.value.trim().replace(/\s+/g, ' '));
+const recordRoute = computed(() => {
+    if (/^bc-/i.test(term.value)) {
+        return 'billing-cycles';
+    }
+    if (/^(?:inv-|[0-9]{4}$)/i.test(term.value)) {
+        return 'customer-invoices';
+    }
+    return undefined;
 });
-const visible = computed(() => focused.value && !!query.value.trim());
+const normalize = (value: string) => value.normalize().toLocaleLowerCase();
+const matches = computed(() => {
+    if (recordRoute.value) {
+        return searchableNavigation.filter(
+            (entry) => entry.route === recordRoute.value,
+        );
+    }
+
+    const value = normalize(term.value);
+    const exact: SearchEntry[] = [];
+    const partial: SearchEntry[] = [];
+
+    for (const entry of searchableNavigation) {
+        const labels = locales.map((language) =>
+            normalize(t(entry.label, language)),
+        );
+        if (labels.includes(value)) {
+            exact.push(entry);
+        } else if (labels.some((label) => label.includes(value))) {
+            partial.push(entry);
+        }
+    }
+
+    return [...exact, ...partial];
+});
+const visible = computed(() => focused.value && !!term.value);
 
 function destination(name: string) {
     return {
         name,
-        query:
-            invoiceQuery.value && name === 'customer-invoices'
-                ? { q: query.value.trim() }
-                : {},
+        query: name === recordRoute.value ? { q: term.value } : {},
     };
 }
 
@@ -42,6 +65,11 @@ function clearSearch(): void {
 function followLink(): void {
     clearSearch();
     emit('navigate');
+}
+
+function reveal(entry: SearchEntry): void {
+    clearSearch();
+    emit('reveal', entry);
 }
 
 function onBlur(event: FocusEvent): void {
@@ -56,9 +84,11 @@ function onBlur(event: FocusEvent): void {
 
 function submit(): void {
     const match = matches.value[0];
-    if (match) {
+    if (match?.route) {
         void router.push(destination(match.route));
         followLink();
+    } else if (match) {
+        reveal(match);
     }
 }
 </script>
@@ -72,37 +102,56 @@ function submit(): void {
         @keydown.esc.stop="focused = false"
         @submit.prevent="submit"
     >
-        <label class="relative block">
-            <span class="sr-only">{{ t('topbar.search') }}</span>
-            <span
-                class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-base text-nav-muted"
-                aria-hidden="true"
-                >⌕</span
+        <div class="relative">
+            <label class="block">
+                <span class="sr-only">{{ t('topbar.search') }}</span>
+                <UiInput
+                    ref="input"
+                    v-model="query"
+                    type="search"
+                    autocomplete="off"
+                    :placeholder="t('topbar.search')"
+                    class="ui-control-sidebar w-full pl-7"
+                    @input="focused = true"
+                />
+            </label>
+            <button
+                type="submit"
+                :aria-label="t('topbar.search')"
+                :title="t('topbar.search')"
+                class="absolute inset-y-0 left-0 grid w-7 place-items-center rounded-control text-base text-nav-muted hover:text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus"
             >
-            <UiInput
-                ref="input"
-                v-model="query"
-                type="search"
-                autocomplete="off"
-                :placeholder="t('topbar.search')"
-                class="ui-control-sidebar w-full pl-7"
-                @input="focused = true"
-            />
-        </label>
+                <span aria-hidden="true">⌕</span>
+            </button>
+        </div>
         <div
             v-if="visible"
             class="mt-1 rounded-control border border-nav-line bg-nav-workspace p-1 text-xs text-nav-ink"
         >
-            <RouterLink
-                v-for="entry in matches"
-                :key="entry.route"
-                :to="destination(entry.route)"
-                class="block rounded-control px-2.5 py-2 hover:bg-nav-hover focus-visible:outline-2 focus-visible:outline-nav-focus"
-                @click="followLink"
-            >
-                {{ t(entry.label)
-                }}<template v-if="invoiceQuery"> · {{ query }}</template>
-            </RouterLink>
+            <template v-for="entry in matches" :key="entry.label">
+                <RouterLink
+                    v-if="entry.route"
+                    :to="destination(entry.route)"
+                    class="block rounded-control px-2.5 py-2 hover:bg-nav-hover focus-visible:outline-2 focus-visible:outline-nav-focus"
+                    @mousedown.prevent
+                    @click="followLink"
+                >
+                    {{ t(entry.label)
+                    }}<template v-if="recordRoute"> · {{ term }}</template>
+                </RouterLink>
+                <button
+                    v-else
+                    type="button"
+                    class="block w-full rounded-control px-2.5 py-2 text-start hover:bg-nav-hover focus-visible:outline-2 focus-visible:outline-nav-focus"
+                    @mousedown.prevent
+                    @click="reveal(entry)"
+                >
+                    {{ t(entry.label) }}
+                    <span class="block text-nav-muted">{{
+                        t('navigation.menu_preview')
+                    }}</span>
+                </button>
+            </template>
             <p v-if="!matches.length" class="p-2 text-nav-muted">
                 {{ t('module.empty') }}
             </p>

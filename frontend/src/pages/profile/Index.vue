@@ -14,7 +14,7 @@ watchEffect(() => {
 <template>
     <AppShell :page-label="t('profile.title')">
         <div class="grid max-w-xl gap-4">
-            <h1 class="text-2xl font-bold text-ink">
+            <h1 class="text-page-title font-bold text-ink">
                 {{ t('profile.title') }}
             </h1>
             <DashboardPanel

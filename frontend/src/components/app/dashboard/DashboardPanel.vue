@@ -10,8 +10,13 @@ defineProps<{ title: string; subtitle?: string }>();
             class="flex flex-wrap items-start justify-between gap-2 px-4 pt-4 pb-3"
         >
             <div>
-                <h2 class="text-sm font-semibold text-ink">{{ title }}</h2>
-                <p v-if="subtitle" class="mt-0.5 text-xs text-ink-muted">
+                <h2 class="text-panel-title font-semibold text-ink">
+                    {{ title }}
+                </h2>
+                <p
+                    v-if="subtitle"
+                    class="mt-0.5 text-panel-subtitle text-ink-muted"
+                >
                     {{ subtitle }}
                 </p>
             </div>

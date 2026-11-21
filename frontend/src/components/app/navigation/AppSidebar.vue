@@ -1,14 +1,69 @@
+<script lang="ts">
+import { ref } from 'vue';
+
+const expanded = ref(new Set<string>(['navigation.platform']));
+</script>
+
 <script setup lang="ts">
-import { useTemplateRef } from 'vue';
+import { computed, nextTick, useId, useTemplateRef, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import SidebarSearch from '@/components/app/navigation/SidebarSearch.vue';
 import { useLocale } from '@/composables/useLocale';
-import { dashboardNavigationItem, navigation } from '@/config/navigation';
+import {
+    dashboardNavigationItem,
+    navigation,
+    type SearchEntry,
+} from '@/config/navigation';
 
 defineProps<{ workspace: string; compact?: boolean }>();
 const { t } = useLocale();
 const emit = defineEmits<{ navigate: []; profile: []; expandSearch: [] }>();
 const search = useTemplateRef('sidebarSearch');
+const sidebarNav = useTemplateRef<HTMLElement>('sidebarNav');
 defineExpose({ focusSearch: () => search.value?.focus() });
+
+const route = useRoute();
+const sidebarId = useId();
+const activeGroup = computed(
+    () =>
+        navigation.find((group) =>
+            group.items.some(
+                (item) => 'route' in item && item.route === route.name,
+            ),
+        )?.label,
+);
+
+watch(
+    activeGroup,
+    (group) => {
+        if (group) {
+            expanded.value.add(group);
+        }
+    },
+    { immediate: true },
+);
+
+function toggleGroup(group: string): void {
+    if (expanded.value.has(group)) {
+        expanded.value.delete(group);
+    } else {
+        expanded.value.add(group);
+    }
+}
+
+async function revealSearchItem(entry: SearchEntry): Promise<void> {
+    if (!entry.group) {
+        return;
+    }
+
+    expanded.value.add(entry.group);
+    await nextTick();
+    const item = sidebarNav.value?.querySelector<HTMLElement>(
+        `[data-menu-item="${entry.label}"]`,
+    );
+    item?.focus({ preventScroll: true });
+    item?.scrollIntoView({ block: 'nearest' });
+}
 </script>
 
 <template>
@@ -38,6 +93,7 @@ defineExpose({ focusSearch: () => search.value?.focus() });
             <p class="mt-0.5 text-sm font-semibold">{{ workspace }}</p>
         </div>
         <nav
+            ref="sidebarNav"
             :aria-label="t('navigation.main')"
             class="sidebar-scroll min-h-0 grow overflow-x-hidden overflow-y-auto px-3 pb-3"
         >
@@ -69,16 +125,49 @@ defineExpose({ focusSearch: () => search.value?.focus() });
                 v-else
                 ref="sidebarSearch"
                 @navigate="emit('navigate')"
+                @reveal="revealSearchItem"
             />
             <section
-                v-for="group in navigation"
+                v-for="(group, index) in navigation"
                 :key="group.label"
                 class="sidebar-group"
             >
-                <h2 :class="compact ? 'sr-only' : 'sidebar-group-label'">
-                    {{ t(group.label) }}
+                <h2>
+                    <button
+                        type="button"
+                        class="sidebar-item sidebar-group-trigger"
+                        :class="{
+                            'sidebar-group-current':
+                                activeGroup === group.label,
+                        }"
+                        :aria-expanded="expanded.has(group.label)"
+                        :aria-controls="`${sidebarId}-group-${index}`"
+                        :title="compact ? t(group.label) : undefined"
+                        @click="toggleGroup(group.label)"
+                    >
+                        <span class="sidebar-icon" aria-hidden="true">{{
+                            group.icon
+                        }}</span>
+                        <span :class="{ 'sr-only': compact }">{{
+                            t(group.label)
+                        }}</span>
+                        <span
+                            v-if="!compact"
+                            aria-hidden="true"
+                            class="sidebar-group-chevron"
+                            :class="{
+                                'sidebar-group-chevron-open': expanded.has(
+                                    group.label,
+                                ),
+                            }"
+                        ></span>
+                    </button>
                 </h2>
-                <ul class="grid gap-0.5">
+                <ul
+                    v-show="expanded.has(group.label)"
+                    :id="`${sidebarId}-group-${index}`"
+                    class="sidebar-submenu grid gap-0.5"
+                >
                     <li v-for="item in group.items" :key="item.label">
                         <RouterLink
                             v-if="'route' in item"
@@ -98,6 +187,8 @@ defineExpose({ focusSearch: () => search.value?.focus() });
                         <span
                             v-else
                             class="sidebar-item"
+                            tabindex="-1"
+                            :data-menu-item="item.label"
                             :title="compact ? t(item.label) : undefined"
                         >
                             <span class="sidebar-icon" aria-hidden="true">{{
@@ -121,7 +212,7 @@ defineExpose({ focusSearch: () => search.value?.focus() });
             >
             <div v-if="!compact">
                 <p class="text-xs font-semibold">{{ t('navigation.admin') }}</p>
-                <p class="text-xs text-nav-muted">
+                <p class="text-footer text-nav-muted">
                     {{ t('navigation.platform_admin') }}
                 </p>
             </div>

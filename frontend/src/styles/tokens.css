@@ -6,11 +6,47 @@
     --table-head: #fafbfd;
     --table-ink: #43516a;
     --table-line: #eff2f6;
+
+    /* Typography */
+    --ui-font-sans:
+        Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --text-small: 0.75rem;
+    --text-body: 0.875rem;
+    --text-standard: 1rem;
+    --text-large: 1.125rem;
+    --text-extra-large: 1.25rem;
+    --page-title-size: 1.5rem;
+    --page-title-leading: 1.2;
+    --page-eyebrow-size: 0.625rem;
+    --page-subtitle-size: 0.6875rem;
+    --panel-title-size: 0.75rem;
+    --panel-subtitle-size: 0.625rem;
+    --kpi-label-size: 0.625rem;
+    --kpi-value-size: 1.4375rem;
+    --kpi-note-size: 0.5625rem;
+    --table-type-size: 0.625rem;
+    --table-head-size: 0.5625rem;
+    --footer-text-size: 0.5625rem;
+    --control-text-size: 0.875rem;
+    --topbar-control-text-size: 0.6875rem;
+    --field-label-size: 0.75rem;
+    --output-text-size: var(--control-text-size);
+    --button-text-size: 0.75rem;
+    --compact-control-text-size: 0.625rem;
+    --nav-item-text-size: 0.75rem;
+    --chart-label-size: 0.625rem;
+    --status-compact-size: 0.5625rem;
+
+    /* Control and table dimensions */
     --table-padding-inline: 0.8125rem;
     --table-padding-block: 0.625rem;
-    --table-type-size: 0.6875rem;
-    --table-head-size: 0.625rem;
+    --table-action-width: 6.75rem;
+    --control-padding-inline: 0.75rem;
+    --control-focus-width: 2px;
+    --control-focus-offset: 2px;
     --module-control-size: 2.125rem;
+
+    /* Palette and surfaces */
     --ink: #17243b;
     --ink-muted: #53647e;
     --line: #d9e1ee;
@@ -58,6 +94,10 @@
     --sidebar-tablet-width: 14.375rem;
     --sidebar-drawer-width: 16.875rem;
     --sidebar-rail-width: 4.75rem;
+}
+
+:root:lang(bn) {
+    --ui-font-sans: 'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif;
 }
 
 .dark {

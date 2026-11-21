@@ -14,6 +14,11 @@ export default createRouter({
             component: () => import('@/pages/organizations/Index.vue'),
         },
         {
+            path: '/billing/cycles',
+            name: 'billing-cycles',
+            component: () => import('@/pages/billing/cycles/Index.vue'),
+        },
+        {
             path: '/billing/invoices',
             name: 'customer-invoices',
             component: () => import('@/pages/billing/invoices/Index.vue'),

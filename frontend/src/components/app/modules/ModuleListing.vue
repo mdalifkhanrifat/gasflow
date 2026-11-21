@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
@@ -12,6 +13,7 @@ import { downloadCsv } from '@/lib/downloadCsv';
 import { formatNumber } from '@/lib/format';
 
 interface RecordRow {
+    key?: string;
     cells: readonly string[];
     statusCode: string;
     status: string;
@@ -80,17 +82,11 @@ function openRecord(row: RecordRow): void {
 <template>
     <AppShell :page-label="title">
         <div class="grid min-w-0 gap-3.5">
-            <header>
-                <p
-                    class="text-xs font-bold tracking-wide text-primary uppercase"
-                >
-                    {{ t('navigation.workspace_label') }} / {{ title }}
-                </p>
-                <h1 class="mt-1 text-2xl font-bold tracking-tight text-ink">
-                    {{ title }}
-                </h1>
-                <p class="mt-1 text-xs text-ink-muted">{{ description }}</p>
-            </header>
+            <PageHeading
+                :title="title"
+                :eyebrow="t('navigation.workspace_label') + ' / ' + title"
+                :description="description"
+            />
 
             <div class="flex flex-wrap items-center gap-2 pt-0.5">
                 <label class="relative min-w-40">
@@ -138,10 +134,10 @@ function openRecord(row: RecordRow): void {
                 <DataTable
                     v-if="visibleRows.length"
                     :label="title"
-                    density="compact"
+                    edge="top"
                     :columns="columns"
                     :rows="visibleRows"
-                    :row-key="(row) => row.cells[0] ?? ''"
+                    :row-key="(row) => row.key ?? row.cells[0] ?? ''"
                 >
                     <template #default="{ row }">
                         <th
@@ -195,13 +191,15 @@ function openRecord(row: RecordRow): void {
         >
             <dl v-if="selected" class="grid gap-3 sm:grid-cols-2">
                 <div v-for="(column, index) in props.columns" :key="column">
-                    <dt class="text-xs text-ink-muted">{{ column }}</dt>
-                    <dd class="text-sm font-medium text-ink">
+                    <dt class="text-field-label text-ink-muted">
+                        {{ column }}
+                    </dt>
+                    <dd class="text-field-output font-medium text-ink">
                         {{ selected.cells[index] }}
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-ink-muted">
+                    <dt class="text-field-label text-ink-muted">
                         {{ t('module.status') }}
                     </dt>
                     <dd>

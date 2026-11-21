@@ -2,6 +2,7 @@
 import { ref, useTemplateRef, watchEffect } from 'vue';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import StatCard from '@/components/app/dashboard/StatCard.vue';
+import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import UiInput from '@/components/ui/UiInput.vue';
@@ -88,20 +89,11 @@ function savePreview(): void {
 <template>
     <AppShell :page-label="t('navigation.dashboard')">
         <div class="grid gap-3.5">
-            <header class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <p
-                        class="text-xs font-bold tracking-wide text-primary uppercase"
-                    >
-                        {{ t('dashboard.overview') }}
-                    </p>
-                    <h1 class="mt-1 text-2xl font-bold tracking-tight text-ink">
-                        {{ t('dashboard.title') }}
-                    </h1>
-                    <p class="mt-1 text-xs text-ink-muted">
-                        {{ t('dashboard.description') }}
-                    </p>
-                </div>
+            <PageHeading
+                :title="t('dashboard.title')"
+                :eyebrow="t('dashboard.overview')"
+                :description="t('dashboard.description')"
+            >
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="ui-button">{{
                         t('dashboard.current_period')
@@ -115,7 +107,7 @@ function savePreview(): void {
                         >{{ t('dashboard.create_cycle') }}
                     </button>
                 </div>
-            </header>
+            </PageHeading>
 
             <p
                 v-if="previewSaved"
@@ -192,7 +184,7 @@ function savePreview(): void {
                     >
                         <span
                             aria-hidden="true"
-                            class="grid size-4 place-items-center rounded-full border border-line text-[0.625rem]"
+                            class="grid size-4 place-items-center rounded-full border border-line text-chart-label"
                             >{{ formatNumber(index + 1, locale) }}</span
                         >
                         {{ t(step.label) }}
@@ -251,7 +243,9 @@ function savePreview(): void {
                     </ul>
                 </DashboardPanel>
             </div>
-            <p class="text-xs text-ink-muted">{{ t('dashboard.preview') }}</p>
+            <p class="text-footer text-ink-muted">
+                {{ t('dashboard.preview') }}
+            </p>
         </div>
 
         <FormDialog
@@ -261,7 +255,7 @@ function savePreview(): void {
             :description="t('dashboard.cycle_preview')"
         >
             <form class="grid gap-4" @submit.prevent="savePreview">
-                <label class="grid gap-1 text-sm">
+                <label class="grid gap-1 text-field-label">
                     {{ t('dashboard.billing_month') }}
                     <UiInput
                         v-model="cycleMonth"

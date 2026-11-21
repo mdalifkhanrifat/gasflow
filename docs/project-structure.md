@@ -525,6 +525,13 @@ and downloads. The shared styles in `styles/app.css` own the control borders,
 spacing, focus, disabled state and touch sizing. Module pages select an
 existing variant and own their data, validation, labels and layout.
 
+Change shared font families and sizes in the Typography section of
+`frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
+and supporting copy. Module and dashboard tables share `DataTable` for cell
+typography and padding. The table record-count footer, dashboard sample note
+and sidebar footer note use `--footer-text-size`. Form labels and read-only
+field values have their own tokens next to the input and button sizes.
+
 ## Tests
 
 ```text

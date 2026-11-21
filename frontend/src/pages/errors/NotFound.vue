@@ -10,7 +10,7 @@ watchEffect(() => {
 
 <template>
     <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-semibold text-ink">
+        <h1 class="text-page-title font-bold text-ink">
             {{ t('errors.not_found') }}
         </h1>
         <RouterLink

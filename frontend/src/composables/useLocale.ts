@@ -52,8 +52,8 @@ async function setLocale(value: string): Promise<void> {
     applyResponse(await writeJson('/api/v1/locale', { locale: value }));
 }
 
-function t(key: MessageKey): string {
-    return dictionaries[locale.value][key];
+function t(key: MessageKey, language: Locale = locale.value): string {
+    return dictionaries[language][key];
 }
 
 export function useLocale() {
