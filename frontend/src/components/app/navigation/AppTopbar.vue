@@ -55,9 +55,7 @@ defineExpose({ openProfile });
                     <span aria-hidden="true">☰</span>
                 </button>
                 <p class="min-w-0 truncate text-xs font-semibold text-ink">
-                    <span class="hidden font-normal text-ink-muted lg:inline"
-                        >{{ t('navigation.workspace_label') }} / </span
-                    >{{ pageLabel }}
+                    {{ pageLabel }}
                 </p>
             </div>
 

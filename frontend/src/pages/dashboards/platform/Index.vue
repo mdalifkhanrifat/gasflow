@@ -89,24 +89,15 @@ function savePreview(): void {
 <template>
     <AppShell :page-label="t('navigation.dashboard')">
         <div class="grid gap-3.5">
-            <PageHeading
-                :title="t('dashboard.title')"
-                :eyebrow="t('dashboard.overview')"
-                :description="t('dashboard.description')"
-            >
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="ui-button">{{
-                        t('dashboard.current_period')
-                    }}</span>
-                    <button
-                        type="button"
-                        class="ui-button ui-button-primary"
-                        @click="cycleDialog?.open()"
-                    >
-                        <span aria-hidden="true">+</span
-                        >{{ t('dashboard.create_cycle') }}
-                    </button>
-                </div>
+            <PageHeading :title="t('dashboard.title')">
+                <button
+                    type="button"
+                    class="ui-button ui-button-primary self-center"
+                    @click="cycleDialog?.open()"
+                >
+                    <span aria-hidden="true">+</span
+                    >{{ t('dashboard.create_cycle') }}
+                </button>
             </PageHeading>
 
             <p
