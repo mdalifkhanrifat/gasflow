@@ -19,6 +19,7 @@ function changeTheme(value: string): void {
     <label class="grid gap-1.5 text-field-label font-medium text-ink">
         {{ t('preferences.theme') }}
         <NativeSelect
+            class="min-w-0"
             :model-value="preference"
             @update:model-value="changeTheme"
         >

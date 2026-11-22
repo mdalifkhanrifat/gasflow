@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useId, useTemplateRef } from 'vue';
+import AdminAppearance from '@/components/app/navigation/AdminAppearance.vue';
 import LanguageSwitcher from '@/components/app/navigation/LanguageSwitcher.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -93,7 +94,7 @@ defineExpose({ openProfile });
                 </label>
                 <button
                     type="button"
-                    class="topbar-icon text-base"
+                    class="topbar-theme topbar-icon text-base"
                     :aria-label="
                         t(isDark ? 'topbar.use_light' : 'topbar.use_dark')
                     "
@@ -102,6 +103,7 @@ defineExpose({ openProfile });
                 >
                     <span aria-hidden="true">{{ isDark ? '☀' : '☾' }}</span>
                 </button>
+                <AdminAppearance />
                 <LanguageSwitcher />
                 <button
                     type="button"

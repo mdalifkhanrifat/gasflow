@@ -8,10 +8,13 @@ const desktopOpen = ref(true);
 import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import AppSidebar from '@/components/app/navigation/AppSidebar.vue';
 import AppTopbar from '@/components/app/navigation/AppTopbar.vue';
+import { useAdminAppearance } from '@/composables/useAdminAppearance';
 import { useLocale } from '@/composables/useLocale';
 import { usePreviewWorkspace } from '@/composables/usePreviewWorkspace';
 
 const { t } = useLocale();
+const { accent, background, heading, tableText, sidebarText } =
+    useAdminAppearance();
 const copyrightYear = String(new Date().getFullYear());
 defineProps<{ pageLabel: string }>();
 const { workspace } = usePreviewWorkspace();
@@ -52,10 +55,17 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
 </script>
 
 <template>
-    <div class="relative isolate min-h-dvh md:flex print:block print:min-h-0">
+    <div
+        class="relative isolate min-h-dvh md:flex print:block print:min-h-0"
+        :data-admin-accent="accent"
+        :data-heading-size="heading"
+        :data-table-text="tableText"
+        :data-sidebar-text="sidebarText"
+    >
         <div
             aria-hidden="true"
             class="public-stage shell-backdrop pointer-events-none absolute inset-0 -z-10 print:hidden"
+            :data-background-preset="background"
         ></div>
         <aside
             id="desktop-navigation"

@@ -1,4 +1,6 @@
+/* Shared defaults. See app.css for the component rules that use these tokens. */
 :root {
+    /* Light surfaces and table colors. */
     color-scheme: light;
     --background: #f4f6fb;
     --surface: #ffffff;
@@ -7,7 +9,7 @@
     --table-ink: #43516a;
     --table-line: #eff2f6;
 
-    /* Typography */
+    /* Base font family and text scale. */
     --ui-font-sans:
         Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     --text-small: 0.75rem;
@@ -15,6 +17,8 @@
     --text-standard: 1rem;
     --text-large: 1.125rem;
     --text-extra-large: 1.25rem;
+
+    /* Page headings, brand wordmark, and service pages. */
     --page-title-size: 1.5rem;
     --marketing-title-size: clamp(1.875rem, 4.25vw, 3rem);
     --marketing-title-leading: 1.12;
@@ -25,26 +29,36 @@
     --page-title-leading: 1.2;
     --page-eyebrow-size: 0.625rem;
     --page-subtitle-size: 0.6875rem;
+
+    /* Dashboard panel titles and KPI cards. */
     --panel-title-size: 0.75rem;
     --panel-subtitle-size: 0.625rem;
     --kpi-label-size: 0.625rem;
     --kpi-value-size: 1.4375rem;
     --kpi-note-size: 0.5625rem;
-    --table-type-size: 0.625rem;
-    --table-head-size: 0.5625rem;
+
+    /* Table body, headers, pagination, and the shared footer. */
+    --table-type-size: 0.75rem;
+    --table-head-size: 0.6875rem;
     --footer-text-size: 0.5625rem;
     --table-footer-text-size: calc(var(--footer-text-size) + 0.125rem);
+
+    /* Inputs, selects, field labels and outputs, and action buttons. */
     --control-text-size: 0.875rem;
     --topbar-control-text-size: 0.6875rem;
     --field-label-size: 0.75rem;
     --output-text-size: var(--control-text-size);
     --button-text-size: 0.75rem;
     --compact-control-text-size: 0.625rem;
+
+    /* Sidebar menu labels and search field defaults. */
     --nav-item-text-size: 0.75rem;
+
+    /* Chart labels and compact status badges. */
     --chart-label-size: 0.625rem;
     --status-compact-size: 0.5625rem;
 
-    /* Control and table dimensions */
+    /* Table cells, row action icons, and selection checkboxes. */
     --table-padding-inline: 0.8125rem;
     --table-padding-block: 0.625rem;
     --table-action-size: 1.875rem;
@@ -54,6 +68,8 @@
     );
     --table-checkbox-size: 0.8125rem;
     --table-checkbox-target: 1.5rem;
+
+    /* Form controls, focus rings, list filters, and pagination. */
     --control-padding-inline: 0.75rem;
     --control-focus-width: 2px;
     --control-focus-offset: 2px;
@@ -62,7 +78,7 @@
     --pagination-select-height: 1.75rem;
     --pagination-select-width: 3.625rem;
 
-    /* Palette and surfaces */
+    /* Main text, borders, and sidebar palette. */
     --ink: #17243b;
     --ink-muted: #53647e;
     --line: #d9e1ee;
@@ -80,6 +96,8 @@
     --nav-brand-start: #6b9aff;
     --nav-brand-end: #2e5de4;
     --nav-focus: #a0b8ff;
+
+    /* Modal backdrop, accents, status colors, and charts. */
     --overlay: rgb(10 16 29 / 65%);
     --primary: #2d58d0;
     --primary-ink: #ffffff;
@@ -96,10 +114,14 @@
     --chart-warning: #e9aa45;
     --chart-neutral: #e8edf4;
     --focus: #416ff0;
+
+    /* Default blue and teal backdrop for public pages and the admin shell. */
     --public-background: #f7faff;
-    --public-glow-blue: #d0e2ff;
-    --public-glow-teal: #d2f1ec;
+    --public-glow-start: #d0e2ff;
+    --public-glow-end: #d2f1ec;
     --public-dot: rgb(51 91 159 / 23%);
+
+    /* GasFlow wordmark gradients. */
     --brand-gradient-light: linear-gradient(
         90deg,
         #163972,
@@ -115,6 +137,8 @@
         #f1c3a3
     );
     --brand-wordmark-fill: var(--brand-gradient-light);
+
+    /* Error and maintenance screen palette. */
     --service-background: #090c19;
     --service-halo: #121a35;
     --service-ink: #f5f7ff;
@@ -123,26 +147,34 @@
     --service-action-start: #b51e5a;
     --service-action-end: #3854cb;
     --service-button-line: #4a5673;
+
+    /* Shared control and panel shapes used by cards, menus, and dialogs. */
     --control-radius: 0.5rem;
     --panel-radius: 0.875rem;
     --panel-shadow: 0 8px 26px rgb(23 36 59 / 6%);
     --density-row-height: 3rem;
     --density-control-height: 2.5rem;
+
+    /* Content gutters and admin topbar dimensions. */
     --shell-gutter: 1rem;
     --topbar-height: 4.125rem;
     --topbar-control-size: 2.125rem;
     --topbar-avatar-size: 1.9375rem;
     --topbar-shadow: 0 2px 10px rgb(20 35 60 / 2.5%);
+
+    /* Expanded, tablet, drawer, and collapsed sidebar widths. */
     --sidebar-width: 16.5rem;
     --sidebar-tablet-width: 14.375rem;
     --sidebar-drawer-width: 16.875rem;
     --sidebar-rail-width: 4.75rem;
 }
 
+/* Bengali typeface. */
 :root:lang(bn) {
     --ui-font-sans: 'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Dark mode equivalents for the shared palette. */
 .dark {
     color-scheme: dark;
     --background: #0d1422;
@@ -171,18 +203,137 @@
     --chart-neutral: #44536c;
     --focus: #a0b8ff;
     --public-background: #0b1323;
-    --public-glow-blue: #233d72;
-    --public-glow-teal: #153f4e;
+    --public-glow-start: #233d72;
+    --public-glow-end: #153f4e;
     --public-dot: rgb(135 178 255 / 34%);
     --brand-wordmark-fill: var(--brand-gradient-dark);
     --panel-shadow: 0 8px 26px rgb(0 0 0 / 22%);
 }
 
+/* Compact row and control heights. Touch rules below take precedence. */
 .density-compact {
     --density-row-height: 2.5rem;
     --density-control-height: 2.25rem;
 }
 
+@media screen {
+    /* Appearance backdrop options. Blue and teal use the root defaults. */
+    [data-background-preset='violet-rose'] {
+        --public-background: #fbf8ff;
+        --public-glow-start: #e8daff;
+        --public-glow-end: #f8ddeb;
+        --public-dot: rgb(105 76 152 / 22%);
+    }
+
+    .dark [data-background-preset='violet-rose'] {
+        --public-background: #161225;
+        --public-glow-start: #382665;
+        --public-glow-end: #512b49;
+        --public-dot: rgb(205 175 255 / 32%);
+    }
+
+    [data-background-preset='green-mint'] {
+        --public-background: #f6fbf8;
+        --public-glow-start: #cdebdc;
+        --public-glow-end: #bde9e2;
+        --public-dot: rgb(28 105 85 / 21%);
+    }
+
+    .dark [data-background-preset='green-mint'] {
+        --public-background: #0c1916;
+        --public-glow-start: #1e4538;
+        --public-glow-end: #1d4b45;
+        --public-dot: rgb(144 221 187 / 30%);
+    }
+
+    [data-background-preset='peach-amber'] {
+        --public-background: #fffbf6;
+        --public-glow-start: #ffe1ca;
+        --public-glow-end: #ffeab8;
+        --public-dot: rgb(153 89 48 / 22%);
+    }
+
+    .dark [data-background-preset='peach-amber'] {
+        --public-background: #211919;
+        --public-glow-start: #5a3427;
+        --public-glow-end: #42402c;
+        --public-dot: rgb(255 198 142 / 32%);
+    }
+
+    /* Appearance accents for buttons, active menus, focus rings, and charts. */
+    [data-admin-accent='teal'] {
+        --primary: #0b746b;
+        --primary-soft: #e8f6f3;
+        --focus: #087e75;
+        --nav-active: #1b5350;
+        --nav-accent: #8ce0d2;
+        --nav-brand-end: #0b746b;
+        --chart-primary: #128d80;
+        --chart-secondary: #a6d7cc;
+    }
+
+    .dark [data-admin-accent='teal'] {
+        --primary: #80dbc9;
+        --primary-ink: #0d201f;
+        --primary-soft: #213e42;
+        --focus: #80dbc9;
+        --chart-primary: #5acdb7;
+        --chart-secondary: #3a706b;
+    }
+
+    [data-admin-accent='violet'] {
+        --primary: #6841bf;
+        --primary-soft: #f1ebff;
+        --focus: #7953c9;
+        --nav-active: #463573;
+        --nav-accent: #d0b9ff;
+        --nav-brand-end: #6841bf;
+        --chart-primary: #895bdc;
+        --chart-secondary: #d7c5f4;
+    }
+
+    .dark [data-admin-accent='violet'] {
+        --primary: #cbb7ff;
+        --primary-ink: #221438;
+        --primary-soft: #342951;
+        --focus: #cbb7ff;
+        --chart-primary: #ae8af3;
+        --chart-secondary: #63508c;
+    }
+
+    /* Appearance page title sizes. Standard uses --page-title-size above. */
+    [data-heading-size='small'] {
+        --page-title-size: 1.375rem;
+    }
+
+    [data-heading-size='large'] {
+        --page-title-size: 1.75rem;
+    }
+
+    /* Appearance table sizes also update headers, badges, and pagination. */
+    [data-table-text='large'] {
+        --table-type-size: 0.8125rem;
+        --table-head-size: 0.75rem;
+        --table-footer-text-size: 0.75rem;
+    }
+
+    [data-table-text='extra-large'] {
+        --table-type-size: 0.875rem;
+        --table-head-size: 0.8125rem;
+        --table-footer-text-size: 0.8125rem;
+    }
+
+    /* Appearance menu text sizes apply to both sidebar layouts. */
+    [data-sidebar-text='small'] .sidebar-item {
+        --nav-item-text-size: 0.6875rem;
+    }
+
+    [data-sidebar-text='large'] .sidebar-item {
+        --nav-item-text-size: 0.875rem;
+    }
+}
+
+/* Larger touch targets on phones, tablets, and other touch-first devices. */
 @media (pointer: coarse) {
     :root {
         --topbar-control-size: 2.5rem;
@@ -200,12 +351,14 @@
     }
 }
 
+/* Wider content gutters when AppShell switches from drawer to sidebar. */
 @media (min-width: 48rem) {
     :root {
         --shell-gutter: 1.25rem;
     }
 }
 
+/* Stable light colors and text sizes for invoice printouts. */
 @media print {
     :root:has(.invoice-sheet) {
         color-scheme: light;

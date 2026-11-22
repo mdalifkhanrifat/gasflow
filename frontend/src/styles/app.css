@@ -4,11 +4,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+    /* Lock page scrolling while a modal or mobile drawer is open. */
     html:has(dialog:modal) {
         overflow: hidden;
     }
 }
 
+/* Tailwind utility aliases for the shared values in tokens.css. */
 @theme inline {
     --color-background: var(--background);
     --color-surface: var(--surface);
@@ -76,6 +78,21 @@
 }
 
 @layer components {
+    /* Animated backdrop for sign-in, landing, and the admin shell. */
+    :is(.public-stage, .background-swatch) {
+        --public-glow-gradient:
+            radial-gradient(
+                ellipse at 13% 30%,
+                var(--public-glow-start),
+                transparent 42%
+            ),
+            radial-gradient(
+                ellipse at 88% 70%,
+                var(--public-glow-end),
+                transparent 41%
+            );
+    }
+
     .public-stage {
         position: relative;
         isolation: isolate;
@@ -93,17 +110,7 @@
     .public-stage::before {
         z-index: -2;
         inset: -8%;
-        background:
-            radial-gradient(
-                ellipse at 13% 30%,
-                var(--public-glow-blue),
-                transparent 42%
-            ),
-            radial-gradient(
-                ellipse at 88% 70%,
-                var(--public-glow-teal),
-                transparent 41%
-            );
+        background: var(--public-glow-gradient);
     }
 
     .public-stage::after {
@@ -158,6 +165,22 @@
         }
     }
 
+    /* Appearance gradient previews and radio states. */
+    .background-swatch {
+        background-color: var(--public-background);
+        background-image: var(--public-glow-gradient);
+    }
+
+    .background-option:has(:checked) {
+        @apply border-primary bg-primary-soft text-primary;
+    }
+
+    .background-option:has(:focus-visible) {
+        outline: var(--control-focus-width) solid var(--focus);
+        outline-offset: var(--control-focus-offset);
+    }
+
+    /* Full-page error and maintenance screens. */
     .service-screen {
         position: relative;
         isolation: isolate;
@@ -261,21 +284,23 @@
         background: var(--service-halo);
     }
 
-    .topbar {
-        box-shadow: var(--topbar-shadow);
-    }
-
+    /* Shared content and footer gutters in AppShell.vue. */
     .shell-content {
         padding-inline: var(--shell-gutter);
+    }
+
+    /* AppTopbar.vue header sizing, workspace filters, and account popovers. */
+    .topbar {
+        box-shadow: var(--topbar-shadow);
     }
 
     .topbar-row {
         padding-inline: var(--shell-gutter);
         min-height: var(--topbar-height);
-        --density-control-height: var(--topbar-control-size);
     }
 
     .topbar-select {
+        --density-control-height: var(--topbar-control-size);
         font-size: var(--topbar-control-text-size);
     }
 
@@ -306,6 +331,43 @@
         min-width: 13rem;
     }
 
+    /* Appearance opens below the topbar on phones and tablets. */
+    .appearance-panel {
+        position: fixed;
+        inset: calc(var(--topbar-height) + 0.5rem) 0.75rem auto;
+        margin: 0;
+        margin-inline-start: auto;
+        inline-size: min(20rem, calc(100% - 1.5rem));
+        max-block-size: calc(100dvh - var(--topbar-height) - 1.25rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    /* Keep room for the page label. Theme stays available in Appearance. */
+    @media (width < 30rem) {
+        .topbar-row {
+            padding-inline: 0.75rem;
+        }
+
+        .topbar-theme {
+            display: none;
+        }
+    }
+
+    /* Move the gear to the right edge on wide screens with a fine pointer. */
+    @media (min-width: 64rem) and (not (pointer: coarse)) {
+        .appearance-trigger {
+            @apply fixed end-1 top-1/2 size-7 -translate-y-1/2 rounded-full shadow-panel;
+        }
+
+        .appearance-panel {
+            inset: 50% 2.75rem auto auto;
+            max-block-size: calc(100dvh - 2rem);
+            transform: translateY(-50%);
+        }
+    }
+
+    /* Shared sidebar styles for the desktop rail and mobile drawer. */
     .sidebar-scroll {
         scrollbar-color: var(--nav-scroll) transparent;
         overscroll-behavior: contain;
@@ -338,6 +400,7 @@
         @apply hover:bg-nav-hover hover:text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus;
     }
 
+    /* Menu groups, nested links, and active and collapsed states. */
     .sidebar-group {
         margin-top: 0.375rem;
     }
@@ -396,12 +459,14 @@
         @apply mt-2 border-t border-nav-line pt-2;
     }
 
+    /* Shared input and dropdown styles for UiInput and NativeSelect. */
     .ui-control {
         @apply min-h-control rounded-control border border-line bg-surface text-ink placeholder:text-ink-muted disabled:opacity-60;
         padding-inline: var(--control-padding-inline);
         font-size: var(--control-text-size);
     }
 
+    /* Keyboard focus rings for controls and table actions. */
     :is(
         .ui-control,
         .ui-button,
@@ -414,6 +479,7 @@
         outline-offset: var(--control-focus-offset);
     }
 
+    /* Native multi-select and option spacing. */
     .ui-select[multiple] {
         padding-block: 0.375rem;
     }
@@ -422,6 +488,7 @@
         padding: 0.375rem 0.25rem;
     }
 
+    /* Sidebar search and compact list filters use the same base control. */
     .ui-control-sidebar {
         @apply min-h-8 border-nav-line bg-nav-workspace text-nav-ink placeholder:text-nav-muted;
         font-size: var(--nav-item-text-size);
@@ -444,6 +511,7 @@
         font-size: var(--compact-control-text-size);
     }
 
+    /* Shared table cell sizing, record counts, and pagination. */
     .module-table-footer,
     .data-table :is(th, td) {
         padding: var(--table-padding-block) var(--table-padding-inline);
@@ -477,6 +545,11 @@
     .pagination-button[aria-current='page'] {
         background: var(--nav-brand-end);
         color: var(--nav-ink);
+    }
+
+    /* Table colors, headings, and selected rows. */
+    .data-table {
+        --status-compact-size: calc(var(--table-type-size) - 0.125rem);
     }
 
     .data-table thead {
@@ -517,6 +590,7 @@
         padding-block: 0;
     }
 
+    /* Table selection marks with separate click and touch targets. */
     .table-checkbox {
         @apply relative inline-grid place-items-center align-middle;
         inline-size: var(--table-checkbox-target);
@@ -559,6 +633,7 @@
         outline-offset: var(--control-focus-offset);
     }
 
+    /* Row action icons and sortable headers. */
     .table-action {
         @apply inline-grid shrink-0 place-items-center rounded-control text-ink-muted hover:bg-surface-muted hover:text-ink;
         inline-size: var(--table-action-size);
@@ -579,6 +654,7 @@
         color: var(--primary);
     }
 
+    /* Shared action buttons and record links. */
     .ui-button-icon {
         @apply inline-grid place-items-center rounded-control border border-line bg-surface enabled:hover:bg-surface-muted disabled:opacity-50;
         width: var(--module-control-size);
@@ -607,6 +683,7 @@
         @apply bg-primary/90;
     }
 
+    /* Dashboard chart grid and invoice-status chart colors. */
     .chart-grid {
         background: repeating-linear-gradient(
             to top,
