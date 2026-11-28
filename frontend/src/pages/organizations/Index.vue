@@ -7,8 +7,8 @@ interface Organization {
     contact: string;
     buildings: number;
     members: number;
-    status: 'module.active' | 'module.pending';
-    tone: 'success' | 'warning';
+    // organizations statuses in status_definitions.
+    status: 'active' | 'pending';
 }
 
 const {
@@ -24,8 +24,7 @@ const {
             contact: 'Jahid Hasan',
             buildings: 3,
             members: 12,
-            status: 'module.active',
-            tone: 'success',
+            status: 'active',
         },
         {
             name: 'Green View Management',
@@ -33,8 +32,7 @@ const {
             contact: 'Sadia Rahman',
             buildings: 2,
             members: 8,
-            status: 'module.active',
-            tone: 'success',
+            status: 'active',
         },
         {
             name: 'Metro Utility Ltd.',
@@ -42,8 +40,7 @@ const {
             contact: 'Mahmud Karim',
             buildings: 5,
             members: 19,
-            status: 'module.pending',
-            tone: 'warning',
+            status: 'pending',
         },
     ],
     (record) => record.name,
@@ -103,8 +100,7 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
                     : 'module.gas_vendor',
             buildings: 0,
             members: 0,
-            status: 'module.pending',
-            tone: 'warning',
+            status: 'pending',
         });
     },
 }));
@@ -120,8 +116,6 @@ const rows = computed(() =>
         ],
         sortValues: { 3: row.buildings, 4: row.members },
         statusCode: row.status,
-        status: t(row.status),
-        tone: row.tone,
     })),
 );
 </script>
@@ -138,6 +132,7 @@ const rows = computed(() =>
             t('module.members'),
         ]"
         :rows="rows"
+        status-entity="organizations"
         :preview-actions="previewActions"
         :create-record="createRecord"
         :numeric-columns="[3, 4]"

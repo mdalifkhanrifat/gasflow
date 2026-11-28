@@ -26,13 +26,8 @@ type PreviewInvoice = {
     due: string;
     period?: string;
     paid: number;
-    status:
-        | 'dashboard.issued'
-        | 'dashboard.draft'
-        | 'dashboard.part_paid'
-        | 'dashboard.overdue'
-        | 'dashboard.paid';
-    tone: 'info' | 'warning' | 'danger' | 'success';
+    // invoices statuses in status_definitions.
+    status: 'draft' | 'issued' | 'partially_paid' | 'paid' | 'overdue';
     lines: readonly InvoiceLine[];
 };
 
@@ -106,8 +101,7 @@ export const {
             issuedOn: '2026-11-05',
             due: '2026-11-20',
             paid: 0,
-            status: 'dashboard.issued',
-            tone: 'info',
+            status: 'issued',
             lines: charges(42, 250),
         },
         {
@@ -119,8 +113,7 @@ export const {
             issuedOn: '2026-11-05',
             due: '2026-11-20',
             paid: 1500,
-            status: 'dashboard.part_paid',
-            tone: 'warning',
+            status: 'partially_paid',
             lines: charges(56, 280),
         },
         {
@@ -132,8 +125,7 @@ export const {
             issuedOn: '2026-11-01',
             due: '2026-11-15',
             paid: 0,
-            status: 'dashboard.overdue',
-            tone: 'danger',
+            status: 'overdue',
             lines: charges(36, 220),
         },
         {
@@ -145,8 +137,7 @@ export const {
             issuedOn: '2026-11-01',
             due: '2026-11-15',
             paid: 1980,
-            status: 'dashboard.paid',
-            tone: 'success',
+            status: 'paid',
             lines: charges(34, 180),
         },
         ...additionalCustomers.map((customer, index): PreviewInvoice => {
@@ -163,8 +154,7 @@ export const {
                     (total, line) => total + lineAmount(line),
                     0,
                 ),
-                status: 'dashboard.paid',
-                tone: 'success',
+                status: 'paid',
                 lines,
             };
         }),
@@ -193,8 +183,7 @@ export function addPreviewInvoice(record: {
         issuer: northstar,
         issuedOn: null,
         paid: 0,
-        status: 'dashboard.draft',
-        tone: 'info',
+        status: 'draft',
         lines: [
             { charge: 'invoice.service_charge', quantity: 1, rate: amount },
         ],

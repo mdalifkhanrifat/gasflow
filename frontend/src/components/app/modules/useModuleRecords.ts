@@ -9,8 +9,6 @@ export interface RecordRow {
     cells: readonly string[];
     sortValues?: Partial<Record<number, string | number>>;
     statusCode: string;
-    status: string;
-    tone: 'info' | 'success' | 'warning' | 'danger';
 }
 
 export function recordKey(row: RecordRow): string {
@@ -22,6 +20,7 @@ export function useModuleRecords(
     search: Ref<string>,
     status: Ref<string>,
     statusColumn: () => number,
+    statusRank: (code: string) => number,
 ) {
     const { locale } = useLocale();
     const collator = computed(
@@ -53,7 +52,7 @@ export function useModuleRecords(
 
     function sortValue(row: RecordRow, column: number): string | number {
         return column === statusColumn()
-            ? row.status
+            ? statusRank(row.statusCode)
             : (row.sortValues?.[column] ?? row.cells[column] ?? '');
     }
 

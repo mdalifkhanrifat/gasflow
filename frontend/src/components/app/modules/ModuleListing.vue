@@ -16,12 +16,13 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
-import UiBadge from '@/components/ui/UiBadge.vue';
+import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import TableCheckbox from '@/components/app/tables/TableCheckbox.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
+import { useStatusCatalogue } from '@/composables/useStatusCatalogue';
 import { useToast } from '@/composables/useToast';
 import AppShell from '@/layouts/AppShell.vue';
 import { downloadCsv } from '@/lib/downloadCsv';
@@ -41,6 +42,8 @@ const props = defineProps<{
     exportFilename: string;
     columns: readonly string[];
     rows: readonly RecordRow[];
+    // status_definitions.entity_name of the rows' status codes.
+    statusEntity: string;
     numericColumns?: readonly number[];
     createRecord?: RecordCreateDefinition;
     previewActions?: {
@@ -51,6 +54,7 @@ const props = defineProps<{
 }>();
 const { locale, t } = useLocale();
 const { notify } = useToast();
+const { statusLabel, statusRank } = useStatusCatalogue();
 const search = ref('');
 const route = useRoute();
 watch(
@@ -66,9 +70,16 @@ const recordAction = ref<'view' | 'edit' | 'delete'>('view');
 const draft = ref('');
 const dialog = useTemplateRef('recordDialog');
 const createDialog = useTemplateRef('createDialog');
-const statuses = computed(() => [
-    ...new Map(props.rows.map((row) => [row.statusCode, row.status])).entries(),
-]);
+// Filter options: the statuses present in the rows, in workflow order.
+const statuses = computed(() =>
+    [...new Set(props.rows.map((row) => row.statusCode))]
+        .sort(
+            (left, right) =>
+                statusRank(props.statusEntity, left) -
+                statusRank(props.statusEntity, right),
+        )
+        .map((code) => [code, statusLabel(props.statusEntity, code)] as const),
+);
 watch(statuses, (options) => {
     if (status.value && !options.some(([code]) => code === status.value)) {
         status.value = '';
@@ -97,6 +108,7 @@ const {
     search,
     status,
     () => props.columns.length,
+    (code) => statusRank(props.statusEntity, code),
 );
 
 const columns = computed(() => [
@@ -145,7 +157,10 @@ function exportRecords(): void {
         : matchedRows.value;
     downloadCsv(props.exportFilename, [
         [...props.columns, t('module.status')],
-        ...records.map((row) => [...row.cells, row.status]),
+        ...records.map((row) => [
+            ...row.cells,
+            statusLabel(props.statusEntity, row.statusCode),
+        ]),
     ]);
 }
 
@@ -360,9 +375,11 @@ function removeRecord(): void {
                             {{ cell }}
                         </td>
                         <td class="whitespace-nowrap">
-                            <UiBadge :tone="row.tone" compact>{{
-                                row.status
-                            }}</UiBadge>
+                            <StatusBadge
+                                :entity="statusEntity"
+                                :value="row.statusCode"
+                                compact
+                            />
                         </td>
                         <td>
                             <div class="flex justify-center gap-0.5">
@@ -527,9 +544,10 @@ function removeRecord(): void {
                             {{ t('module.status') }}
                         </dt>
                         <dd>
-                            <UiBadge :tone="selected.tone">{{
-                                selected.status
-                            }}</UiBadge>
+                            <StatusBadge
+                                :entity="statusEntity"
+                                :value="selected.statusCode"
+                            />
                         </dd>
                     </div>
                 </dl>

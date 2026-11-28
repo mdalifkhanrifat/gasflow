@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeft } from '@lucide/vue';
 import { computed, watchEffect } from 'vue';
-import UiBadge from '@/components/ui/UiBadge.vue';
+import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import { useLocale } from '@/composables/useLocale';
 import AppShell from '@/layouts/AppShell.vue';
@@ -79,9 +79,10 @@ function printInvoice(): void {
                             <p class="text-field-output font-semibold text-ink">
                                 {{ invoice.number }}
                             </p>
-                            <UiBadge :tone="invoice.tone">{{
-                                t(invoice.status)
-                            }}</UiBadge>
+                            <StatusBadge
+                                entity="invoices"
+                                :value="invoice.status"
+                            />
                         </div>
                     </div>
                     <div class="flex min-w-0 items-start gap-3">

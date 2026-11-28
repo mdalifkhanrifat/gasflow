@@ -97,6 +97,12 @@ export function useStatusCatalogue() {
         return statusSet(entity)[code]?.tone ?? 'neutral';
     }
 
+    // Position in the database's display order; unknown codes sort last.
+    function statusRank(entity: string, code: string): number {
+        const rank = Object.keys(statusSet(entity)).indexOf(code);
+        return rank === -1 ? Number.MAX_SAFE_INTEGER : rank;
+    }
+
     function statusOptions(entity: string): StatusOption[] {
         return Object.keys(statusSet(entity)).map((code) => ({
             code,
@@ -108,6 +114,7 @@ export function useStatusCatalogue() {
         catalogue: readonly(catalogue),
         statusLabel,
         statusTone,
+        statusRank,
         statusOptions,
     };
 }

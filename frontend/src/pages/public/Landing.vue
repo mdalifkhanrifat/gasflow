@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
-import UiBadge from '@/components/ui/UiBadge.vue';
+import StatusBadge from '@/components/app/StatusBadge.vue';
 import { useLocale } from '@/composables/useLocale';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 import { formatNumber } from '@/lib/format';
@@ -21,9 +21,13 @@ const setupSteps = [
 ] as const;
 
 const operations = [
-    { name: 'public.reading', status: 'dashboard.approved', tone: 'success' },
-    { name: 'public.reconciliation', status: 'cycle.review', tone: 'warning' },
-    { name: 'public.invoice', status: 'dashboard.issued', tone: 'info' },
+    { name: 'public.reading', entity: 'meter_readings', status: 'approved' },
+    {
+        name: 'public.reconciliation',
+        entity: 'meter_reconciliations',
+        status: 'pending_review',
+    },
+    { name: 'public.invoice', entity: 'invoices', status: 'issued' },
 ] as const;
 </script>
 
@@ -81,9 +85,10 @@ const operations = [
                                 <span class="text-sm text-ink">{{
                                     t(operation.name)
                                 }}</span>
-                                <UiBadge :tone="operation.tone">{{
-                                    t(operation.status)
-                                }}</UiBadge>
+                                <StatusBadge
+                                    :entity="operation.entity"
+                                    :value="operation.status"
+                                />
                             </li>
                         </ul>
                     </DashboardPanel>

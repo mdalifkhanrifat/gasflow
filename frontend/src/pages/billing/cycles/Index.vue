@@ -12,12 +12,8 @@ interface BillingCycle {
         | 'cycle.pending_review'
         | 'cycle.accepted'
         | 'cycle.exception';
-    status:
-        | 'cycle.review'
-        | 'dashboard.approved'
-        | 'cycle.blocked'
-        | 'dashboard.draft';
-    tone: 'warning' | 'success' | 'danger' | 'info';
+    // billing_cycles statuses in status_definitions.
+    status: 'draft' | 'review' | 'approved';
 }
 
 let nextCycleId = 0;
@@ -36,8 +32,7 @@ const {
             received: 48,
             expected: 48,
             reconciliation: 'cycle.pending_review',
-            status: 'cycle.review',
-            tone: 'warning',
+            status: 'review',
         },
         {
             id: 'green-residency',
@@ -47,8 +42,7 @@ const {
             received: 36,
             expected: 36,
             reconciliation: 'cycle.accepted',
-            status: 'dashboard.approved',
-            tone: 'success',
+            status: 'approved',
         },
         {
             id: 'sunrise-heights',
@@ -58,8 +52,7 @@ const {
             received: 58,
             expected: 60,
             reconciliation: 'cycle.exception',
-            status: 'cycle.blocked',
-            tone: 'danger',
+            status: 'draft',
         },
     ],
     (record) => record.id,
@@ -127,8 +120,7 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
             received: 0,
             expected: 0,
             reconciliation: 'cycle.pending_review',
-            status: 'dashboard.draft',
-            tone: 'info',
+            status: 'draft',
         });
     },
 }));
@@ -149,8 +141,6 @@ const rows = computed(() =>
         ],
         sortValues: { 2: cycle.period, 4: cycle.received },
         statusCode: cycle.status,
-        status: t(cycle.status),
-        tone: cycle.tone,
     })),
 );
 </script>
@@ -168,6 +158,7 @@ const rows = computed(() =>
             t('dashboard.reconciliation'),
         ]"
         :rows="rows"
+        status-entity="billing_cycles"
         :preview-actions="previewActions"
         :create-record="createRecord"
     />

@@ -78,8 +78,6 @@ const rows = computed(() =>
                 5: Date.parse(row.due),
             },
             statusCode: row.status,
-            status: t(row.status),
-            tone: row.tone,
         };
     }),
 );
@@ -98,6 +96,7 @@ const rows = computed(() =>
             t('dashboard.due'),
         ]"
         :rows="rows"
+        status-entity="invoices"
         :preview-actions="previewActions"
         :create-record="createRecord"
         :numeric-columns="[4]"

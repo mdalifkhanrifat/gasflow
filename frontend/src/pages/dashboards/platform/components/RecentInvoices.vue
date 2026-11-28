@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import UiBadge from '@/components/ui/UiBadge.vue';
+import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import { useLocale } from '@/composables/useLocale';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -51,7 +51,7 @@ const rows = computed(() => previewInvoices.value.slice(0, 3));
                 {{ formatDate(row.due, locale) }}
             </td>
             <td class="whitespace-nowrap">
-                <UiBadge :tone="row.tone" compact>{{ t(row.status) }}</UiBadge>
+                <StatusBadge entity="invoices" :value="row.status" compact />
             </td>
         </template>
     </DataTable>
