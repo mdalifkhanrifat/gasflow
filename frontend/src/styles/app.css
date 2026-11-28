@@ -595,6 +595,63 @@
         padding-block: 0;
     }
 
+    /* Phones show each list row as a card: the record name and selection on
+       top, then one labelled line per column, then the actions. The headings
+       stay for screen readers; ModuleListing offers a sort select instead. */
+    @media (width < 40rem) {
+        .module-listing-table thead {
+            @apply sr-only;
+        }
+
+        .module-listing-table :is(table, tbody, tr, th, td) {
+            display: block;
+        }
+
+        .module-listing-table tbody tr {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            column-gap: 0.5rem;
+            padding: 0.75rem var(--table-padding-inline);
+        }
+
+        .module-listing-table tbody :is(th, td) {
+            padding: 0;
+            width: auto;
+        }
+
+        .module-listing-table tbody [data-cell='primary'] {
+            grid-column: 2;
+            grid-row: 1;
+            white-space: normal;
+        }
+
+        .module-listing-table tbody td[data-label] {
+            @apply flex items-center justify-between gap-4;
+            grid-column: 1 / -1;
+            padding-block: 0.25rem;
+        }
+
+        .module-listing-table tbody td[data-label]:first-of-type {
+            margin-block-start: 0.5rem;
+        }
+
+        .module-listing-table tbody td[data-label]::before {
+            content: attr(data-label);
+            color: var(--ink-muted);
+            font-weight: 500;
+        }
+
+        .module-listing-table tbody [data-cell='actions'] {
+            grid-column: 1 / -1;
+            margin-block-start: 0.375rem;
+        }
+
+        .module-listing-table tbody .record-actions {
+            justify-content: flex-end;
+        }
+    }
+
     /* Table selection marks with separate click and touch targets. */
     .table-checkbox {
         @apply relative inline-grid place-items-center align-middle;
@@ -639,6 +696,10 @@
     }
 
     /* Row action icons and sortable headers. */
+    .record-actions {
+        @apply flex justify-center gap-0.5;
+    }
+
     .table-action {
         @apply inline-grid shrink-0 place-items-center rounded-control text-ink-muted hover:bg-surface-muted hover:text-ink;
         inline-size: var(--table-action-size);

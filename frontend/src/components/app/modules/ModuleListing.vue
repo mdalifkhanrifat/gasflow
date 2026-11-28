@@ -8,6 +8,7 @@ import DataTable from '@/components/app/tables/DataTable.vue';
 import RecordActions from '@/components/app/tables/RecordActions.vue';
 import TableCheckbox from '@/components/app/tables/TableCheckbox.vue';
 import TableFilters from '@/components/app/tables/TableFilters.vue';
+import NativeSelect from '@/components/ui/NativeSelect.vue';
 import TablePagination from '@/components/app/tables/TablePagination.vue';
 import {
     formatCell,
@@ -118,6 +119,42 @@ const tableColumns = computed(() => [
     { label: t('module.action'), action: true },
 ]);
 const selectedCount = computed(() => selected.value.size);
+// Phones hide the column headings, so sorting moves into a select.
+const sortOptions = computed(() =>
+    props.columns
+        .filter((column) => column.sortable)
+        .flatMap((column) => [
+            {
+                value: column.key,
+                label: t('module.sort_ascending').replace(
+                    '{column}',
+                    column.label,
+                ),
+            },
+            {
+                value: '-' + column.key,
+                label: t('module.sort_descending').replace(
+                    '{column}',
+                    column.label,
+                ),
+            },
+        ]),
+);
+const sortValue = computed(() =>
+    sort.value
+        ? (sort.value.direction === 'descending' ? '-' : '') + sort.value.key
+        : '',
+);
+function setSort(value: string | string[]): void {
+    const key = String(value);
+    sort.value = key
+        ? {
+              key: key.replace(/^-/, ''),
+              direction: key.startsWith('-') ? 'descending' : 'ascending',
+          }
+        : undefined;
+}
+
 const canExport = computed(
     () =>
         selectedCount.value > 0 || (!!props.source.loadAll && total.value > 0),
@@ -186,6 +223,23 @@ function removeRecord(row: Row): void {
                         v-model:status="status"
                         :statuses="statuses"
                     />
+                    <label v-if="sortOptions.length" class="sm:hidden">
+                        <span class="sr-only">{{ t('module.sort_by') }}</span>
+                        <NativeSelect
+                            class="ui-control-compact"
+                            :model-value="sortValue"
+                            @update:model-value="setSort"
+                        >
+                            <option value="">{{ t('module.sort_by') }}</option>
+                            <option
+                                v-for="option in sortOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </NativeSelect>
+                    </label>
                     <div class="ms-auto flex flex-wrap items-center gap-2">
                         <template v-if="selectedCount">
                             <p role="status" class="text-xs text-ink-muted">
@@ -277,7 +331,7 @@ function removeRecord(row: Row): void {
                         <span v-else>{{ column.label }}</span>
                     </template>
                     <template #default="{ row }">
-                        <td>
+                        <td role="cell" data-cell="select">
                             <TableCheckbox
                                 :label="
                                     t('module.select_row').replace(
@@ -296,6 +350,8 @@ function removeRecord(row: Row): void {
                             <th
                                 v-if="index === 0"
                                 scope="row"
+                                role="rowheader"
+                                data-cell="primary"
                                 class="text-start font-semibold whitespace-nowrap"
                             >
                                 <RouterLink
@@ -310,6 +366,8 @@ function removeRecord(row: Row): void {
                             </th>
                             <td
                                 v-else
+                                role="cell"
+                                :data-label="column.label"
                                 class="whitespace-nowrap"
                                 :class="{
                                     'text-end tabular-nums':
@@ -327,7 +385,7 @@ function removeRecord(row: Row): void {
                                 }}</template>
                             </td>
                         </template>
-                        <td>
+                        <td role="cell" data-cell="actions">
                             <RecordActions
                                 :record="recordLabel(row)"
                                 :details-to="rowLink?.(row)"

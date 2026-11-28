@@ -17,7 +17,7 @@ const { t } = useLocale();
 </script>
 
 <template>
-    <div class="flex justify-center gap-0.5">
+    <div class="record-actions">
         <button
             v-if="editable"
             type="button"

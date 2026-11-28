@@ -257,5 +257,8 @@
     "module.removed": "Record removed",
     "module.created": "Record added",
     "module.loading": "Loading records…",
-    "module.load_failed": "The records could not be loaded. Try again."
+    "module.load_failed": "The records could not be loaded. Try again.",
+    "module.sort_by": "Sort by",
+    "module.sort_ascending": "{column}, low to high",
+    "module.sort_descending": "{column}, high to low"
 }

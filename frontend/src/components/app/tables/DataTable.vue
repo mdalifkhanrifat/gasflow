@@ -25,13 +25,15 @@ defineProps<{
         role="region"
         :aria-label="label"
     >
-        <table :aria-label="label" class="data-table w-full">
-            <thead class="text-ink-muted">
-                <tr>
+        <!-- Explicit roles keep table semantics when small screens show rows as cards. -->
+        <table :aria-label="label" role="table" class="data-table w-full">
+            <thead role="rowgroup" class="text-ink-muted">
+                <tr role="row">
                     <th
                         v-for="(column, index) in columns"
                         :key="column.key ?? column.label"
                         scope="col"
+                        role="columnheader"
                         :aria-sort="column.ariaSort"
                         :class="[
                             column.action
@@ -49,9 +51,10 @@ defineProps<{
                     </th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody role="rowgroup" class="divide-y">
                 <tr
                     v-for="row in rows"
+                    role="row"
                     :key="rowKey(row)"
                     :data-selected="isRowSelected?.(row) || undefined"
                     class="text-ink"

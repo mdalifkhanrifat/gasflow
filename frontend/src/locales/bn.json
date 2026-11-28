@@ -257,5 +257,8 @@
     "module.removed": "রেকর্ড মুছে ফেলা হয়েছে",
     "module.created": "রেকর্ড যোগ হয়েছে",
     "module.loading": "রেকর্ড লোড হচ্ছে…",
-    "module.load_failed": "রেকর্ড লোড করা যায়নি। আবার চেষ্টা করুন।"
+    "module.load_failed": "রেকর্ড লোড করা যায়নি। আবার চেষ্টা করুন।",
+    "module.sort_by": "সাজান",
+    "module.sort_ascending": "{column}, ছোট থেকে বড়",
+    "module.sort_descending": "{column}, বড় থেকে ছোট"
 }
