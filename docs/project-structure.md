@@ -518,7 +518,11 @@ use a dedicated layout built from those same primitives.
 `frontend/src/styles/tokens.css` owns semantic colors, density and component design
 values. Keep workspace palette overrides at the document root. The shared
 `useTheme` composable exposes the system, light and dark preference. All
-pages use the same component styles and responsive behavior.
+pages use the same component styles and responsive behavior. Density has two
+tokens: `--density-row-height` is the minimum table row height and
+`--density-control-height` the form control height (list toolbar controls
+follow it). The `density-compact` class makes everything inside it denser;
+touch screens keep 44 px targets either way.
 
 Use `components/ui/UiInput.vue` for text, number, search and date inputs,
 and `NativeSelect.vue` for both single and multiple selection. Use
