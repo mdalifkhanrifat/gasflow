@@ -525,6 +525,13 @@ and downloads. The shared styles in `styles/app.css` own the control borders,
 spacing, focus, disabled state and touch sizing. Module pages select an
 existing variant and own their data, validation, labels and layout.
 
+Icons come from `@lucide/vue`, imported by name where they are used.
+Navigation icons live in `config/navigation.ts`. Never use text glyphs as
+icons. Every icon takes its size and stroke from `--icon-size` and
+`--icon-stroke`; a component that needs another size sets `--icon-size` on
+itself, as `.table-action` and `.data-table-sort` do. Icons are decorative
+(`aria-hidden`), so the button or link around them carries the accessible name.
+
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
 and supporting copy. Module and dashboard tables share `DataTable` for cell
