@@ -265,5 +265,7 @@
     "invoice.tab_history": "ইতিহাস",
     "invoice.history_issued": "বিল ইস্যু হয়েছে",
     "invoice.history_due": "পরিশোধের শেষ তারিখ",
-    "invoice.history_status": "বর্তমান অবস্থা: {status}"
+    "invoice.history_status": "বর্তমান অবস্থা: {status}",
+    "offline.message": "আপনি অফলাইনে আছেন। সংযোগ ফিরলে নতুন তথ্য দেখা যাবে।",
+    "offline.restored": "সংযোগ ফিরে এসেছে"
 }

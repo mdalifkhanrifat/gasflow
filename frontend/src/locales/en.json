@@ -265,5 +265,7 @@
     "invoice.tab_history": "History",
     "invoice.history_issued": "Invoice issued",
     "invoice.history_due": "Payment due",
-    "invoice.history_status": "Current status: {status}"
+    "invoice.history_status": "Current status: {status}",
+    "offline.message": "You are offline. New data appears when the connection returns.",
+    "offline.restored": "Back online"
 }

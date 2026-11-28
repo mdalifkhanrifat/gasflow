@@ -858,6 +858,15 @@
         }
     }
 
+    /* OfflineBanner.vue: a bar at the bottom start, clear of the toasts. */
+    .offline-banner {
+        @apply fixed z-60 flex items-center gap-2 rounded-control border border-line bg-warning-soft px-3 py-2 font-medium text-warning shadow-panel;
+        inset-inline-start: max(1rem, env(safe-area-inset-left));
+        inset-block-end: max(1rem, env(safe-area-inset-bottom));
+        max-inline-size: calc(100vw - 2rem);
+        font-size: var(--toast-text-size);
+    }
+
     /* ToastRegion.vue: short confirmations at the bottom edge. */
     .toast-region {
         position: fixed;
