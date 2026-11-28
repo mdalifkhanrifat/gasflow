@@ -1,6 +1,8 @@
 <script lang="ts">
 export interface RecordCreateDefinition {
     label: string;
+    // Use a sheet for longer forms.
+    layout?: 'dialog' | 'sheet';
     fields: readonly {
         name: string;
         label: string;
@@ -89,6 +91,7 @@ defineExpose({ open });
         ref="dialog"
         title-id="module-create-title"
         :title="definition.label"
+        :layout="definition.layout"
         :description="t('module.preview_changes')"
     >
         <form ref="form" class="grid gap-4" @submit.prevent="submit">

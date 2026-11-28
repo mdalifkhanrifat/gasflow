@@ -755,6 +755,33 @@
         @apply bg-primary/90;
     }
 
+    /* FormDialog.vue: a centered dialog, or a sheet at the inline end. */
+    .form-dialog {
+        @apply m-auto max-h-dvh w-[calc(100%-2rem)] max-w-md rounded-panel;
+    }
+
+    .form-sheet {
+        @apply m-0 ms-auto h-dvh max-h-dvh w-full max-w-md rounded-s-panel;
+        padding-block-end: env(safe-area-inset-bottom);
+    }
+
+    .form-sheet[open] {
+        animation: sheet-in 180ms ease-out;
+    }
+
+    @keyframes sheet-in {
+        from {
+            translate: 1.5rem 0;
+            opacity: 0;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .form-sheet[open] {
+            animation: none;
+        }
+    }
+
     /* ToastRegion.vue: short confirmations at the bottom edge. */
     .toast-region {
         position: fixed;

@@ -29,6 +29,7 @@ const previewActions = {
 
 const createRecord = computed<RecordCreateDefinition>(() => ({
     label: t('module.add_invoice'),
+    layout: 'sheet',
     fields: [
         { name: 'customer', label: t('module.customer') },
         { name: 'building', label: t('topbar.building') },

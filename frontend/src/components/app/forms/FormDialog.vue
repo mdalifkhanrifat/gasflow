@@ -5,6 +5,8 @@ defineProps<{
     titleId: string;
     title: string;
     description?: string;
+    // A sheet fills the height at the inline end, for longer forms.
+    layout?: 'dialog' | 'sheet';
 }>();
 const drawer = useTemplateRef<HTMLDialogElement>('dialog');
 
@@ -23,7 +25,8 @@ defineExpose({ open, close });
     <dialog
         ref="dialog"
         :aria-labelledby="titleId"
-        class="m-auto max-h-dvh w-[calc(100%-2rem)] max-w-md overflow-auto rounded-panel border border-line bg-surface p-0 text-ink shadow-panel backdrop:bg-overlay"
+        :class="layout === 'sheet' ? 'form-sheet' : 'form-dialog'"
+        class="overflow-auto border border-line bg-surface p-0 text-ink shadow-panel backdrop:bg-overlay"
         @click.self="close"
     >
         <div class="p-5">
