@@ -131,6 +131,7 @@ Generators accept the subfolder: `php artisan make:model Billing/Invoice`,
 | a model                                | `app/Models/<Domain>/` with `HasLifecycle` (+ `HasPublicId` if the table has `public_id`) |
 | a business operation (create, approve) | `app/Actions/<Domain>/<Verb><Noun>.php`                                                   |
 | a page or endpoint                     | controller + form request under `<Domain>/`, route in `routes/web/<domain>.php`           |
+| a list endpoint (search, filter, sort) | a form request extending `App\Http\Requests\TableRequest` that allow-lists its columns     |
 | a permission check                     | the model's policy in `app/Policies/<Domain>/`                                            |
 | background work                        | a job in `app/Jobs/<Domain>/`                                                             |
 | a scheduled task                       | `routes/console.php`, inside the licensed group unless it protects data                   |
@@ -557,6 +558,24 @@ status code, never a label or color. A new status or a changed tone is a
 `status_definitions` row; `config/status.ts` maps each tone to its colors.
 `components/ui/UiBadge.vue` is the plain colored badge for anything that is
 not a record status, such as a count.
+
+Every list uses one query: `?search=&filter[status]=paid,overdue&sort=-due_date&page=2&per_page=25`.
+On the server, a list endpoint's form request extends
+`App\Http\Requests\TableRequest`, declares `$sortable`, `$filterable`,
+`$searchable` and `$defaultSort`, and answers with
+`XResource::collection($request->paginate($query))` (Laravel's `data`, `links`
+and `meta`). Anything not allow-listed is a 422. In the UI, a page declares its
+columns once with `TableColumn` (`components/app/tables/columns.ts`: key,
+label, value, type `text | number | money | date | month | status`,
+`sortable`) and gives `ModuleListing` a source from `lib/tableQuery.ts`:
+`serverTableSource('/api/v1/…', mapRow)` for real data or
+`usePreviewTableSource()` for preview rows. Both run through
+`useTableQuery`, so search, filters, sorting, paging, selection and CSV behave
+the same. The table parts (`DataTable`, `TableFilters`, `TablePagination`,
+`RecordActions`, `RecordDialog`) are shared; on phones the rows become cards
+with one labelled line per column, and the headings stay for screen readers.
+Keep `pageSizes` and `maxSearchLength` in `lib/tableQuery.ts` equal to
+`TableRequest::PAGE_SIZES` and `MAX_SEARCH_LENGTH`.
 
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
