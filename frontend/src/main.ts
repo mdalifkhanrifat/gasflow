@@ -1,3 +1,4 @@
+import { registerSW } from 'virtual:pwa-register';
 import { createApp } from 'vue';
 import { initializeTheme } from '@/composables/useTheme';
 import { restoreLocale } from '@/composables/useLocale';
@@ -10,3 +11,4 @@ initializeTheme();
 void restoreLocale();
 void loadStatusCatalogue();
 createApp(App).use(router).mount('#app');
+void registerSW({ immediate: true });
