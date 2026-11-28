@@ -147,11 +147,11 @@ function savePreview(): void {
                     :subtitle="t('dashboard.invoice_status_subtitle')"
                 >
                     <template #action
-                        ><a
+                        ><RouterLink
                             :to="{ name: 'customer-invoices' }"
                             class="ui-button"
                             >{{ t('dashboard.view_invoices') }}
-                            <span aria-hidden="true">→</span></a
+                            <span aria-hidden="true">→</span></RouterLink
                         ></template
                     >
                     <InvoiceStatusChart />
