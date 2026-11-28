@@ -40,9 +40,9 @@ function closeMobile(): void {
     drawer.value?.close();
 }
 
-function openProfile(): void {
+function openProfile(opener: HTMLElement): void {
     closeMobile();
-    topbar.value?.openProfile();
+    topbar.value?.openProfile(opener);
 }
 
 function closeOnDesktop(event: MediaQueryListEvent): void {

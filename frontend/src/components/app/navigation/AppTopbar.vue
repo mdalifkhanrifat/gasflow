@@ -24,9 +24,30 @@ const profileId = useId();
 const profile = useTemplateRef<HTMLElement>('profile');
 const profileButton = useTemplateRef<HTMLButtonElement>('profileButton');
 
-function openProfile(): void {
+let profileOpener: HTMLElement | undefined;
+
+// The sidebar's account button opens this menu next to the avatar. When the
+// menu closes, focus goes back to that button if it is still on screen (on
+// phones the drawer has closed, so focus stays on the avatar).
+function openProfile(opener: HTMLElement): void {
     profileButton.value?.focus();
     profileButton.value?.click();
+    profileOpener = opener;
+}
+
+function restoreProfileFocus(event: ToggleEvent): void {
+    if (event.newState !== 'closed') {
+        return;
+    }
+
+    if (
+        profileOpener?.checkVisibility() &&
+        document.activeElement === profileButton.value
+    ) {
+        profileOpener.focus();
+    }
+
+    profileOpener = undefined;
 }
 
 defineExpose({ openProfile });
@@ -142,6 +163,7 @@ defineExpose({ openProfile });
         <div
             :id="profileId"
             ref="profile"
+            @toggle="restoreProfileFocus"
             popover
             class="topbar-popover rounded-panel border border-line bg-surface p-4 text-ink shadow-panel"
         >

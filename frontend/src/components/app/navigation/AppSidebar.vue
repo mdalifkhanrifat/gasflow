@@ -19,7 +19,11 @@ import {
 
 defineProps<{ workspace: string; compact?: boolean }>();
 const { t } = useLocale();
-const emit = defineEmits<{ navigate: []; profile: []; expandSearch: [] }>();
+const emit = defineEmits<{
+    navigate: [];
+    profile: [opener: HTMLElement];
+    expandSearch: [];
+}>();
 const search = useTemplateRef('sidebarSearch');
 const sidebarNav = useTemplateRef<HTMLElement>('sidebarNav');
 defineExpose({ focusSearch: () => search.value?.focus() });
@@ -213,7 +217,7 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                 class="sidebar-profile-more ml-auto grid size-7 shrink-0 place-items-center rounded-control text-nav-muted"
                 :aria-label="t('topbar.account')"
                 :title="t('topbar.account')"
-                @click="emit('profile')"
+                @click="emit('profile', $event.currentTarget as HTMLElement)"
             >
                 <Ellipsis />
             </button>
