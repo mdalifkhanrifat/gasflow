@@ -782,6 +782,47 @@
         }
     }
 
+    /* DetailLayout.vue tabs and RecordTimeline.vue. */
+    .detail-tabs {
+        @apply flex gap-1 overflow-x-auto;
+        box-shadow: inset 0 -1px var(--line);
+    }
+
+    .detail-tab {
+        @apply min-h-control shrink-0 border-b-2 border-transparent px-3 font-semibold text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
+        font-size: var(--button-text-size);
+    }
+
+    .detail-tab[data-state='active'] {
+        @apply border-primary text-primary;
+    }
+
+    .detail-tab-panel:focus-visible {
+        outline: var(--control-focus-width) solid var(--focus);
+        outline-offset: var(--control-focus-offset);
+    }
+
+    .record-timeline {
+        @apply grid gap-0 rounded-panel border border-line bg-surface p-4 shadow-panel sm:p-6;
+        font-size: var(--state-text-size);
+    }
+
+    .record-timeline-item {
+        @apply relative grid gap-0.5 border-s-2 border-line ps-4 pb-5 last:pb-0;
+    }
+
+    .record-timeline-item::before {
+        content: '';
+        position: absolute;
+        inset-inline-start: -0.4375rem;
+        inset-block-start: 0.25rem;
+        inline-size: 0.75rem;
+        block-size: 0.75rem;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 2px solid var(--primary);
+    }
+
     /* StatePanel.vue: empty, loading, error and forbidden states. */
     .state-panel {
         @apply grid justify-items-center gap-1 px-4 py-10 text-center;

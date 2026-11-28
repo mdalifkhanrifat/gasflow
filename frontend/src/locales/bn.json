@@ -264,5 +264,11 @@
     "module.retry": "আবার চেষ্টা করুন",
     "module.forbidden": "এই তালিকা দেখার অনুমতি আপনার নেই",
     "module.forbidden_detail": "অনুমতির জন্য আপনার প্রতিষ্ঠানের অ্যাডমিনের সাথে যোগাযোগ করুন।",
-    "module.clear_filters": "খোঁজ ও ফিল্টার মুছুন"
+    "module.clear_filters": "খোঁজ ও ফিল্টার মুছুন",
+    "invoice.sections": "বিলের অংশ",
+    "invoice.tab_invoice": "বিল",
+    "invoice.tab_history": "ইতিহাস",
+    "invoice.history_issued": "বিল ইস্যু হয়েছে",
+    "invoice.history_due": "পরিশোধের শেষ তারিখ",
+    "invoice.history_status": "বর্তমান অবস্থা: {status}"
 }
