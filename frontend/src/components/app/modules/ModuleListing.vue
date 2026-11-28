@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="Row">
 import {
     ArrowDown,
     ArrowUp,
@@ -13,12 +13,18 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, type RouteLocationRaw } from 'vue-router';
 import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import TableCheckbox from '@/components/app/tables/TableCheckbox.vue';
+import {
+    formatCell,
+    isNumericColumn,
+    type TableColumn,
+} from '@/components/app/tables/columns';
+import { useTableQuery } from '@/components/app/tables/useTableQuery';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -27,35 +33,56 @@ import { useToast } from '@/composables/useToast';
 import AppShell from '@/layouts/AppShell.vue';
 import { downloadCsv } from '@/lib/downloadCsv';
 import { formatNumber } from '@/lib/format';
+import { pageSizes, type TableSource } from '@/lib/tableQuery';
 import RecordCreateDialog, {
     type RecordCreateDefinition,
 } from './RecordCreateDialog.vue';
 
-import {
-    recordKey,
-    useModuleRecords,
-    type RecordRow,
-} from './useModuleRecords';
-
 const props = defineProps<{
     title: string;
     exportFilename: string;
-    columns: readonly string[];
-    rows: readonly RecordRow[];
-    // status_definitions.entity_name of the rows' status codes.
-    statusEntity: string;
-    numericColumns?: readonly number[];
+    // The first column names the row; a status column also gives the filter.
+    columns: readonly TableColumn<Row>[];
+    source: TableSource<Row> & { changes?: () => unknown };
+    rowKey: (row: Row) => string;
+    rowLabel?: (row: Row) => string;
+    rowLink?: (row: Row) => RouteLocationRaw | undefined;
+    searchDelay?: number;
     createRecord?: RecordCreateDefinition;
     previewActions?: {
-        editColumn: number;
+        // Key of the column the preview edit changes.
+        editColumn: string;
         onEdit: (key: string, value: string) => void;
         onRemove: (key: string) => void;
     };
 }>();
 const { locale, t } = useLocale();
 const { notify } = useToast();
-const { statusLabel, statusRank } = useStatusCatalogue();
-const search = ref('');
+const { statusLabel, statusOptions } = useStatusCatalogue();
+const table = useTableQuery(props.source, props.rowKey, {
+    searchDelay: props.searchDelay,
+});
+const {
+    search,
+    sort,
+    page,
+    perPage,
+    rows,
+    total,
+    lastPage,
+    loading,
+    failed,
+    selected,
+    selectedOnPage,
+    allPageSelected,
+    sortBy,
+    setFilter,
+    isSelected,
+    setSelected,
+    selectPage,
+    clearSelection,
+} = table;
+
 const route = useRoute();
 watch(
     () => route.query.q,
@@ -64,126 +91,129 @@ watch(
     },
     { immediate: true },
 );
+
+const formatting = computed(() => ({ locale: locale.value, statusLabel }));
+function cell(column: TableColumn<Row>, row: Row): string {
+    return formatCell(column, row, formatting.value);
+}
+
+const primaryColumn = computed(() => props.columns[0]);
+const statusColumn = computed(() =>
+    props.columns.find((column) => column.type === 'status'),
+);
 const status = ref('');
-const selected = ref<RecordRow>();
+watch(status, (value) => {
+    if (statusColumn.value) {
+        setFilter(statusColumn.value.key, value ? [value] : []);
+    }
+});
+const statuses = computed(() =>
+    statusColumn.value
+        ? statusOptions(statusColumn.value.statusEntity ?? '*')
+        : [],
+);
+
+const selectedRecord = ref<Row>();
 const recordAction = ref<'view' | 'edit' | 'delete'>('view');
 const draft = ref('');
 const dialog = useTemplateRef('recordDialog');
 const createDialog = useTemplateRef('createDialog');
-// Filter options: the statuses present in the rows, in workflow order.
-const statuses = computed(() =>
-    [...new Set(props.rows.map((row) => row.statusCode))]
-        .sort(
-            (left, right) =>
-                statusRank(props.statusEntity, left) -
-                statusRank(props.statusEntity, right),
-        )
-        .map((code) => [code, statusLabel(props.statusEntity, code)] as const),
-);
-watch(statuses, (options) => {
-    if (status.value && !options.some(([code]) => code === status.value)) {
-        status.value = '';
-    }
-});
-const {
-    sort,
-    sortBy,
-    matchedRows,
-    page,
-    pageSize,
-    pageSizes,
-    pageCount,
-    offset,
-    pageRows,
-    pageNumbers,
-    selectedRows,
-    selectedPageCount,
-    allPageSelected,
-    isSelected,
-    setSelected,
-    selectPage,
-    clearSelection,
-} = useModuleRecords(
-    () => props.rows,
-    search,
-    status,
-    () => props.columns.length,
-    (code) => statusRank(props.statusEntity, code),
-);
 
-const columns = computed(() => [
+const tableColumns = computed(() => [
     { label: t('module.select_page') },
-    ...[...props.columns, t('module.status')].map((label, index) => ({
-        label,
-        align: props.numericColumns?.includes(index)
-            ? ('end' as const)
-            : undefined,
+    ...props.columns.map((column) => ({
+        label: column.label,
+        key: column.key,
+        sortable: column.sortable,
+        align: isNumericColumn(column) ? ('end' as const) : undefined,
         ariaSort:
-            sort.value?.column === index ? sort.value.direction : undefined,
+            sort.value?.key === column.key ? sort.value.direction : undefined,
     })),
     { label: t('module.action'), action: true },
 ]);
-const selectedCount = computed(() => selectedRows.value.length);
+const selectedCount = computed(() => selected.value.size);
+const offset = computed(() => (page.value - 1) * perPage.value);
 const recordCount = computed(() =>
     t('module.record_count')
         .replace(
             '{first}',
             formatNumber(
-                pageRows.value.length ? offset.value + 1 : 0,
+                rows.value.length ? offset.value + 1 : 0,
                 locale.value,
             ),
         )
         .replace(
             '{last}',
-            formatNumber(offset.value + pageRows.value.length, locale.value),
+            formatNumber(offset.value + rows.value.length, locale.value),
         )
-        .replace(
-            '{total}',
-            formatNumber(matchedRows.value.length, locale.value),
-        ),
+        .replace('{total}', formatNumber(total.value, locale.value)),
+);
+const pageNumbers = computed(() => {
+    const first = Math.max(1, Math.min(page.value - 2, lastPage.value - 4));
+    return Array.from(
+        { length: Math.min(lastPage.value, 5) },
+        (_, index) => first + index,
+    );
+});
+const canExport = computed(
+    () =>
+        selectedCount.value > 0 || (!!props.source.loadAll && total.value > 0),
 );
 
 function showNewRecord(): void {
     notify(t('module.created'));
-    search.value = '';
     status.value = '';
-    sort.value = undefined;
-    page.value = 1;
+    table.reset();
 }
 
-function exportRecords(): void {
+async function exportRecords(): Promise<void> {
     const records = selectedCount.value
-        ? selectedRows.value
-        : matchedRows.value;
+        ? [...selected.value.values()]
+        : await props.source.loadAll?.(table.query.value);
+    if (!records) {
+        return;
+    }
     downloadCsv(props.exportFilename, [
-        [...props.columns, t('module.status')],
-        ...records.map((row) => [
-            ...row.cells,
-            statusLabel(props.statusEntity, row.statusCode),
-        ]),
+        props.columns.map((column) => column.label),
+        ...records.map((row) =>
+            props.columns.map((column) => cell(column, row)),
+        ),
     ]);
 }
 
-function recordLabel(row: RecordRow): string {
-    return row.label ?? row.cells[0] ?? recordKey(row);
+function recordLabel(row: Row): string {
+    return (
+        props.rowLabel?.(row) ??
+        (primaryColumn.value
+            ? cell(primaryColumn.value, row)
+            : props.rowKey(row))
+    );
 }
+
+const editColumn = computed(() =>
+    props.columns.find(
+        (column) => column.key === props.previewActions?.editColumn,
+    ),
+);
 
 const dialogTitle = computed(() => {
     if (recordAction.value === 'view') {
-        return selected.value ? recordLabel(selected.value) : props.title;
+        return selectedRecord.value
+            ? recordLabel(selectedRecord.value)
+            : props.title;
     }
 
     return t(recordAction.value === 'edit' ? 'module.edit' : 'module.delete');
 });
 
 async function openRecord(
-    row: RecordRow,
+    row: Row,
     action: typeof recordAction.value,
 ): Promise<void> {
-    selected.value = row;
+    selectedRecord.value = row;
     recordAction.value = action;
-    if (action === 'edit' && props.previewActions) {
-        draft.value = row.cells[props.previewActions.editColumn] ?? '';
+    if (action === 'edit' && editColumn.value) {
+        draft.value = String(editColumn.value.value(row));
     }
     await nextTick();
     dialog.value?.open();
@@ -191,16 +221,16 @@ async function openRecord(
 
 function saveRecord(): void {
     const value = draft.value.trim();
-    if (selected.value && value) {
-        props.previewActions?.onEdit(recordKey(selected.value), value);
+    if (selectedRecord.value && value) {
+        props.previewActions?.onEdit(props.rowKey(selectedRecord.value), value);
         dialog.value?.close();
         notify(t('module.saved'));
     }
 }
 
 function removeRecord(): void {
-    if (selected.value) {
-        props.previewActions?.onRemove(recordKey(selected.value));
+    if (selectedRecord.value) {
+        props.previewActions?.onRemove(props.rowKey(selectedRecord.value));
         dialog.value?.close();
         notify(t('module.removed'));
     }
@@ -229,7 +259,7 @@ function removeRecord(): void {
                             class="ui-control-compact w-full pl-7"
                         />
                     </label>
-                    <label>
+                    <label v-if="statusColumn">
                         <span class="sr-only">{{ t('module.status') }}</span>
                         <NativeSelect
                             class="ui-control-compact"
@@ -239,11 +269,11 @@ function removeRecord(): void {
                                 {{ t('module.all_statuses') }}
                             </option>
                             <option
-                                v-for="[code, label] in statuses"
-                                :key="code"
-                                :value="code"
+                                v-for="option in statuses"
+                                :key="option.code"
+                                :value="option.code"
                             >
-                                {{ label }}
+                                {{ option.label }}
                             </option>
                         </NativeSelect>
                     </label>
@@ -268,7 +298,7 @@ function removeRecord(): void {
                         <button
                             type="button"
                             class="ui-button"
-                            :disabled="!matchedRows.length"
+                            :disabled="!canExport"
                             @click="exportRecords"
                         >
                             <Download />
@@ -298,14 +328,15 @@ function removeRecord(): void {
                 class="min-w-0 rounded-panel border border-line bg-surface shadow-panel"
             >
                 <DataTable
-                    v-if="pageRows.length"
+                    v-if="rows.length"
                     class="module-listing-table"
                     :label="title"
                     edge="top"
-                    :columns="columns"
-                    :rows="pageRows"
-                    :row-key="recordKey"
+                    :columns="tableColumns"
+                    :rows="rows"
+                    :row-key="rowKey"
                     :is-row-selected="isSelected"
+                    :aria-busy="loading || undefined"
                 >
                     <template #heading="{ column, index }">
                         <TableCheckbox
@@ -313,18 +344,15 @@ function removeRecord(): void {
                             :label="column.label"
                             :checked="allPageSelected"
                             :indeterminate="
-                                selectedPageCount > 0 && !allPageSelected
+                                selectedOnPage > 0 && !allPageSelected
                             "
                             @change="selectPage"
                         />
-                        <span v-else-if="column.action">{{
-                            column.label
-                        }}</span>
                         <button
-                            v-else
+                            v-else-if="column.sortable && column.key"
                             type="button"
                             class="data-table-sort"
-                            @click="sortBy(index - 1)"
+                            @click="sortBy(column.key)"
                         >
                             {{ column.label }}
                             <component
@@ -337,6 +365,7 @@ function removeRecord(): void {
                                 "
                             />
                         </button>
+                        <span v-else>{{ column.label }}</span>
                     </template>
                     <template #default="{ row }">
                         <td>
@@ -351,36 +380,44 @@ function removeRecord(): void {
                                 @change="setSelected(row, $event)"
                             />
                         </td>
-                        <th
-                            scope="row"
-                            class="text-start font-semibold whitespace-nowrap"
+                        <template
+                            v-for="(column, index) in columns"
+                            :key="column.key"
                         >
-                            <RouterLink
-                                v-if="row.to"
-                                :to="row.to"
-                                class="ui-record-link"
-                                >{{ row.cells[0] }}</RouterLink
+                            <th
+                                v-if="index === 0"
+                                scope="row"
+                                class="text-start font-semibold whitespace-nowrap"
                             >
-                            <template v-else>{{ row.cells[0] }}</template>
-                        </th>
-                        <td
-                            v-for="(cell, index) in row.cells.slice(1)"
-                            :key="index"
-                            class="whitespace-nowrap"
-                            :class="{
-                                'text-end tabular-nums':
-                                    numericColumns?.includes(index + 1),
-                            }"
-                        >
-                            {{ cell }}
-                        </td>
-                        <td class="whitespace-nowrap">
-                            <StatusBadge
-                                :entity="statusEntity"
-                                :value="row.statusCode"
-                                compact
-                            />
-                        </td>
+                                <RouterLink
+                                    v-if="rowLink?.(row)"
+                                    :to="rowLink(row)!"
+                                    class="ui-record-link"
+                                    >{{ cell(column, row) }}</RouterLink
+                                >
+                                <template v-else>{{
+                                    cell(column, row)
+                                }}</template>
+                            </th>
+                            <td
+                                v-else
+                                class="whitespace-nowrap"
+                                :class="{
+                                    'text-end tabular-nums':
+                                        isNumericColumn(column),
+                                }"
+                            >
+                                <StatusBadge
+                                    v-if="column.type === 'status'"
+                                    :entity="column.statusEntity ?? '*'"
+                                    :value="String(column.value(row))"
+                                    compact
+                                />
+                                <template v-else>{{
+                                    cell(column, row)
+                                }}</template>
+                            </td>
+                        </template>
                         <td>
                             <div class="flex justify-center gap-0.5">
                                 <button
@@ -398,8 +435,8 @@ function removeRecord(): void {
                                     <Pencil />
                                 </button>
                                 <RouterLink
-                                    v-if="row.to"
-                                    :to="row.to"
+                                    v-if="rowLink?.(row)"
+                                    :to="rowLink(row)!"
                                     class="table-action"
                                     :title="t('module.details')"
                                     :aria-label="
@@ -442,8 +479,20 @@ function removeRecord(): void {
                         </td>
                     </template>
                 </DataTable>
-                <p v-else class="px-4 py-6 text-sm text-ink-muted">
-                    {{ t('module.empty') }}
+                <p
+                    v-else
+                    role="status"
+                    class="px-4 py-6 text-sm text-ink-muted"
+                >
+                    {{
+                        t(
+                            failed
+                                ? 'module.load_failed'
+                                : loading
+                                  ? 'module.loading'
+                                  : 'module.empty',
+                        )
+                    }}
                 </p>
                 <footer
                     class="module-table-footer border-t border-line text-ink-muted"
@@ -455,8 +504,9 @@ function removeRecord(): void {
                                 t('module.rows_per_page')
                             }}</span>
                             <NativeSelect
-                                v-model="pageSize"
+                                :model-value="String(perPage)"
                                 class="pagination-size"
+                                @update:model-value="perPage = Number($event)"
                             >
                                 <option
                                     v-for="size in pageSizes"
@@ -469,7 +519,7 @@ function removeRecord(): void {
                         </label>
                     </div>
                     <nav
-                        v-if="pageCount > 1"
+                        v-if="lastPage > 1"
                         :aria-label="t('module.pagination')"
                         class="ms-auto flex flex-wrap items-center justify-end gap-1 self-end"
                     >
@@ -501,7 +551,7 @@ function removeRecord(): void {
                         <button
                             type="button"
                             class="pagination-button"
-                            :disabled="page === pageCount"
+                            :disabled="page === lastPage"
                             :aria-label="t('module.next_page')"
                             @click="page++"
                         >
@@ -529,25 +579,21 @@ function removeRecord(): void {
                     : t('module.preview_changes')
             "
         >
-            <template v-if="selected && recordAction === 'view'">
+            <template v-if="selectedRecord && recordAction === 'view'">
                 <dl class="grid gap-3 sm:grid-cols-2">
-                    <div v-for="(column, index) in props.columns" :key="column">
+                    <div v-for="column in columns" :key="column.key">
                         <dt class="text-field-label text-ink-muted">
-                            {{ column }}
+                            {{ column.label }}
                         </dt>
                         <dd class="text-field-output font-medium text-ink">
-                            {{ selected.cells[index] }}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-field-label text-ink-muted">
-                            {{ t('module.status') }}
-                        </dt>
-                        <dd>
                             <StatusBadge
-                                :entity="statusEntity"
-                                :value="selected.statusCode"
+                                v-if="column.type === 'status'"
+                                :entity="column.statusEntity ?? '*'"
+                                :value="String(column.value(selectedRecord))"
                             />
+                            <template v-else>{{
+                                cell(column, selectedRecord)
+                            }}</template>
                         </dd>
                     </div>
                 </dl>
@@ -564,13 +610,13 @@ function removeRecord(): void {
             </template>
             <form
                 v-else-if="
-                    selected && recordAction === 'edit' && previewActions
+                    selectedRecord && recordAction === 'edit' && editColumn
                 "
                 class="grid gap-4"
                 @submit.prevent="saveRecord"
             >
                 <label class="grid gap-1.5 text-field-label font-medium">
-                    {{ props.columns[previewActions.editColumn] }}
+                    {{ editColumn.label }}
                     <UiInput
                         v-model="draft"
                         required
@@ -595,12 +641,12 @@ function removeRecord(): void {
                     </button>
                 </div>
             </form>
-            <template v-else-if="selected && recordAction === 'delete'">
+            <template v-else-if="selectedRecord && recordAction === 'delete'">
                 <p class="text-sm text-ink">
                     {{
                         t('module.confirm_remove').replace(
                             '{record}',
-                            recordLabel(selected),
+                            recordLabel(selectedRecord),
                         )
                     }}
                 </p>

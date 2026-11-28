@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue';
 import ModuleListing from '@/components/app/modules/ModuleListing.vue';
+import {
+    type TableColumn,
+    usePreviewTableSource,
+} from '@/components/app/tables/columns';
 import type { RecordCreateDefinition } from '@/components/app/modules/RecordCreateDialog.vue';
 import { useLocale } from '@/composables/useLocale';
-import { formatDate, formatMoney, formatMonth } from '@/lib/format';
 import {
     addPreviewInvoice,
     invoiceTotal,
@@ -12,13 +15,13 @@ import {
     updatePreviewInvoice,
 } from './previewInvoices';
 
-const { locale, t } = useLocale();
+const { t } = useLocale();
 watchEffect(() => {
     document.title = t('navigation.invoices') + ' - GasFlow';
 });
 
 const previewActions = {
-    editColumn: 1,
+    editColumn: 'customer',
     onEdit: (key: string, value: string) =>
         updatePreviewInvoice(key, { customer: value }),
     onRemove: removePreviewInvoice,
@@ -57,29 +60,60 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
     },
 }));
 
-const rows = computed(() =>
-    previewInvoices.value.map((row) => {
-        const amount = invoiceTotal(row);
-        return {
-            to: { name: 'customer-invoice', params: { number: row.number } },
-            cells: [
-                row.number,
-                row.customer,
-                row.flat,
-                row.period
-                    ? formatMonth(row.period, locale.value)
-                    : t('module.october_period'),
-                formatMoney(amount, locale.value),
-                formatDate(row.due, locale.value),
-            ],
-            sortValues: {
-                3: row.period ?? '2026-10',
-                4: amount,
-                5: Date.parse(row.due),
-            },
-            statusCode: row.status,
-        };
-    }),
+type Invoice = (typeof previewInvoices.value)[number];
+
+const columns = computed<TableColumn<Invoice>[]>(() => [
+    {
+        key: 'number',
+        label: t('dashboard.invoice'),
+        value: (row) => row.number,
+        sortable: true,
+    },
+    {
+        key: 'customer',
+        label: t('module.customer'),
+        value: (row) => row.customer,
+        sortable: true,
+    },
+    {
+        key: 'flat',
+        label: t('module.flat'),
+        value: (row) => row.flat,
+        sortable: true,
+    },
+    {
+        key: 'period',
+        label: t('module.period'),
+        value: (row) => row.period ?? '2026-10',
+        type: 'month',
+        sortable: true,
+    },
+    {
+        key: 'amount',
+        label: t('dashboard.amount'),
+        value: (row) => invoiceTotal(row),
+        type: 'money',
+        sortable: true,
+    },
+    {
+        key: 'due_date',
+        label: t('dashboard.due'),
+        value: (row) => row.due,
+        type: 'date',
+        sortable: true,
+    },
+    {
+        key: 'status',
+        label: t('module.status'),
+        value: (row) => row.status,
+        type: 'status',
+        statusEntity: 'invoices',
+        sortable: true,
+    },
+]);
+const source = usePreviewTableSource(
+    () => previewInvoices.value,
+    () => columns.value,
 );
 </script>
 
@@ -87,18 +121,16 @@ const rows = computed(() =>
     <ModuleListing
         export-filename="customer-invoices.csv"
         :title="t('navigation.invoices')"
-        :columns="[
-            t('dashboard.invoice'),
-            t('module.customer'),
-            t('module.flat'),
-            t('module.period'),
-            t('dashboard.amount'),
-            t('dashboard.due'),
-        ]"
-        :rows="rows"
-        status-entity="invoices"
+        :columns="columns"
+        :source="source"
+        :row-key="(row) => row.number"
+        :row-link="
+            (row) => ({
+                name: 'customer-invoice',
+                params: { number: row.number },
+            })
+        "
         :preview-actions="previewActions"
         :create-record="createRecord"
-        :numeric-columns="[4]"
     />
 </template>

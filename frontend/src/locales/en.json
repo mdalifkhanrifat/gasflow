@@ -255,5 +255,7 @@
     "toast.dismiss": "Dismiss notification",
     "module.saved": "Changes saved",
     "module.removed": "Record removed",
-    "module.created": "Record added"
+    "module.created": "Record added",
+    "module.loading": "Loading records…",
+    "module.load_failed": "The records could not be loaded. Try again."
 }

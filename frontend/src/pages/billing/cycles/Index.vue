@@ -62,9 +62,13 @@ const {
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue';
 import ModuleListing from '@/components/app/modules/ModuleListing.vue';
+import {
+    type TableColumn,
+    usePreviewTableSource,
+} from '@/components/app/tables/columns';
 import type { RecordCreateDefinition } from '@/components/app/modules/RecordCreateDialog.vue';
 import { useLocale } from '@/composables/useLocale';
-import { formatMonth, formatNumber } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
 
 const { locale, t } = useLocale();
 watchEffect(() => {
@@ -72,7 +76,7 @@ watchEffect(() => {
 });
 
 const previewActions = {
-    editColumn: 1,
+    editColumn: 'building',
     onEdit: (key: string, value: string) =>
         updateRecord(key, { building: value }),
     onRemove: removeRecord,
@@ -125,23 +129,60 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
     },
 }));
 
-const rows = computed(() =>
-    cycles.value.map((cycle) => ({
-        key: cycle.id,
-        label: cycle.building,
-        cells: [
-            'BC-' + cycle.period,
-            cycle.building,
-            formatMonth(cycle.period, locale.value),
-            t(cycle.mode),
+const columns = computed<TableColumn<BillingCycle>[]>(() => [
+    {
+        key: 'number',
+        label: t('cycle.number'),
+        value: (cycle) => 'BC-' + cycle.period,
+        sortable: true,
+    },
+    {
+        key: 'building',
+        label: t('topbar.building'),
+        value: (cycle) => cycle.building,
+        sortable: true,
+    },
+    {
+        key: 'period',
+        label: t('cycle.reading_period'),
+        value: (cycle) => cycle.period,
+        type: 'month',
+        sortable: true,
+    },
+    {
+        key: 'mode',
+        label: t('cycle.mode'),
+        value: (cycle) => t(cycle.mode),
+        sortable: true,
+    },
+    {
+        key: 'readings',
+        label: t('cycle.readings'),
+        value: (cycle) =>
             formatNumber(cycle.received, locale.value) +
-                ' / ' +
-                formatNumber(cycle.expected, locale.value),
-            t(cycle.reconciliation),
-        ],
-        sortValues: { 2: cycle.period, 4: cycle.received },
-        statusCode: cycle.status,
-    })),
+            ' / ' +
+            formatNumber(cycle.expected, locale.value),
+        sortValue: (cycle) => cycle.received,
+        sortable: true,
+    },
+    {
+        key: 'reconciliation',
+        label: t('dashboard.reconciliation'),
+        value: (cycle) => t(cycle.reconciliation),
+        sortable: true,
+    },
+    {
+        key: 'status',
+        label: t('module.status'),
+        value: (cycle) => cycle.status,
+        type: 'status',
+        statusEntity: 'billing_cycles',
+        sortable: true,
+    },
+]);
+const source = usePreviewTableSource(
+    () => cycles.value,
+    () => columns.value,
 );
 </script>
 
@@ -149,16 +190,10 @@ const rows = computed(() =>
     <ModuleListing
         export-filename="billing-cycles.csv"
         :title="t('navigation.cycles')"
-        :columns="[
-            t('cycle.number'),
-            t('topbar.building'),
-            t('cycle.reading_period'),
-            t('cycle.mode'),
-            t('cycle.readings'),
-            t('dashboard.reconciliation'),
-        ]"
-        :rows="rows"
-        status-entity="billing_cycles"
+        :columns="columns"
+        :source="source"
+        :row-key="(cycle) => cycle.id"
+        :row-label="(cycle) => cycle.building"
         :preview-actions="previewActions"
         :create-record="createRecord"
     />

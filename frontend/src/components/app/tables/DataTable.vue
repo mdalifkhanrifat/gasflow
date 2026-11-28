@@ -3,6 +3,9 @@ defineProps<{
     label: string;
     columns: readonly {
         label: string;
+        // Sort key for sortable headings.
+        key?: string;
+        sortable?: boolean;
         align?: 'end';
         action?: boolean;
         ariaSort?: 'ascending' | 'descending';
@@ -27,7 +30,7 @@ defineProps<{
                 <tr>
                     <th
                         v-for="(column, index) in columns"
-                        :key="column.label"
+                        :key="column.key ?? column.label"
                         scope="col"
                         :aria-sort="column.ariaSort"
                         :class="[

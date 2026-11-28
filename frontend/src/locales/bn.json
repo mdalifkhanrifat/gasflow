@@ -255,5 +255,7 @@
     "toast.dismiss": "বিজ্ঞপ্তি বন্ধ করুন",
     "module.saved": "পরিবর্তন সংরক্ষণ হয়েছে",
     "module.removed": "রেকর্ড মুছে ফেলা হয়েছে",
-    "module.created": "রেকর্ড যোগ হয়েছে"
+    "module.created": "রেকর্ড যোগ হয়েছে",
+    "module.loading": "রেকর্ড লোড হচ্ছে…",
+    "module.load_failed": "রেকর্ড লোড করা যায়নি। আবার চেষ্টা করুন।"
 }

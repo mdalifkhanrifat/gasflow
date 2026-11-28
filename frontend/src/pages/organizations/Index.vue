@@ -50,17 +50,20 @@ const {
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue';
 import ModuleListing from '@/components/app/modules/ModuleListing.vue';
+import {
+    type TableColumn,
+    usePreviewTableSource,
+} from '@/components/app/tables/columns';
 import type { RecordCreateDefinition } from '@/components/app/modules/RecordCreateDialog.vue';
 import { useLocale } from '@/composables/useLocale';
-import { formatNumber } from '@/lib/format';
 
-const { locale, t } = useLocale();
+const { t } = useLocale();
 watchEffect(() => {
     document.title = t('navigation.organizations') + ' - GasFlow';
 });
 
 const previewActions = {
-    editColumn: 2,
+    editColumn: 'contact',
     onEdit: (key: string, value: string) =>
         updateRecord(key, { contact: value }),
     onRemove: removeRecord,
@@ -105,18 +108,51 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
     },
 }));
 
-const rows = computed(() =>
-    organizations.value.map((row) => ({
-        cells: [
-            row.name,
-            t(row.type),
-            row.contact,
-            formatNumber(row.buildings, locale.value),
-            formatNumber(row.members, locale.value),
-        ],
-        sortValues: { 3: row.buildings, 4: row.members },
-        statusCode: row.status,
-    })),
+const columns = computed<TableColumn<Organization>[]>(() => [
+    {
+        key: 'name',
+        label: t('module.organization'),
+        value: (row) => row.name,
+        sortable: true,
+    },
+    {
+        key: 'type',
+        label: t('module.type'),
+        value: (row) => t(row.type),
+        sortable: true,
+    },
+    {
+        key: 'contact',
+        label: t('module.contact'),
+        value: (row) => row.contact,
+        sortable: true,
+    },
+    {
+        key: 'buildings',
+        label: t('module.building_count'),
+        value: (row) => row.buildings,
+        type: 'number',
+        sortable: true,
+    },
+    {
+        key: 'members',
+        label: t('module.members'),
+        value: (row) => row.members,
+        type: 'number',
+        sortable: true,
+    },
+    {
+        key: 'status',
+        label: t('module.status'),
+        value: (row) => row.status,
+        type: 'status',
+        statusEntity: 'organizations',
+        sortable: true,
+    },
+]);
+const source = usePreviewTableSource(
+    () => organizations.value,
+    () => columns.value,
 );
 </script>
 
@@ -124,17 +160,10 @@ const rows = computed(() =>
     <ModuleListing
         export-filename="organizations.csv"
         :title="t('navigation.organizations')"
-        :columns="[
-            t('module.organization'),
-            t('module.type'),
-            t('module.contact'),
-            t('module.building_count'),
-            t('module.members'),
-        ]"
-        :rows="rows"
-        status-entity="organizations"
+        :columns="columns"
+        :source="source"
+        :row-key="(row) => row.name"
         :preview-actions="previewActions"
         :create-record="createRecord"
-        :numeric-columns="[3, 4]"
     />
 </template>
