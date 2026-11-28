@@ -578,6 +578,7 @@
     }
 
     .data-table td {
+        height: var(--density-row-height);
         color: var(--table-ink);
     }
 
@@ -624,6 +625,7 @@
         .module-listing-table tbody :is(th, td) {
             padding: 0;
             width: auto;
+            height: auto;
         }
 
         .module-listing-table tbody [data-cell='primary'] {

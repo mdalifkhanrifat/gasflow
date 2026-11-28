@@ -86,7 +86,6 @@
     --control-padding-inline: 0.75rem;
     --control-focus-width: 2px;
     --control-focus-offset: 2px;
-    --module-control-size: 2.125rem;
     --pagination-button-size: max(2.25rem, var(--module-control-size));
     --pagination-select-height: 1.75rem;
     --pagination-select-width: 3.625rem;
@@ -165,8 +164,12 @@
     --control-radius: 0.5rem;
     --panel-radius: 0.875rem;
     --panel-shadow: 0 8px 26px rgb(23 36 59 / 6%);
-    --density-row-height: 3rem;
+
+    /* Density: the minimum table row height and the form control height.
+       List toolbar controls follow the control height. */
+    --density-row-height: 2.5rem;
     --density-control-height: 2.5rem;
+    --module-control-size: calc(var(--density-control-height) - 0.375rem);
 
     /* Content gutters and admin topbar dimensions. */
     --shell-gutter: 1rem;
@@ -225,8 +228,10 @@
 
 /* Compact row and control heights. Touch rules below take precedence. */
 .density-compact {
-    --density-row-height: 2.5rem;
+    --density-row-height: 2.25rem;
     --density-control-height: 2.25rem;
+    --module-control-size: calc(var(--density-control-height) - 0.375rem);
+    --table-padding-block: 0.375rem;
 }
 
 @media screen {
@@ -350,7 +355,6 @@
 @media (pointer: coarse) {
     :root {
         --topbar-control-size: 2.5rem;
-        --module-control-size: 2.75rem;
         --table-action-size: 2.75rem;
         --table-checkbox-target: 2.75rem;
         --pagination-select-height: var(--module-control-size);
@@ -361,6 +365,7 @@
     .density-compact {
         --density-row-height: 3rem;
         --density-control-height: 2.75rem;
+        --module-control-size: 2.75rem;
     }
 }
 
