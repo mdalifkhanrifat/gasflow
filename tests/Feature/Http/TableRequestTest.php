@@ -212,3 +212,20 @@ describe('search', function () {
             ->assertUnprocessable()->assertJsonValidationErrors('search');
     });
 });
+
+describe('the query the UI builds', function () {
+    it('reads the encoded query from frontend/src/lib/tableQuery.ts', function () {
+        // Arrange: toSearchParams() percent-encodes the brackets, commas and Bangla text.
+        [$ash, $birch] = tableItems(['রহিম Ash', 'রহিম Birch', 'Cedar']);
+        $ash->transitionTo('inactive');
+        $birch->transitionTo('archived');
+        $query = 'search=%E0%A6%B0%E0%A6%B9%E0%A6%BF%E0%A6%AE&filter%5Bstatus%5D=inactive%2Carchived&sort=-name&per_page=25';
+
+        // Act
+        $response = $this->getJson('/_table-test/items?'.$query);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('meta.per_page', 25);
+        expect(tableNames($response))->toBe(['রহিম Birch', 'রহিম Ash']);
+    });
+});
