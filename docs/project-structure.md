@@ -577,6 +577,21 @@ with one labelled line per column, and the headings stay for screen readers.
 Keep `pageSizes` and `maxSearchLength` in `lib/tableQuery.ts` equal to
 `TableRequest::PAGE_SIZES` and `MAX_SEARCH_LENGTH`.
 
+Forms build each field with `components/app/forms/FormField.vue`: it renders
+the label, hint and error and hands the control its `id`, `aria-invalid` and
+`aria-describedby` through the slot (`v-slot="{ control }"`, then
+`v-bind="control"` on the input). `api/client.ts` throws `ApiValidationError`
+for Laravel's 422 and `ApiError` for other failures; `useFormErrors().fromApi()`
+turns the 422 into one message per field and `focusFirstError()` moves focus
+to the first invalid control. Long forms open `FormDialog` with
+`layout="sheet"`. A panel with nothing to show uses
+`components/app/feedback/StatePanel.vue` (`empty`, `loading`, `error`,
+`forbidden`). A record page uses `components/app/detail/DetailLayout.vue`:
+actions, reka-ui tabs whose active tab is in the URL (`?tab=history`), one slot
+per tab key and an optional summary; its History tab shows `RecordTimeline`.
+reka-ui is used only where native HTML lacks the keyboard behavior, such as
+tabs; dialogs and popovers stay native.
+
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
 and supporting copy. Module and dashboard tables share `DataTable` for cell
