@@ -599,6 +599,21 @@ sizes is fine); `bn.json` and `en.json` have the same keys and `{placeholders}`,
 no empty text, and every key is used in `src` (keys built at run time count
 through their prefix, such as `` `preferences.theme.${theme}` ``).
 
+The app installs as a PWA. `frontend/public/manifest.webmanifest` and
+`public/icons/` (192, 512 and a maskable 512 drawn from `favicon.svg`) are
+static; their colors match `--surface` and `--background`. `vite-plugin-pwa`
+builds `sw.js` in production builds only: it precaches the built files and
+answers page loads with `index.html`, while `/api`, `/sanctum` and `/up` always
+go to the network, so no record, invoice or balance is stored on the device.
+Add a runtime cache only for data the design allows offline (Phase 7 reading
+drafts use IndexedDB, not the service worker). nginx serves `sw.js` and the
+manifest with `no-cache`. `composables/useServiceWorker.ts` registers it; a new
+version waits for the user's "Reload" toast. `useOnlineStatus` drives the
+offline banner, and `useInstallPrompt` with `InstallAppButton` offers the
+browser's install dialog or, on iPhone and iPad, the Share-menu steps. Test the
+PWA on the nginx build (http://localhost:8047); the Vite dev server has no
+service worker.
+
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
 and supporting copy. Module and dashboard tables share `DataTable` for cell
