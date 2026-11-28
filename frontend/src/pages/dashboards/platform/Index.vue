@@ -9,6 +9,7 @@ import {
     Building2,
     Gauge,
     Package,
+    Plus,
 } from '@lucide/vue';
 import { ref, useTemplateRef, watchEffect } from 'vue';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
@@ -110,8 +111,7 @@ function savePreview(): void {
                     class="ui-button ui-button-primary self-center"
                     @click="cycleDialog?.open()"
                 >
-                    <span aria-hidden="true">+</span
-                    >{{ t('dashboard.create_cycle') }}
+                    <Plus />{{ t('dashboard.create_cycle') }}
                 </button>
             </PageHeading>
 

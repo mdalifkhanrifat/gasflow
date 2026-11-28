@@ -8,6 +8,7 @@ import {
     Download,
     Eye,
     Pencil,
+    Plus,
     Search,
     Trash2,
 } from '@lucide/vue';
@@ -265,11 +266,7 @@ function removeRecord(): void {
                             class="ui-button ui-button-primary"
                             @click="createDialog?.open()"
                         >
-                            <span
-                                aria-hidden="true"
-                                class="text-base leading-none"
-                                >+</span
-                            >
+                            <Plus />
                             {{ createRecord.label }}
                         </button>
                     </div>
