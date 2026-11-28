@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="Row">
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
+import FormField from '@/components/app/forms/FormField.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import { formatCell, type TableColumn } from '@/components/app/tables/columns';
 import UiInput from '@/components/ui/UiInput.vue';
@@ -112,10 +113,14 @@ defineExpose({ open });
             class="grid gap-4"
             @submit.prevent="save"
         >
-            <label class="grid gap-1.5 text-field-label font-medium">
-                {{ editColumn.label }}
-                <UiInput v-model="draft" required maxlength="120" autofocus />
-            </label>
+            <FormField v-slot="{ control }" :label="editColumn.label" required>
+                <UiInput
+                    v-bind="control"
+                    v-model="draft"
+                    maxlength="120"
+                    autofocus
+                />
+            </FormField>
             <div class="flex flex-wrap justify-end gap-2">
                 <button
                     type="button"

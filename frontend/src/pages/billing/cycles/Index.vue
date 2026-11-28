@@ -111,7 +111,7 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
                         building.toLocaleLowerCase(),
             )
         ) {
-            return t('module.existing_cycle');
+            return { period: t('module.existing_cycle') };
         }
         addCycle({
             id: 'preview-cycle-' + ++nextCycleId,

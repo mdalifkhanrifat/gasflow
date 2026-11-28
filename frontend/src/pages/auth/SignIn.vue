@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
 import BrandLogo from '@/components/app/BrandLogo.vue';
+import FormField from '@/components/app/forms/FormField.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
 import PublicLayout from '@/layouts/PublicLayout.vue';
@@ -36,29 +37,28 @@ function submitPreview(): void {
                 </p>
 
                 <form class="mt-5 grid gap-4" @submit.prevent="submitPreview">
-                    <label
-                        class="grid gap-1.5 text-field-label font-medium text-ink"
+                    <FormField
+                        v-slot="{ control }"
+                        :label="t('auth.email')"
+                        required
                     >
-                        {{ t('auth.email') }}
                         <UiInput
+                            v-bind="control"
                             v-model="email"
-                            required
                             type="email"
                             autocomplete="username"
                             class="w-full"
                         />
-                    </label>
-                    <div class="grid gap-1.5">
-                        <label
-                            for="gasflow-password"
-                            class="text-field-label font-medium text-ink"
-                            >{{ t('auth.password') }}</label
-                        >
+                    </FormField>
+                    <FormField
+                        v-slot="{ control }"
+                        :label="t('auth.password')"
+                        required
+                    >
                         <div class="relative">
                             <UiInput
-                                id="gasflow-password"
+                                v-bind="control"
                                 v-model="password"
-                                required
                                 :type="passwordVisible ? 'text' : 'password'"
                                 autocomplete="current-password"
                                 class="w-full pe-18"
@@ -67,7 +67,7 @@ function submitPreview(): void {
                                 type="button"
                                 class="absolute inset-y-0 end-0 rounded-control px-2.5 text-xs font-semibold text-primary focus-visible:outline-2 focus-visible:outline-focus"
                                 :aria-pressed="passwordVisible"
-                                aria-controls="gasflow-password"
+                                :aria-controls="control.id"
                                 @click="passwordVisible = !passwordVisible"
                             >
                                 {{
@@ -79,7 +79,7 @@ function submitPreview(): void {
                                 }}
                             </button>
                         </div>
-                    </div>
+                    </FormField>
                     <button
                         type="submit"
                         class="ui-button ui-button-primary justify-center"

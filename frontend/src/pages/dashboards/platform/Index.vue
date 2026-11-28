@@ -16,6 +16,7 @@ import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import StatCard from '@/components/app/dashboard/StatCard.vue';
 import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
+import FormField from '@/components/app/forms/FormField.vue';
 import UiBadge from '@/components/ui/UiBadge.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -252,16 +253,19 @@ function savePreview(): void {
             :description="t('dashboard.cycle_preview')"
         >
             <form class="grid gap-4" @submit.prevent="savePreview">
-                <label class="grid gap-1 text-field-label">
-                    {{ t('dashboard.billing_month') }}
+                <FormField
+                    v-slot="{ control }"
+                    :label="t('dashboard.billing_month')"
+                    required
+                >
                     <UiInput
+                        v-bind="control"
                         v-model="cycleMonth"
                         autofocus
-                        required
                         type="month"
                         class="w-full"
                     />
-                </label>
+                </FormField>
                 <div class="flex flex-wrap justify-end gap-2">
                     <button
                         type="button"

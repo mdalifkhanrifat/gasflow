@@ -92,7 +92,7 @@ const createRecord = computed<RecordCreateDefinition>(() => ({
                     name.toLocaleLowerCase(),
             )
         ) {
-            return t('module.existing_organization');
+            return { name: t('module.existing_organization') };
         }
         addOrganization({
             name,
