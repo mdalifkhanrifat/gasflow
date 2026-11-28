@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
-import StatusBadge from '@/components/app/StatusBadge.vue';
+import UiBadge from '@/components/ui/UiBadge.vue';
 import { useLocale } from '@/composables/useLocale';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 import { formatNumber } from '@/lib/format';
@@ -81,9 +81,9 @@ const operations = [
                                 <span class="text-sm text-ink">{{
                                     t(operation.name)
                                 }}</span>
-                                <StatusBadge :tone="operation.tone">{{
+                                <UiBadge :tone="operation.tone">{{
                                     t(operation.status)
-                                }}</StatusBadge>
+                                }}</UiBadge>
                             </li>
                         </ul>
                     </DashboardPanel>

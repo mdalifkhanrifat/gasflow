@@ -1,21 +1,16 @@
 <script setup lang="ts">
+import { statusTones, type StatusTone } from '@/config/status';
+
 defineProps<{
-    tone: 'info' | 'success' | 'warning' | 'danger';
+    tone: StatusTone;
     compact?: boolean;
 }>();
-
-const tones = {
-    info: 'bg-primary-soft text-primary',
-    success: 'bg-success-soft text-success',
-    warning: 'bg-warning-soft text-warning',
-    danger: 'bg-danger-soft text-danger',
-};
 </script>
 
 <template>
     <span
         :class="[
-            tones[tone],
+            statusTones[tone],
             compact
                 ? 'px-1.5 py-0.5 text-status-compact'
                 : 'px-2.5 py-1 text-xs',

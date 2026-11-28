@@ -16,7 +16,7 @@ import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import StatCard from '@/components/app/dashboard/StatCard.vue';
 import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
-import StatusBadge from '@/components/app/StatusBadge.vue';
+import UiBadge from '@/components/ui/UiBadge.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
 import { useToast } from '@/composables/useToast';
@@ -170,9 +170,9 @@ function savePreview(): void {
                 :subtitle="t('dashboard.pipeline_subtitle')"
             >
                 <template #action
-                    ><StatusBadge tone="info">{{
+                    ><UiBadge tone="info">{{
                         t('dashboard.cycle_october')
-                    }}</StatusBadge></template
+                    }}</UiBadge></template
                 >
                 <ol class="flex flex-wrap gap-2 px-4 pb-4">
                     <li
@@ -214,9 +214,9 @@ function savePreview(): void {
                     :subtitle="t('dashboard.attention_subtitle')"
                 >
                     <template #action
-                        ><StatusBadge tone="warning">{{
+                        ><UiBadge tone="warning">{{
                             t('dashboard.attention_count')
-                        }}</StatusBadge></template
+                        }}</UiBadge></template
                     >
                     <ul class="grid gap-3 px-4 pb-4">
                         <li

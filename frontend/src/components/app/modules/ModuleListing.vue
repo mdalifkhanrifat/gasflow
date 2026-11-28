@@ -16,7 +16,7 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
-import StatusBadge from '@/components/app/StatusBadge.vue';
+import UiBadge from '@/components/ui/UiBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import TableCheckbox from '@/components/app/tables/TableCheckbox.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
@@ -360,9 +360,9 @@ function removeRecord(): void {
                             {{ cell }}
                         </td>
                         <td class="whitespace-nowrap">
-                            <StatusBadge :tone="row.tone" compact>{{
+                            <UiBadge :tone="row.tone" compact>{{
                                 row.status
-                            }}</StatusBadge>
+                            }}</UiBadge>
                         </td>
                         <td>
                             <div class="flex justify-center gap-0.5">
@@ -527,9 +527,9 @@ function removeRecord(): void {
                             {{ t('module.status') }}
                         </dt>
                         <dd>
-                            <StatusBadge :tone="selected.tone">{{
+                            <UiBadge :tone="selected.tone">{{
                                 selected.status
-                            }}</StatusBadge>
+                            }}</UiBadge>
                         </dd>
                     </div>
                 </dl>

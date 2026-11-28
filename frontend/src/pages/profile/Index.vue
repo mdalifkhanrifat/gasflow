@@ -3,7 +3,7 @@ import { watchEffect } from 'vue';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import PageHeading from '@/components/app/PageHeading.vue';
 import ThemeSwitcher from '@/components/app/navigation/ThemeSwitcher.vue';
-import StatusBadge from '@/components/app/StatusBadge.vue';
+import UiBadge from '@/components/ui/UiBadge.vue';
 import { useLocale } from '@/composables/useLocale';
 import { usePreviewWorkspace } from '@/composables/usePreviewWorkspace';
 import AppShell from '@/layouts/AppShell.vue';
@@ -27,9 +27,9 @@ watchEffect(() => {
             >
                 <DashboardPanel :title="t('profile.account_title')">
                     <template #action
-                        ><StatusBadge tone="info">{{
+                        ><UiBadge tone="info">{{
                             t('profile.sample')
-                        }}</StatusBadge></template
+                        }}</UiBadge></template
                     >
                     <div class="px-4 pb-5">
                         <div
