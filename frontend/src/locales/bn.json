@@ -269,5 +269,11 @@
     "offline.message": "আপনি অফলাইনে আছেন। সংযোগ ফিরলে নতুন তথ্য দেখা যাবে।",
     "offline.restored": "সংযোগ ফিরে এসেছে",
     "pwa.update_ready": "GasFlow-এর নতুন সংস্করণ প্রস্তুত।",
-    "pwa.reload": "রিলোড করুন"
+    "pwa.reload": "রিলোড করুন",
+    "pwa.install": "অ্যাপ ইনস্টল করুন",
+    "pwa.installed": "GasFlow ইনস্টল হয়েছে",
+    "pwa.ios_intro": "Safari থেকে GasFlow আপনার হোম স্ক্রিনে যোগ করুন।",
+    "pwa.ios_share": "শেয়ার বোতাম চাপুন।",
+    "pwa.ios_add": "“Add to Home Screen” (হোম স্ক্রিনে যোগ করুন) বেছে নিন।",
+    "pwa.ios_confirm": "“Add” (যোগ করুন) চাপুন।"
 }

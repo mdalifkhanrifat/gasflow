@@ -823,6 +823,19 @@
         border: 2px solid var(--primary);
     }
 
+    /* InstallAppButton.vue: a menu row and the iPhone/iPad steps. */
+    .install-app-button {
+        @apply flex w-full items-center gap-2 rounded-control px-2.5 py-2 text-start text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus;
+    }
+
+    .install-steps {
+        @apply grid list-decimal gap-2 ps-5 text-sm text-ink;
+    }
+
+    .install-steps li > .lucide {
+        @apply me-1.5 inline text-primary;
+    }
+
     /* StatePanel.vue: empty, loading, error and forbidden states. */
     .state-panel {
         @apply grid justify-items-center gap-1 px-4 py-10 text-center;

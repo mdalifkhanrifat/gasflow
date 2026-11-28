@@ -2,6 +2,7 @@
 import { Bell, Menu, Moon, Sun } from '@lucide/vue';
 import { useId, useTemplateRef } from 'vue';
 import AdminAppearance from '@/components/app/navigation/AdminAppearance.vue';
+import InstallAppButton from '@/components/app/navigation/InstallAppButton.vue';
 import LanguageSwitcher from '@/components/app/navigation/LanguageSwitcher.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -156,6 +157,7 @@ defineExpose({ openProfile });
             >
                 {{ t('profile.title') }}
             </RouterLink>
+            <InstallAppButton />
         </div>
     </header>
 </template>

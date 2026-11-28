@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import { initializeTheme } from '@/composables/useTheme';
+import '@/composables/useInstallPrompt';
 import { restoreLocale } from '@/composables/useLocale';
 import { registerServiceWorker } from '@/composables/useServiceWorker';
 import { loadStatusCatalogue } from '@/composables/useStatusCatalogue';

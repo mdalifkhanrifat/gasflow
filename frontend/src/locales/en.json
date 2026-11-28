@@ -269,5 +269,11 @@
     "offline.message": "You are offline. New data appears when the connection returns.",
     "offline.restored": "Back online",
     "pwa.update_ready": "A new version of GasFlow is ready.",
-    "pwa.reload": "Reload"
+    "pwa.reload": "Reload",
+    "pwa.install": "Install app",
+    "pwa.installed": "GasFlow is installed",
+    "pwa.ios_intro": "Add GasFlow to your Home Screen from Safari.",
+    "pwa.ios_share": "Tap the Share button.",
+    "pwa.ios_add": "Choose “Add to Home Screen”.",
+    "pwa.ios_confirm": "Tap “Add”."
 }
