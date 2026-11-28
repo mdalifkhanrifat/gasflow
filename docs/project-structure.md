@@ -141,7 +141,7 @@ Generators accept the subfolder: `php artisan make:model Billing/Invoice`,
 | a status                               | an enum case in `app/Enums/<Domain>/` and a row in `status_definitions` (its migration)   |
 | a permission or system role            | a row in a migration (every environment needs it); demo data in a seeder (Phase 4/6)      |
 | a setting                              | a `config/` file; secrets only through `.env`                                             |
-| a translation                          | `lang/bn` and `lang/en` (Phase 3)                                                         |
+| a UI translation                       | the same key in `frontend/src/locales/bn.json` and `en.json` (checked by `npm run check`) |
 | a test                                 | `tests/Feature/<Domain>/` or `tests/Unit/<Domain>/`                                       |
 
 ## Request flow
@@ -591,6 +591,13 @@ actions, reka-ui tabs whose active tab is in the URL (`?tab=history`), one slot
 per tab key and an optional summary; its History tab shows `RecordTimeline`.
 reka-ui is used only where native HTML lacks the keyboard behavior, such as
 tabs; dialogs and popovers stay native.
+
+`npm run check` (in `make check` and CI) also runs
+`frontend/scripts/check-ui-rules.mjs`: no hex color in `.vue` or `.ts` files
+and no static `style="…"` in components (a `:style` binding for data-driven
+sizes is fine); `bn.json` and `en.json` have the same keys and `{placeholders}`,
+no empty text, and every key is used in `src` (keys built at run time count
+through their prefix, such as `` `preferences.theme.${theme}` ``).
 
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
