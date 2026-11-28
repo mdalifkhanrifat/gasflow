@@ -5,6 +5,7 @@ const desktopOpen = ref(true);
 </script>
 
 <script setup lang="ts">
+import { X } from '@lucide/vue';
 import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import AppSidebar from '@/components/app/navigation/AppSidebar.vue';
 import AppTopbar from '@/components/app/navigation/AppTopbar.vue';
@@ -123,7 +124,7 @@ onUnmounted(() => desktop.removeEventListener('change', closeOnDesktop));
                     class="absolute top-[max(1rem,env(safe-area-inset-top))] right-3 grid size-control place-items-center rounded-control text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus"
                     @click="closeMobile"
                 >
-                    <span aria-hidden="true">×</span>
+                    <X />
                 </button>
                 <AppSidebar
                     :workspace="workspace"

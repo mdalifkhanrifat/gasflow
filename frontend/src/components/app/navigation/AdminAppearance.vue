@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Settings, X } from '@lucide/vue';
 import { useId } from 'vue';
 import ThemeSwitcher from '@/components/app/navigation/ThemeSwitcher.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
@@ -40,12 +41,12 @@ function resetAppearance(): void {
     <div class="contents">
         <button
             type="button"
-            class="topbar-icon appearance-trigger text-sm print:hidden"
+            class="topbar-icon appearance-trigger print:hidden"
             :aria-label="t('preferences.appearance')"
             :title="t('preferences.appearance')"
             :popovertarget="id"
         >
-            <span aria-hidden="true">⚙︎</span>
+            <Settings />
         </button>
         <section
             :id="id"
@@ -65,7 +66,7 @@ function resetAppearance(): void {
                     :popovertarget="id"
                     popovertargetaction="hide"
                 >
-                    <span aria-hidden="true">×</span>
+                    <X />
                 </button>
             </div>
             <div class="grid grid-cols-2 gap-3">

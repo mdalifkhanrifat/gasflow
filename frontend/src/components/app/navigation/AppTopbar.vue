@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Bell, Menu, Moon, Sun } from '@lucide/vue';
 import { useId, useTemplateRef } from 'vue';
 import AdminAppearance from '@/components/app/navigation/AdminAppearance.vue';
 import LanguageSwitcher from '@/components/app/navigation/LanguageSwitcher.vue';
@@ -42,7 +43,7 @@ defineExpose({ openProfile });
                     class="topbar-icon md:hidden"
                     @click="emit('openMobile')"
                 >
-                    <span aria-hidden="true">☰</span>
+                    <Menu />
                 </button>
                 <button
                     type="button"
@@ -52,7 +53,7 @@ defineExpose({ openProfile });
                     class="topbar-icon hidden md:inline-grid"
                     @click="emit('toggleDesktop')"
                 >
-                    <span aria-hidden="true">☰</span>
+                    <Menu />
                 </button>
                 <p class="min-w-0 truncate text-xs font-semibold text-ink">
                     {{ pageLabel }}
@@ -92,25 +93,25 @@ defineExpose({ openProfile });
                 </label>
                 <button
                     type="button"
-                    class="topbar-theme topbar-icon text-base"
+                    class="topbar-theme topbar-icon"
                     :aria-label="
                         t(isDark ? 'topbar.use_light' : 'topbar.use_dark')
                     "
                     :title="t(isDark ? 'topbar.use_light' : 'topbar.use_dark')"
                     @click="setPreference(isDark ? 'light' : 'dark')"
                 >
-                    <span aria-hidden="true">{{ isDark ? '☀' : '☾' }}</span>
+                    <component :is="isDark ? Sun : Moon" />
                 </button>
                 <AdminAppearance />
                 <LanguageSwitcher />
                 <button
                     type="button"
-                    class="topbar-icon text-base"
+                    class="topbar-icon"
                     :aria-label="t('navigation.notifications')"
                     :title="t('navigation.notifications')"
                     :popovertarget="notificationsId"
                 >
-                    <span aria-hidden="true">♧</span>
+                    <Bell />
                 </button>
                 <button
                     type="button"

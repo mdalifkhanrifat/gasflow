@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Moon, Sun } from '@lucide/vue';
 import BrandLogo from '@/components/app/BrandLogo.vue';
 import LanguageSwitcher from '@/components/app/navigation/LanguageSwitcher.vue';
 import { useLocale } from '@/composables/useLocale';
@@ -29,7 +30,7 @@ const { isDark, setPreference } = useTheme();
                         "
                         @click="setPreference(isDark ? 'light' : 'dark')"
                     >
-                        <span aria-hidden="true">{{ isDark ? '☀' : '☾' }}</span>
+                        <component :is="isDark ? Sun : Moon" />
                     </button>
                     <LanguageSwitcher />
                     <slot name="actions" />
