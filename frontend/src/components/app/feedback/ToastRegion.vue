@@ -4,7 +4,7 @@ import { useLocale } from '@/composables/useLocale';
 import { useToast } from '@/composables/useToast';
 
 const { t } = useLocale();
-const { toasts, dismiss, pause, resume } = useToast();
+const { toasts, dismiss, runAction, pause, resume } = useToast();
 const icons = {
     success: CircleCheck,
     info: Info,
@@ -40,6 +40,14 @@ function leave(event: FocusEvent): void {
             >
                 <component :is="icons[toast.tone]" class="toast-icon" />
                 <p class="min-w-0 flex-1">{{ toast.message }}</p>
+                <button
+                    v-if="toast.action"
+                    type="button"
+                    class="toast-action"
+                    @click="runAction(toast)"
+                >
+                    {{ toast.action.label }}
+                </button>
                 <button
                     type="button"
                     class="toast-dismiss"

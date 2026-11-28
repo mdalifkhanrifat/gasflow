@@ -267,5 +267,7 @@
     "invoice.history_due": "পরিশোধের শেষ তারিখ",
     "invoice.history_status": "বর্তমান অবস্থা: {status}",
     "offline.message": "আপনি অফলাইনে আছেন। সংযোগ ফিরলে নতুন তথ্য দেখা যাবে।",
-    "offline.restored": "সংযোগ ফিরে এসেছে"
+    "offline.restored": "সংযোগ ফিরে এসেছে",
+    "pwa.update_ready": "GasFlow-এর নতুন সংস্করণ প্রস্তুত।",
+    "pwa.reload": "রিলোড করুন"
 }

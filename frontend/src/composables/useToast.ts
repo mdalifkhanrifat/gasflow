@@ -2,10 +2,18 @@ import { readonly, ref } from 'vue';
 
 export type ToastTone = 'success' | 'info' | 'warning' | 'danger';
 
+export interface ToastAction {
+    label: string;
+    run: () => void;
+}
+
 export interface Toast {
     id: number;
     message: string;
     tone: ToastTone;
+    action?: ToastAction;
+    // Stays until the user acts or dismisses it, such as an update prompt.
+    persistent?: boolean;
 }
 
 // Short confirmations shown by ToastRegion. Errors that block a form stay
@@ -31,13 +39,25 @@ function dismiss(id: number): void {
     toasts.value = toasts.value.filter((toast) => toast.id !== id);
 }
 
-function notify(message: string, tone: ToastTone = 'success'): void {
-    const toast = { id: ++nextId, message, tone };
+function notify(
+    message: string,
+    tone: ToastTone = 'success',
+    options: { action?: ToastAction; persistent?: boolean } = {},
+): void {
+    const toast = { id: ++nextId, message, tone, ...options };
     toasts.value = [...toasts.value, toast];
-    toasts.value.slice(0, -visibleLimit).forEach(({ id }) => dismiss(id));
-    if (!paused) {
+    toasts.value
+        .filter(({ persistent }) => !persistent)
+        .slice(0, -visibleLimit)
+        .forEach(({ id }) => dismiss(id));
+    if (!paused && !toast.persistent) {
         startTimer(toast.id);
     }
+}
+
+function runAction(toast: Toast): void {
+    dismiss(toast.id);
+    toast.action?.run();
 }
 
 // Pointer or keyboard focus inside the region keeps every toast open.
@@ -49,9 +69,18 @@ function pause(): void {
 
 function resume(): void {
     paused = false;
-    toasts.value.forEach(({ id }) => startTimer(id));
+    toasts.value
+        .filter(({ persistent }) => !persistent)
+        .forEach(({ id }) => startTimer(id));
 }
 
 export function useToast() {
-    return { toasts: readonly(toasts), notify, dismiss, pause, resume };
+    return {
+        toasts: readonly(toasts),
+        notify,
+        dismiss,
+        runAction,
+        pause,
+        resume,
+    };
 }
