@@ -532,6 +532,14 @@ icons. Every icon takes its size and stroke from `--icon-size` and
 itself, as `.table-action` and `.data-table-sort` do. Icons are decorative
 (`aria-hidden`), so the button or link around them carries the accessible name.
 
+Modal forms use `components/app/forms/FormDialog.vue`, a native `<dialog>`
+opened with `showModal()`: the browser moves focus inside, keeps the page
+behind it inert, closes on Escape and returns focus to the trigger. Menus and
+panels that do not block the page use the native `popover` attribute. After an
+action succeeds, call `notify()` from `composables/useToast.ts`; the single
+`ToastRegion` in `App.vue` announces it politely and pauses while hovered or
+focused. Errors that block a form stay inside the form.
+
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
 and supporting copy. Module and dashboard tables share `DataTable` for cell
