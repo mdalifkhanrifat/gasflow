@@ -5,8 +5,8 @@
     "scripts": {
         "build": "vp build",
         "dev": "vp dev",
-        "check": "vp check",
-        "check:fix": "vp check --fix",
+        "check": "vp check && node scripts/check-ui-rules.mjs",
+        "check:fix": "vp check --fix && node scripts/check-ui-rules.mjs",
         "types:check": "vue-tsc --noEmit"
     },
     "dependencies": {
