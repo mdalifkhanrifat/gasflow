@@ -178,7 +178,7 @@
     --sidebar-rail-width: 4.75rem;
 }
 
-/* Bengali typeface. */
+/* Bengali typeface, bundled in fonts.css. */
 :root:lang(bn) {
     --ui-font-sans: 'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif;
 }

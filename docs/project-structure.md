@@ -499,6 +499,7 @@ frontend/
     ├── composables/ theme and locale preferences
     ├── layouts/     app shell and auth layout when needed
     ├── locales/     frontend translation dictionaries
+    ├── assets/      bundled files Vite fingerprints, such as fonts
     ├── styles/      semantic tokens and Tailwind mappings
     └── lib/         shared formatters and helpers
 ```
@@ -539,6 +540,12 @@ panels that do not block the page use the native `popover` attribute. After an
 action succeeds, call `notify()` from `composables/useToast.ts`; the single
 `ToastRegion` in `App.vue` announces it politely and pauses while hovered or
 focused. Errors that block a form stay inside the form.
+
+Fonts are self-hosted, never loaded from a CDN. Each font has its own folder
+under `src/assets/fonts/` with the file, its licence and a `SOURCE.md` that
+says where it came from and how to rebuild it; `src/styles/fonts.css` holds the
+`@font-face` rules. Bengali uses Noto Sans Bengali (weights 400–800, Bengali
+characters only); Latin text uses the system font.
 
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
