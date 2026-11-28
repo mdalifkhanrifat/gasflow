@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onErrorCaptured } from 'vue';
+import ToastRegion from '@/components/app/feedback/ToastRegion.vue';
 import ServiceNotice from '@/pages/errors/ServiceNotice.vue';
 import router, { navigationFailure } from '@/router';
 
@@ -26,4 +27,5 @@ onErrorCaptured((error) => {
         @resume="navigationFailure = undefined"
     />
     <RouterView v-else />
+    <ToastRegion />
 </template>

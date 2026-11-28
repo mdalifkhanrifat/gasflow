@@ -258,5 +258,7 @@
     "service.forbidden_title": "You don’t have access to this page",
     "service.forbidden_description": "Ask your organization administrator to check your role or give you access to this workspace.",
     "service.missing_description": "This page may have moved, or the link may be out of date.",
-    "invoice.not_found_description": "This invoice is unavailable. Check the invoice number or choose another invoice from the list."
+    "invoice.not_found_description": "This invoice is unavailable. Check the invoice number or choose another invoice from the list.",
+    "toast.region": "Notifications",
+    "toast.dismiss": "Dismiss notification"
 }

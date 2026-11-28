@@ -687,6 +687,72 @@
         @apply bg-primary/90;
     }
 
+    /* ToastRegion.vue: short confirmations at the bottom edge. */
+    .toast-region {
+        position: fixed;
+        z-index: 60;
+        inset-inline: max(1rem, env(safe-area-inset-left))
+            max(1rem, env(safe-area-inset-right));
+        inset-block-end: max(1rem, env(safe-area-inset-bottom));
+        pointer-events: none;
+    }
+
+    .toast-list {
+        @apply ms-auto grid gap-2;
+        max-inline-size: var(--toast-width);
+    }
+
+    .toast {
+        @apply flex items-start gap-2.5 rounded-control border border-line bg-surface px-3 py-2.5 text-ink shadow-panel;
+        font-size: var(--toast-text-size);
+        pointer-events: auto;
+    }
+
+    .toast-icon {
+        margin-block-start: 0.0625rem;
+    }
+
+    .toast[data-tone='success'] .toast-icon {
+        color: var(--success);
+    }
+
+    .toast[data-tone='info'] .toast-icon {
+        color: var(--primary);
+    }
+
+    .toast[data-tone='warning'] .toast-icon {
+        color: var(--warning);
+    }
+
+    .toast[data-tone='danger'] .toast-icon {
+        color: var(--danger);
+    }
+
+    .toast-dismiss {
+        @apply -my-1 -me-1.5 grid size-7 shrink-0 place-items-center rounded-control text-ink-muted hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus;
+        --icon-size: var(--icon-size-small);
+    }
+
+    .toast-enter-active,
+    .toast-leave-active {
+        transition:
+            opacity 180ms ease,
+            translate 180ms ease;
+    }
+
+    .toast-enter-from,
+    .toast-leave-to {
+        opacity: 0;
+        translate: 0 0.5rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .toast-enter-active,
+        .toast-leave-active {
+            transition: none;
+        }
+    }
+
     /* Dashboard chart grid and invoice-status chart colors. */
     .chart-grid {
         background: repeating-linear-gradient(
