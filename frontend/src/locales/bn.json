@@ -257,8 +257,12 @@
     "module.removed": "রেকর্ড মুছে ফেলা হয়েছে",
     "module.created": "রেকর্ড যোগ হয়েছে",
     "module.loading": "রেকর্ড লোড হচ্ছে…",
-    "module.load_failed": "রেকর্ড লোড করা যায়নি। আবার চেষ্টা করুন।",
+    "module.load_failed": "রেকর্ড লোড করা যায়নি।",
     "module.sort_by": "সাজান",
     "module.sort_ascending": "{column}, ছোট থেকে বড়",
-    "module.sort_descending": "{column}, বড় থেকে ছোট"
+    "module.sort_descending": "{column}, বড় থেকে ছোট",
+    "module.retry": "আবার চেষ্টা করুন",
+    "module.forbidden": "এই তালিকা দেখার অনুমতি আপনার নেই",
+    "module.forbidden_detail": "অনুমতির জন্য আপনার প্রতিষ্ঠানের অ্যাডমিনের সাথে যোগাযোগ করুন।",
+    "module.clear_filters": "খোঁজ ও ফিল্টার মুছুন"
 }

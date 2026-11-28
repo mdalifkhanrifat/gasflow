@@ -75,6 +75,9 @@
     --icon-size-small: 0.75rem;
     --icon-stroke: 1.75;
 
+    /* Empty, loading, error and forbidden panels. */
+    --state-text-size: 0.8125rem;
+
     /* Toast notifications. */
     --toast-width: 22rem;
     --toast-text-size: 0.8125rem;

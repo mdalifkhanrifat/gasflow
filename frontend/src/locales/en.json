@@ -257,8 +257,12 @@
     "module.removed": "Record removed",
     "module.created": "Record added",
     "module.loading": "Loading records…",
-    "module.load_failed": "The records could not be loaded. Try again.",
+    "module.load_failed": "The records could not be loaded.",
     "module.sort_by": "Sort by",
     "module.sort_ascending": "{column}, low to high",
-    "module.sort_descending": "{column}, high to low"
+    "module.sort_descending": "{column}, high to low",
+    "module.retry": "Try again",
+    "module.forbidden": "You do not have access to this list",
+    "module.forbidden_detail": "Ask an administrator of your organization for access.",
+    "module.clear_filters": "Clear search and filters"
 }

@@ -1,4 +1,5 @@
 import { computed, ref, shallowRef, watch } from 'vue';
+import { ApiError } from '@/api/client';
 import {
     pageSizes,
     type SortDirection,
@@ -30,6 +31,8 @@ export function useTableQuery<Row>(
     const lastPage = ref(1);
     const loading = ref(false);
     const failed = ref(false);
+    // HTTP status of the last failed load, such as 403; 0 for network errors.
+    const failedStatus = ref(0);
     const selected = shallowRef(new Map<string, Row>());
 
     const query = computed<TableQuery>(() => ({
@@ -76,9 +79,11 @@ export function useTableQuery<Row>(
             if (result.page !== page.value) {
                 page.value = result.page;
             }
-        } catch {
+        } catch (error) {
             if (current === revision) {
                 failed.value = true;
+                failedStatus.value =
+                    error instanceof ApiError ? error.status : 0;
             }
         } finally {
             if (current === revision) {
@@ -179,6 +184,7 @@ export function useTableQuery<Row>(
         lastPage,
         loading,
         failed,
+        failedStatus,
         selected,
         selectedOnPage,
         allPageSelected,

@@ -782,6 +782,41 @@
         }
     }
 
+    /* StatePanel.vue: empty, loading, error and forbidden states. */
+    .state-panel {
+        @apply grid justify-items-center gap-1 px-4 py-10 text-center;
+        font-size: var(--state-text-size);
+    }
+
+    .state-panel-icon {
+        @apply mb-1 grid size-10 place-items-center rounded-full bg-surface-muted text-ink-muted;
+        --icon-size: 1.25rem;
+    }
+
+    .state-panel[data-state='error'] .state-panel-icon {
+        @apply bg-danger-soft text-danger;
+    }
+
+    .state-panel[data-state='forbidden'] .state-panel-icon {
+        @apply bg-warning-soft text-warning;
+    }
+
+    .state-panel[data-state='loading'] .state-panel-icon .lucide {
+        animation: state-spin 900ms linear infinite;
+    }
+
+    @keyframes state-spin {
+        to {
+            rotate: 1turn;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .state-panel[data-state='loading'] .state-panel-icon .lucide {
+            animation: none;
+        }
+    }
+
     /* ToastRegion.vue: short confirmations at the bottom edge. */
     .toast-region {
         position: fixed;

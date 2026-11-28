@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Download, Plus } from '@lucide/vue';
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useRoute, type RouteLocationRaw } from 'vue-router';
 import PageHeading from '@/components/app/PageHeading.vue';
+import StatePanel from '@/components/app/feedback/StatePanel.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
 import RecordActions from '@/components/app/tables/RecordActions.vue';
@@ -62,6 +63,7 @@ const {
     lastPage,
     loading,
     failed,
+    failedStatus,
     selected,
     selectedOnPage,
     allPageSelected,
@@ -153,6 +155,12 @@ function setSort(value: string | string[]): void {
               direction: key.startsWith('-') ? 'descending' : 'ascending',
           }
         : undefined;
+}
+
+const filtered = computed(() => !!search.value.trim() || !!status.value);
+function clearFilters(): void {
+    search.value = '';
+    status.value = '';
 }
 
 const canExport = computed(
@@ -398,21 +406,36 @@ function removeRecord(row: Row): void {
                         </td>
                     </template>
                 </DataTable>
-                <p
-                    v-else
-                    role="status"
-                    class="px-4 py-6 text-sm text-ink-muted"
+                <StatePanel
+                    v-else-if="failed && failedStatus === 403"
+                    state="forbidden"
+                    :title="t('module.forbidden')"
+                    :description="t('module.forbidden_detail')"
+                />
+                <StatePanel
+                    v-else-if="failed"
+                    state="error"
+                    :title="t('module.load_failed')"
                 >
-                    {{
-                        t(
-                            failed
-                                ? 'module.load_failed'
-                                : loading
-                                  ? 'module.loading'
-                                  : 'module.empty',
-                        )
-                    }}
-                </p>
+                    <button type="button" class="ui-button" @click="table.load">
+                        {{ t('module.retry') }}
+                    </button>
+                </StatePanel>
+                <StatePanel
+                    v-else-if="loading"
+                    state="loading"
+                    :title="t('module.loading')"
+                />
+                <StatePanel v-else state="empty" :title="t('module.empty')">
+                    <button
+                        v-if="filtered"
+                        type="button"
+                        class="ui-button"
+                        @click="clearFilters"
+                    >
+                        {{ t('module.clear_filters') }}
+                    </button>
+                </StatePanel>
                 <TablePagination
                     v-model:page="page"
                     v-model:per-page="perPage"
