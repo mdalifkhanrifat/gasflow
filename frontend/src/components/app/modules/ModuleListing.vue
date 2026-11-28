@@ -22,6 +22,7 @@ import TableCheckbox from '@/components/app/tables/TableCheckbox.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
+import { useToast } from '@/composables/useToast';
 import AppShell from '@/layouts/AppShell.vue';
 import { downloadCsv } from '@/lib/downloadCsv';
 import { formatNumber } from '@/lib/format';
@@ -49,6 +50,7 @@ const props = defineProps<{
     };
 }>();
 const { locale, t } = useLocale();
+const { notify } = useToast();
 const search = ref('');
 const route = useRoute();
 watch(
@@ -130,6 +132,7 @@ const recordCount = computed(() =>
 );
 
 function showNewRecord(): void {
+    notify(t('module.created'));
     search.value = '';
     status.value = '';
     sort.value = undefined;
@@ -176,6 +179,7 @@ function saveRecord(): void {
     if (selected.value && value) {
         props.previewActions?.onEdit(recordKey(selected.value), value);
         dialog.value?.close();
+        notify(t('module.saved'));
     }
 }
 
@@ -183,6 +187,7 @@ function removeRecord(): void {
     if (selected.value) {
         props.previewActions?.onRemove(recordKey(selected.value));
         dialog.value?.close();
+        notify(t('module.removed'));
     }
 }
 </script>

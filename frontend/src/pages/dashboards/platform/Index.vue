@@ -19,6 +19,7 @@ import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import { useLocale } from '@/composables/useLocale';
+import { useToast } from '@/composables/useToast';
 import AppShell from '@/layouts/AppShell.vue';
 import { formatMoney, formatNumber } from '@/lib/format';
 import CollectionsChart from './components/CollectionsChart.vue';
@@ -26,13 +27,13 @@ import InvoiceStatusChart from './components/InvoiceStatusChart.vue';
 import RecentInvoices from './components/RecentInvoices.vue';
 
 const { locale, t } = useLocale();
+const { notify } = useToast();
 watchEffect(() => {
     document.title = t('dashboard.title') + ' - GasFlow';
 });
 
 const cycleDialog = useTemplateRef('cycleDialog');
 const cycleMonth = ref('2026-11');
-const previewSaved = ref(false);
 
 const metrics = [
     {
@@ -97,8 +98,8 @@ const attention = [
 ] as const;
 
 function savePreview(): void {
-    previewSaved.value = true;
     cycleDialog.value?.close();
+    notify(t('dashboard.cycle_preview_saved'));
 }
 </script>
 
@@ -114,14 +115,6 @@ function savePreview(): void {
                     <Plus />{{ t('dashboard.create_cycle') }}
                 </button>
             </PageHeading>
-
-            <p
-                v-if="previewSaved"
-                role="status"
-                class="rounded-control bg-success-soft px-3 py-2 text-sm text-success"
-            >
-                {{ t('dashboard.cycle_preview_saved') }}
-            </p>
 
             <dl
                 class="grid grid-cols-1 gap-3.5 min-[25rem]:grid-cols-2 xl:grid-cols-4"
