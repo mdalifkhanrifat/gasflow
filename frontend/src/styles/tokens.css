@@ -69,6 +69,10 @@
     --table-checkbox-size: 0.8125rem;
     --table-checkbox-target: 1.5rem;
 
+    /* Size and stroke of every Lucide icon. */
+    --icon-size: 1rem;
+    --icon-stroke: 1.75;
+
     /* Form controls, focus rings, list filters, and pagination. */
     --control-padding-inline: 0.75rem;
     --control-focus-width: 2px;

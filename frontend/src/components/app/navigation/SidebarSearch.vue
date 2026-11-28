@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Search } from '@lucide/vue';
 import { computed, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import UiInput from '@/components/ui/UiInput.vue';
@@ -119,9 +120,9 @@ function submit(): void {
                 type="submit"
                 :aria-label="t('topbar.search')"
                 :title="t('topbar.search')"
-                class="absolute inset-y-0 left-0 grid w-7 place-items-center rounded-control text-base text-nav-muted hover:text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus"
+                class="absolute inset-y-0 left-0 grid w-7 place-items-center rounded-control text-nav-muted hover:text-nav-ink focus-visible:outline-2 focus-visible:outline-nav-focus"
             >
-                <span aria-hidden="true">⌕</span>
+                <Search />
             </button>
         </div>
         <div

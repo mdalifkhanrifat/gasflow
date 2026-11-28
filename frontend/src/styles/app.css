@@ -4,6 +4,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+    /* Shared size and stroke for every Lucide icon. */
+    .lucide {
+        flex-shrink: 0;
+        inline-size: var(--icon-size);
+        block-size: var(--icon-size);
+        stroke-width: var(--icon-stroke);
+    }
+
     /* Lock page scrolling while a modal or mobile drawer is open. */
     html:has(dialog:modal) {
         overflow: hidden;
@@ -445,10 +453,6 @@
     .sidebar-item.sidebar-item-active {
         @apply bg-nav-active font-semibold text-nav-ink;
         box-shadow: inset 3px 0 var(--nav-accent);
-    }
-
-    .sidebar-icon {
-        @apply w-4 shrink-0 text-center text-sm;
     }
 
     .sidebar[data-compact] :is(.sidebar-brand, .sidebar-footer, .sidebar-item) {

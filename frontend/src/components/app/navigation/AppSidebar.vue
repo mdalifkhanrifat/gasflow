@@ -6,6 +6,7 @@ const expanded = ref(new Set<string>(['navigation.platform']));
 
 <script setup lang="ts">
 import { computed, nextTick, useId, useTemplateRef, watch } from 'vue';
+import { Ellipsis, Search } from '@lucide/vue';
 import { useRoute } from 'vue-router';
 import BrandLogo from '@/components/app/BrandLogo.vue';
 import SidebarSearch from '@/components/app/navigation/SidebarSearch.vue';
@@ -99,9 +100,7 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                 :title="compact ? t(dashboardNavigationItem.label) : undefined"
                 @click="emit('navigate')"
             >
-                <span class="sidebar-icon" aria-hidden="true">{{
-                    dashboardNavigationItem.icon
-                }}</span>
+                <component :is="dashboardNavigationItem.icon" />
                 <span :class="{ 'sr-only': compact }">{{
                     t(dashboardNavigationItem.label)
                 }}</span>
@@ -114,7 +113,7 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                 :title="t('topbar.search')"
                 @click="emit('expandSearch')"
             >
-                <span class="sidebar-icon" aria-hidden="true">⌕</span>
+                <Search />
             </button>
             <SidebarSearch
                 v-else
@@ -140,9 +139,7 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                         :title="compact ? t(group.label) : undefined"
                         @click="toggleGroup(group.label)"
                     >
-                        <span class="sidebar-icon" aria-hidden="true">{{
-                            group.icon
-                        }}</span>
+                        <component :is="group.icon" />
                         <span :class="{ 'sr-only': compact }">{{
                             t(group.label)
                         }}</span>
@@ -175,9 +172,7 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                             :title="compact ? t(item.label) : undefined"
                             @click="emit('navigate')"
                         >
-                            <span class="sidebar-icon" aria-hidden="true">{{
-                                item.icon
-                            }}</span>
+                            <component :is="item.icon" />
                             <span :class="{ 'sr-only': compact }">{{
                                 t(item.label)
                             }}</span>
@@ -189,9 +184,7 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
                             :data-menu-item="item.label"
                             :title="compact ? t(item.label) : undefined"
                         >
-                            <span class="sidebar-icon" aria-hidden="true">{{
-                                item.icon
-                            }}</span>
+                            <component :is="item.icon" />
                             <span :class="{ 'sr-only': compact }">{{
                                 t(item.label)
                             }}</span>
@@ -217,12 +210,12 @@ async function revealSearchItem(entry: SearchEntry): Promise<void> {
             <button
                 v-if="!compact"
                 type="button"
-                class="sidebar-profile-more ml-auto grid size-7 shrink-0 place-items-center rounded-control text-lg text-nav-muted"
+                class="sidebar-profile-more ml-auto grid size-7 shrink-0 place-items-center rounded-control text-nav-muted"
                 :aria-label="t('topbar.account')"
                 :title="t('topbar.account')"
                 @click="emit('profile')"
             >
-                <span aria-hidden="true">⋯</span>
+                <Ellipsis />
             </button>
         </div>
     </div>
