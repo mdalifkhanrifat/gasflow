@@ -547,6 +547,17 @@ says where it came from and how to rebuild it; `src/styles/fonts.css` holds the
 `@font-face` rules. Bengali uses Noto Sans Bengali (weights 400–800, Bengali
 characters only); Latin text uses the system font.
 
+Record statuses come from the database. `GET /api/v1/statuses`
+(`Http/Controllers/Lifecycle/StatusCatalogueController`) returns every
+entity's statuses from `StatusRegistry` in display order, each with its tone
+and a label per supported language. `composables/useStatusCatalogue.ts` loads
+it once at start-up. Show a record status with
+`<StatusBadge entity="invoices" :value="row.status" />`: pages keep only the
+status code, never a label or color. A new status or a changed tone is a
+`status_definitions` row; `config/status.ts` maps each tone to its colors.
+`components/ui/UiBadge.vue` is the plain colored badge for anything that is
+not a record status, such as a count.
+
 Change shared font families and sizes in the Typography section of
 `frontend/src/styles/tokens.css`. Use `PageHeading` for the title, eyebrow
 and supporting copy. Module and dashboard tables share `DataTable` for cell
