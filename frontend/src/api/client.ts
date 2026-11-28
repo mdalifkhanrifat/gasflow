@@ -1,3 +1,46 @@
+// A response outside 2xx. `payload` is the JSON body when there is one.
+export class ApiError extends Error {
+    constructor(
+        readonly status: number,
+        readonly payload: unknown,
+    ) {
+        super(`Request failed with HTTP ${status}`);
+        this.name = 'ApiError';
+    }
+}
+
+// Laravel's 422: { message, errors: { field: [messages] } }.
+export class ApiValidationError extends ApiError {
+    constructor(
+        payload: unknown,
+        readonly errors: Readonly<Record<string, readonly string[]>>,
+    ) {
+        super(422, payload);
+        this.name = 'ApiValidationError';
+    }
+}
+
+function fieldErrors(payload: unknown): Record<string, string[]> {
+    if (
+        typeof payload !== 'object' ||
+        payload === null ||
+        !('errors' in payload) ||
+        typeof payload.errors !== 'object' ||
+        payload.errors === null
+    ) {
+        return {};
+    }
+
+    return Object.fromEntries(
+        Object.entries(payload.errors).map(([field, messages]) => [
+            field,
+            Array.isArray(messages)
+                ? messages.filter((message) => typeof message === 'string')
+                : [],
+        ]),
+    );
+}
+
 async function request(
     path: string,
     options: RequestInit = {},
@@ -10,7 +53,10 @@ async function request(
         credentials: 'same-origin',
     });
     if (!response.ok) {
-        throw new Error(`Request failed with HTTP ${response.status}`);
+        const payload: unknown = await response.json().catch(() => null);
+        throw response.status === 422
+            ? new ApiValidationError(payload, fieldErrors(payload))
+            : new ApiError(response.status, payload);
     }
     return response;
 }
@@ -20,7 +66,11 @@ export async function readJson(path: string): Promise<unknown> {
     return await response.json();
 }
 
-export async function writeJson(path: string, data: object): Promise<unknown> {
+export async function writeJson(
+    path: string,
+    data: object,
+    method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'PUT',
+): Promise<unknown> {
     await request('/sanctum/csrf-cookie');
     const token = document.cookie
         .split('; ')
@@ -30,7 +80,7 @@ export async function writeJson(path: string, data: object): Promise<unknown> {
     }
 
     const response = await request(path, {
-        method: 'PUT',
+        method,
         headers: {
             'Content-Type': 'application/json',
             'X-XSRF-TOKEN': decodeURIComponent(
@@ -39,5 +89,5 @@ export async function writeJson(path: string, data: object): Promise<unknown> {
         },
         body: JSON.stringify(data),
     });
-    return await response.json();
+    return response.status === 204 ? null : await response.json();
 }

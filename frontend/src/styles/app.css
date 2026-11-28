@@ -75,6 +75,7 @@
     --text-page-eyebrow: var(--page-eyebrow-size);
     --text-field-label: var(--field-label-size);
     --text-field-output: var(--output-text-size);
+    --text-field-hint: var(--field-hint-size);
     --text-footer: var(--footer-text-size);
     --text-chart-label: var(--chart-label-size);
     --text-status-compact: var(--status-compact-size);
@@ -469,6 +470,11 @@
         @apply min-h-control rounded-control border border-line bg-surface text-ink placeholder:text-ink-muted disabled:opacity-60;
         padding-inline: var(--control-padding-inline);
         font-size: var(--control-text-size);
+    }
+
+    /* FormField marks a control with an error. */
+    .ui-control[aria-invalid='true'] {
+        border-color: var(--danger);
     }
 
     /* Keyboard focus rings for controls and table actions. */

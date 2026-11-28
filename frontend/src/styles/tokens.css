@@ -47,6 +47,7 @@
     --control-text-size: 0.875rem;
     --topbar-control-text-size: 0.6875rem;
     --field-label-size: 0.75rem;
+    --field-hint-size: 0.6875rem;
     --output-text-size: var(--control-text-size);
     --button-text-size: 0.75rem;
     --compact-control-text-size: 0.625rem;
