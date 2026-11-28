@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowLeft } from '@lucide/vue';
 import { computed, watchEffect } from 'vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
@@ -47,7 +48,7 @@ function printInvoice(): void {
                     :to="{ name: 'customer-invoices' }"
                     class="ui-button"
                 >
-                    <span aria-hidden="true">←</span>
+                    <ArrowLeft />
                     {{ t('invoice.back') }}
                 </RouterLink>
                 <button

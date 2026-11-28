@@ -71,6 +71,7 @@
 
     /* Size and stroke of every Lucide icon. */
     --icon-size: 1rem;
+    --icon-size-small: 0.75rem;
     --icon-stroke: 1.75;
 
     /* Form controls, focus rings, list filters, and pagination. */

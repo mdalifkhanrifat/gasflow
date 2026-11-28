@@ -1,11 +1,22 @@
 <script setup lang="ts">
+import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Eye,
+    Pencil,
+    Search,
+    Trash2,
+} from '@lucide/vue';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import PageHeading from '@/components/app/PageHeading.vue';
 import FormDialog from '@/components/app/forms/FormDialog.vue';
 import StatusBadge from '@/components/app/StatusBadge.vue';
 import DataTable from '@/components/app/tables/DataTable.vue';
-import RecordActionIcon from '@/components/app/tables/RecordActionIcon.vue';
 import TableCheckbox from '@/components/app/tables/TableCheckbox.vue';
 import NativeSelect from '@/components/ui/NativeSelect.vue';
 import UiInput from '@/components/ui/UiInput.vue';
@@ -187,10 +198,9 @@ function removeRecord(): void {
                     >
                         <span class="sr-only">{{ t('module.search') }}</span>
                         <span
-                            aria-hidden="true"
                             class="pointer-events-none absolute inset-y-0 left-2.5 grid place-items-center text-ink-muted"
-                            >⌕</span
-                        >
+                            ><Search
+                        /></span>
                         <UiInput
                             v-model="search"
                             type="search"
@@ -240,7 +250,7 @@ function removeRecord(): void {
                             :disabled="!matchedRows.length"
                             @click="exportRecords"
                         >
-                            <span aria-hidden="true">↓</span>
+                            <Download />
                             {{
                                 t(
                                     selectedCount
@@ -300,13 +310,15 @@ function removeRecord(): void {
                             @click="sortBy(index - 1)"
                         >
                             {{ column.label }}
-                            <span aria-hidden="true">{{
-                                column.ariaSort === 'ascending'
-                                    ? '↑'
-                                    : column.ariaSort === 'descending'
-                                      ? '↓'
-                                      : '↕'
-                            }}</span>
+                            <component
+                                :is="
+                                    column.ariaSort === 'ascending'
+                                        ? ArrowUp
+                                        : column.ariaSort === 'descending'
+                                          ? ArrowDown
+                                          : ArrowUpDown
+                                "
+                            />
                         </button>
                     </template>
                     <template #default="{ row }">
@@ -364,7 +376,7 @@ function removeRecord(): void {
                                     "
                                     @click="openRecord(row, 'edit')"
                                 >
-                                    <RecordActionIcon action="edit" />
+                                    <Pencil />
                                 </button>
                                 <RouterLink
                                     v-if="row.to"
@@ -377,7 +389,7 @@ function removeRecord(): void {
                                         recordLabel(row)
                                     "
                                 >
-                                    <RecordActionIcon action="view" />
+                                    <Eye />
                                 </RouterLink>
                                 <button
                                     v-else
@@ -391,7 +403,7 @@ function removeRecord(): void {
                                     "
                                     @click="openRecord(row, 'view')"
                                 >
-                                    <RecordActionIcon action="view" />
+                                    <Eye />
                                 </button>
                                 <button
                                     v-if="previewActions"
@@ -405,7 +417,7 @@ function removeRecord(): void {
                                     "
                                     @click="openRecord(row, 'delete')"
                                 >
-                                    <RecordActionIcon action="delete" />
+                                    <Trash2 />
                                 </button>
                             </div>
                         </td>
@@ -449,11 +461,7 @@ function removeRecord(): void {
                             :aria-label="t('module.previous_page')"
                             @click="page--"
                         >
-                            <span
-                                aria-hidden="true"
-                                class="text-base leading-none"
-                                >‹</span
-                            >
+                            <ChevronLeft />
                         </button>
                         <button
                             v-for="number in pageNumbers"
@@ -478,11 +486,7 @@ function removeRecord(): void {
                             :aria-label="t('module.next_page')"
                             @click="page++"
                         >
-                            <span
-                                aria-hidden="true"
-                                class="text-base leading-none"
-                                >›</span
-                            >
+                            <ChevronRight />
                         </button>
                     </nav>
                 </footer>

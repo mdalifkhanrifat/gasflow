@@ -644,13 +644,13 @@
         block-size: var(--table-action-size);
     }
 
-    .table-action svg {
-        inline-size: var(--table-action-icon-size);
-        block-size: var(--table-action-icon-size);
+    .table-action {
+        --icon-size: var(--table-action-icon-size);
     }
 
     .data-table-sort {
         @apply inline-flex cursor-pointer items-center gap-1.5 rounded-sm hover:text-primary;
+        --icon-size: var(--icon-size-small);
         text-transform: inherit;
     }
 

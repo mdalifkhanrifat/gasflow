@@ -1,4 +1,15 @@
 <script setup lang="ts">
+import {
+    Activity,
+    AlarmClock,
+    ArrowLeftRight,
+    ArrowRight,
+    Banknote,
+    Building,
+    Building2,
+    Gauge,
+    Package,
+} from '@lucide/vue';
 import { ref, useTemplateRef, watchEffect } from 'vue';
 import DashboardPanel from '@/components/app/dashboard/DashboardPanel.vue';
 import StatCard from '@/components/app/dashboard/StatCard.vue';
@@ -27,25 +38,29 @@ const metrics = [
         label: 'dashboard.organizations',
         value: 18,
         note: 'dashboard.organizations_note',
-        icon: '▣',
+        icon: Building2,
+        money: false,
     },
     {
         label: 'dashboard.buildings',
         value: 42,
         note: 'dashboard.buildings_note',
-        icon: '⌂',
+        icon: Building,
+        money: false,
     },
     {
         label: 'dashboard.meters',
         value: 1284,
         note: 'dashboard.meters_note',
-        icon: '◉',
+        icon: Gauge,
+        money: false,
     },
     {
         label: 'dashboard.monthly_collected',
         value: 842000,
         note: 'dashboard.collected_note',
-        icon: '৳',
+        icon: Banknote,
+        money: true,
     },
 ] as const;
 
@@ -61,22 +76,22 @@ const attention = [
     {
         label: 'dashboard.attention_reconcile',
         detail: 'dashboard.attention_reconcile_detail',
-        icon: '⇄',
+        icon: ArrowLeftRight,
     },
     {
         label: 'dashboard.attention_readings',
         detail: 'dashboard.attention_readings_detail',
-        icon: '⌁',
+        icon: Activity,
     },
     {
         label: 'dashboard.attention_overdue',
         detail: 'dashboard.attention_overdue_detail',
-        icon: '৳',
+        icon: AlarmClock,
     },
     {
         label: 'dashboard.attention_renewal',
         detail: 'dashboard.attention_renewal_detail',
-        icon: '◇',
+        icon: Package,
     },
 ] as const;
 
@@ -116,7 +131,7 @@ function savePreview(): void {
                     :key="metric.label"
                     :label="t(metric.label)"
                     :value="
-                        metric.icon === '৳'
+                        metric.money
                             ? formatMoney(metric.value, locale)
                             : formatNumber(metric.value, locale)
                     "
@@ -151,9 +166,8 @@ function savePreview(): void {
                             :to="{ name: 'customer-invoices' }"
                             class="ui-button"
                             >{{ t('dashboard.view_invoices') }}
-                            <span aria-hidden="true">→</span></RouterLink
-                        ></template
-                    >
+                            <ArrowRight /></RouterLink
+                    ></template>
                     <InvoiceStatusChart />
                 </DashboardPanel>
             </div>
@@ -219,9 +233,8 @@ function savePreview(): void {
                         >
                             <span
                                 class="grid size-7 shrink-0 place-items-center rounded-control bg-primary-soft text-primary"
-                                aria-hidden="true"
-                                >{{ item.icon }}</span
-                            >
+                                ><component :is="item.icon"
+                            /></span>
                             <div>
                                 <p class="text-xs font-semibold text-ink">
                                     {{ t(item.label) }}
